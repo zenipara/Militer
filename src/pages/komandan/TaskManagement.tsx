@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import TaskCard from '../../components/ui/TaskCard';
 import Button from '../../components/common/Button';
@@ -9,8 +9,10 @@ import { useTasks } from '../../hooks/useTasks';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
+import PageHeader from '../../components/ui/PageHeader';
 import type { Task, TaskReport, TaskStatus } from '../../types';
 import { CardListSkeleton } from '../../components/common/Skeleton';
+import { Link } from 'react-router-dom';
 
 export default function TaskManagement() {
   const { user } = useAuthStore();
@@ -27,6 +29,7 @@ export default function TaskManagement() {
   const [isSaving, setIsSaving] = useState(false);
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [searchRaw, setSearchRaw] = useState('');
   const [form, setForm] = useState({
     judul: '',
     deskripsi: '',
@@ -35,7 +38,26 @@ export default function TaskManagement() {
     prioritas: 2 as 1 | 2 | 3,
   });
 
-  const filtered = tasks.filter((t) => !filterStatus || t.status === filterStatus);
+  const filtered = useMemo(() => {
+    const query = searchRaw.trim().toLowerCase();
+    return tasks.filter((t) => {
+      const matchStatus = !filterStatus || t.status === filterStatus;
+      const matchSearch = !query
+        || t.judul.toLowerCase().includes(query)
+        || (t.deskripsi?.toLowerCase().includes(query) ?? false)
+        || (t.assignee?.nama?.toLowerCase().includes(query) ?? false)
+        || (t.assignee?.nrp?.includes(query) ?? false);
+      return matchStatus && matchSearch;
+    });
+  }, [filterStatus, searchRaw, tasks]);
+
+  const stats = {
+    total: tasks.length,
+    pending: tasks.filter((t) => t.status === 'pending').length,
+    inProgress: tasks.filter((t) => t.status === 'in_progress').length,
+    done: tasks.filter((t) => t.status === 'done').length,
+    approved: tasks.filter((t) => t.status === 'approved').length,
+  };
 
   const openDetail = async (task: Task) => {
     setSelectedTask(task);
@@ -117,8 +139,49 @@ export default function TaskManagement() {
   return (
     <DashboardLayout title="Manajemen Tugas">
       <div className="space-y-5">
+        <PageHeader
+          title="Manajemen Tugas"
+          subtitle="Buat, tinjau, dan kontrol progres tugas personel dari satu panel kerja."
+          meta={
+            <>
+              <span>Total: {stats.total}</span>
+              <span>Perlu review: {stats.done}</span>
+            </>
+          }
+          actions={
+            <>
+              <Button variant="outline" onClick={() => setShowCreate(true)}>+ Buat Tugas</Button>
+              <Link to="/komandan/reports" className="inline-flex items-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary hover:border-primary">
+                Laporan
+              </Link>
+            </>
+          }
+        />
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          {[
+            { label: 'Total', value: stats.total },
+            { label: 'Menunggu', value: stats.pending },
+            { label: 'Dikerjakan', value: stats.inProgress },
+            { label: 'Perlu Ditinjau', value: stats.done },
+            { label: 'Disetujui', value: stats.approved },
+          ].map((item) => (
+            <div key={item.label} className="app-card p-4">
+              <p className="text-xs text-text-muted">{item.label}</p>
+              <p className="mt-1 text-2xl font-bold text-text-primary">{item.value}</p>
+            </div>
+          ))}
+        </div>
+
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Input
+            type="text"
+            placeholder="Cari judul, deskripsi, atau personel..."
+            value={searchRaw}
+            onChange={(e) => setSearchRaw(e.target.value)}
+            className="flex-1"
+          />
           <div className="flex gap-2 flex-wrap">
             {statusFilters.map((f) => (
               <button
@@ -138,9 +201,6 @@ export default function TaskManagement() {
                 )}
               </button>
             ))}
-          </div>
-          <div className="sm:ml-auto">
-            <Button onClick={() => setShowCreate(true)}>+ Buat Tugas</Button>
           </div>
         </div>
 
