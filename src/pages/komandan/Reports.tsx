@@ -7,7 +7,20 @@ import { useUIStore } from '../../store/uiStore';
 import { useLeaveRequests } from '../../hooks/useLeaveRequests';
 import { AttendanceBadge, TaskStatusBadge, LeaveStatusBadge } from '../../components/common/Badge';
 import { CardListSkeleton, StatCardsSkeleton } from '../../components/common/Skeleton';
+import PageHeader from '../../components/ui/PageHeader';
 import type { Attendance, Task } from '../../types';
+import { useMemo } from 'react';
+
+function downloadCSV(rows: string[][], filename: string) {
+  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function Reports() {
   const { user } = useAuthStore();
@@ -17,6 +30,8 @@ export default function Reports() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -24,7 +39,7 @@ export default function Reports() {
       supabase
         .from('attendance')
         .select('*, user:user_id(id,nama,nrp,pangkat)')
-        .eq('tanggal', new Date().toISOString().split('T')[0])
+        .eq('tanggal', selectedDate)
         .order('created_at', { ascending: false }),
       supabase
         .from('tasks')
@@ -36,11 +51,38 @@ export default function Reports() {
     setAttendances((attnRes.data as Attendance[]) ?? []);
     setTasks((taskRes.data as Task[]) ?? []);
     setIsLoading(false);
-  }, [user?.satuan]);
+  }, [user?.satuan, selectedDate]);
+
+  const refresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchData();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (user?.satuan) void fetchData();
   }, [user, fetchData]);
+
+  useEffect(() => {
+    if (!user?.satuan) return undefined;
+    const channel = supabase
+      .channel('komandan-reports')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => { void fetchData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { void fetchData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => { void fetchData(); })
+      .subscribe();
+
+    return () => { void supabase.removeChannel(channel); };
+  }, [fetchData, user?.satuan]);
+
+  const leaveByStatus = useMemo(() => ({
+    pending: leaveRequests.filter((r) => r.status === 'pending').length,
+    approved: leaveRequests.filter((r) => r.status === 'approved').length,
+    rejected: leaveRequests.filter((r) => r.status === 'rejected').length,
+  }), [leaveRequests]);
 
   if (isLoading) return (
     <DashboardLayout title="Laporan Harian">
@@ -56,6 +98,23 @@ export default function Reports() {
   const approvedTasks = tasks.filter((t) => t.status === 'approved').length;
   const pendingTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length;
   const pendingLeave = leaveRequests.filter((r) => r.status === 'pending').length;
+  const attendanceRate = attendances.length > 0 ? Math.round((presentCount / attendances.length) * 100) : 0;
+
+  const handleExportCSV = () => {
+    const headers = ['Tanggal', 'NRP', 'Nama', 'Pangkat', 'Status', 'Check-In', 'Check-Out', 'Keterangan'];
+    const rows = attendances.map((a) => [
+      a.tanggal,
+      a.user?.nrp ?? '',
+      a.user?.nama ?? '',
+      a.user?.pangkat ?? '',
+      a.status,
+      a.check_in ? new Date(a.check_in).toLocaleTimeString('id-ID') : '',
+      a.check_out ? new Date(a.check_out).toLocaleTimeString('id-ID') : '',
+      a.keterangan ?? '',
+    ]);
+    downloadCSV([headers, ...rows], `laporan_${user?.satuan ?? 'unit'}_${selectedDate}.csv`);
+    showNotification('CSV laporan diekspor', 'success');
+  };
 
   const handleReviewLeave = async (id: string, status: 'approved' | 'rejected') => {
     setReviewingId(id);
@@ -75,6 +134,40 @@ export default function Reports() {
   return (
     <DashboardLayout title="Laporan Harian">
       <div className="space-y-6">
+        <PageHeader
+          title="Laporan Harian"
+          subtitle="Ringkasan cepat status kehadiran, tugas, dan izin personel untuk keputusan harian."
+          meta={
+            <>
+              <span>Unit: {user?.satuan ?? '—'}</span>
+              <span>Rasio hadir: {attendanceRate}%</span>
+            </>
+          }
+          actions={
+            <>
+              <Button variant="outline" onClick={() => void refresh()} isLoading={isRefreshing}>Muat Ulang</Button>
+              <Button variant="secondary" onClick={handleExportCSV}>Export CSV</Button>
+            </>
+          }
+        />
+
+        <div className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <label className="text-sm text-text-muted whitespace-nowrap">Tanggal laporan:</label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="form-control w-auto"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs text-text-muted">
+            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin menunggu: {leaveByStatus.pending}</span>
+            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin disetujui: {leaveByStatus.approved}</span>
+            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin ditolak: {leaveByStatus.rejected}</span>
+          </div>
+        </div>
+
         {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {[
@@ -84,7 +177,7 @@ export default function Reports() {
             { icon: '⏳', label: 'Tugas Aktif', value: pendingTasks, color: 'text-accent-gold' },
             { icon: '📋', label: 'Izin Menunggu', value: pendingLeave, color: 'text-blue-400' },
           ].map((s) => (
-            <div key={s.label} className="bg-bg-card border border-surface rounded-xl p-4">
+            <div key={s.label} className="app-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-text-muted text-sm">{s.label}</span>
                 <span className="text-xl">{s.icon}</span>
@@ -96,8 +189,8 @@ export default function Reports() {
 
         {/* Leave Requests Pending Approval */}
         {pendingLeave > 0 && (
-          <div className="bg-bg-card border border-surface rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-surface flex items-center justify-between">
+          <div className="app-card overflow-hidden">
+            <div className="flex items-center justify-between border-b border-surface/80 px-5 py-4">
               <h3 className="font-semibold text-text-primary">Permohonan Izin — Perlu Persetujuan</h3>
               <span className="bg-blue-500/20 text-blue-400 text-xs rounded-full px-2.5 py-0.5 font-medium">
                 {pendingLeave} menunggu
@@ -151,8 +244,8 @@ export default function Reports() {
         )}
 
         {/* Attendance Today */}
-        <div className="bg-bg-card border border-surface rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-surface">
+        <div className="app-card overflow-hidden">
+          <div className="border-b border-surface/80 px-5 py-4">
             <h3 className="font-semibold text-text-primary">
               Absensi Hari Ini — {new Date().toLocaleDateString('id-ID')}
             </h3>
@@ -180,8 +273,8 @@ export default function Reports() {
         </div>
 
         {/* Recent Tasks */}
-        <div className="bg-bg-card border border-surface rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-surface">
+        <div className="app-card overflow-hidden">
+          <div className="border-b border-surface/80 px-5 py-4">
             <h3 className="font-semibold text-text-primary">Status Tugas Terkini</h3>
           </div>
           <div className="divide-y divide-surface/50 max-h-64 overflow-y-auto">
@@ -202,8 +295,8 @@ export default function Reports() {
         </div>
 
         {/* All Leave Requests */}
-        <div className="bg-bg-card border border-surface rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-surface">
+        <div className="app-card overflow-hidden">
+          <div className="border-b border-surface/80 px-5 py-4">
             <h3 className="font-semibold text-text-primary">Riwayat Permohonan Izin</h3>
           </div>
           <div className="divide-y divide-surface/50 max-h-64 overflow-y-auto">
