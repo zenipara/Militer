@@ -5,15 +5,18 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import { RoleBadge } from '../../components/common/Badge';
+import { TableSkeleton } from '../../components/common/Skeleton';
 import { useUsers } from '../../hooks/useUsers';
 import { useUIStore } from '../../store/uiStore';
+import { useDebounce } from '../../hooks/useDebounce';
 import type { User, Role } from '../../types';
 
 export default function UserManagement() {
   const { users, isLoading, createUser, toggleUserActive, resetUserPin } = useUsers();
   const { showNotification } = useUIStore();
 
-  const [search, setSearch] = useState('');
+  const [searchRaw, setSearchRaw] = useState('');
+  const search = useDebounce(searchRaw, 300);
   const [filterRole, setFilterRole] = useState<Role | ''>('');
   const [showCreate, setShowCreate] = useState(false);
   const [showResetPin, setShowResetPin] = useState(false);
@@ -91,8 +94,8 @@ export default function UserManagement() {
           <input
             type="text"
             placeholder="Cari nama atau NRP..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchRaw}
+            onChange={(e) => setSearchRaw(e.target.value)}
             className="flex-1 rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
           />
           <select
@@ -108,6 +111,9 @@ export default function UserManagement() {
           <Button onClick={() => setShowCreate(true)}>+ Tambah Personel</Button>
         </div>
 
+        {isLoading ? (
+          <TableSkeleton rows={6} cols={6} />
+        ) : (
         <Table
           columns={[
             { key: 'nrp', header: 'NRP', render: (u) => <span className="font-mono text-sm">{u.nrp}</span> },
@@ -146,9 +152,10 @@ export default function UserManagement() {
           ]}
           data={filtered}
           keyExtractor={(u) => u.id}
-          isLoading={isLoading}
+          isLoading={false}
           emptyMessage="Tidak ada personel ditemukan"
         />
+        )}
       </div>
 
       {/* Create User Modal */}

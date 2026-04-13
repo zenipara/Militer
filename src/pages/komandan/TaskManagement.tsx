@@ -9,20 +9,24 @@ import { useTasks } from '../../hooks/useTasks';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
-import type { Task, TaskStatus } from '../../types';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import type { Task, TaskReport, TaskStatus } from '../../types';
+import { CardListSkeleton } from '../../components/common/Skeleton';
 
 export default function TaskManagement() {
   const { user } = useAuthStore();
   const { showNotification } = useUIStore();
-  const { tasks, isLoading, createTask, updateTaskStatus } = useTasks({ assignedBy: user?.id });
+  const { tasks, isLoading, createTask, approveTask, rejectTask, getTaskReport } = useTasks({ assignedBy: user?.id });
   const { users } = useUsers({ role: 'prajurit', isActive: true });
 
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [showCreate, setShowCreate] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskReport, setTaskReport] = useState<TaskReport | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
   const [form, setForm] = useState({
     judul: '',
     deskripsi: '',
@@ -33,6 +37,23 @@ export default function TaskManagement() {
 
   const filtered = tasks.filter((t) => !filterStatus || t.status === filterStatus);
 
+  const openDetail = async (task: Task) => {
+    setSelectedTask(task);
+    setShowDetail(true);
+    setShowRejectForm(false);
+    setRejectReason('');
+    setTaskReport(null);
+    if (task.status === 'done') {
+      setLoadingReport(true);
+      try {
+        const report = await getTaskReport(task.id);
+        setTaskReport(report as TaskReport | null);
+      } finally {
+        setLoadingReport(false);
+      }
+    }
+  };
+
   const handleCreate = async () => {
     if (!form.judul || !form.assigned_to) {
       showNotification('Judul dan assignee wajib diisi', 'error');
@@ -40,10 +61,7 @@ export default function TaskManagement() {
     }
     setIsSaving(true);
     try {
-      await createTask({
-        ...form,
-        satuan: user?.satuan,
-      });
+      await createTask({ ...form, satuan: user?.satuan });
       showNotification('Tugas berhasil dibuat', 'success');
       setShowCreate(false);
       setForm({ judul: '', deskripsi: '', assigned_to: '', deadline: '', prioritas: 2 });
@@ -54,23 +72,36 @@ export default function TaskManagement() {
     }
   };
 
-  const handleApprove = async (task: Task) => {
+  const handleApprove = async () => {
+    if (!selectedTask) return;
+    setIsSaving(true);
     try {
-      await updateTaskStatus(task.id, 'approved');
-      showNotification('Tugas disetujui', 'success');
+      await approveTask(selectedTask.id);
+      showNotification('Tugas disetujui ✓', 'success');
       setShowDetail(false);
     } catch {
       showNotification('Gagal menyetujui tugas', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleReject = async (task: Task) => {
+  const handleReject = async () => {
+    if (!selectedTask) return;
+    if (!rejectReason.trim()) {
+      showNotification('Catatan penolakan wajib diisi', 'error');
+      return;
+    }
+    setIsSaving(true);
     try {
-      await updateTaskStatus(task.id, 'rejected');
-      showNotification('Tugas ditolak', 'warning');
+      await rejectTask(selectedTask.id, rejectReason);
+      showNotification('Tugas dikembalikan untuk revisi', 'info');
       setShowDetail(false);
+      setShowRejectForm(false);
     } catch {
       showNotification('Gagal menolak tugas', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -78,7 +109,7 @@ export default function TaskManagement() {
     { value: '', label: 'Semua' },
     { value: 'pending', label: 'Menunggu' },
     { value: 'in_progress', label: 'Dikerjakan' },
-    { value: 'done', label: 'Selesai' },
+    { value: 'done', label: 'Perlu Ditinjau' },
     { value: 'approved', label: 'Disetujui' },
     { value: 'rejected', label: 'Ditolak' },
   ];
@@ -100,6 +131,11 @@ export default function TaskManagement() {
                 }`}
               >
                 {f.label}
+                {f.value !== '' && (
+                  <span className="ml-1.5 text-xs opacity-70">
+                    ({tasks.filter((t) => t.status === f.value).length})
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -110,7 +146,7 @@ export default function TaskManagement() {
 
         {/* Task list */}
         {isLoading ? (
-          <LoadingSpinner />
+          <CardListSkeleton count={4} />
         ) : filtered.length === 0 ? (
           <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
             Tidak ada tugas
@@ -122,11 +158,8 @@ export default function TaskManagement() {
                 key={task.id}
                 task={task}
                 showAssignee
-                actionLabel={task.status === 'done' ? 'Tinjau' : 'Detail'}
-                onAction={() => {
-                  setSelectedTask(task);
-                  setShowDetail(true);
-                }}
+                actionLabel={task.status === 'done' ? '📋 Tinjau Laporan' : 'Detail'}
+                onAction={() => openDetail(task)}
               />
             ))}
           </div>
@@ -191,37 +224,95 @@ export default function TaskManagement() {
         </div>
       </Modal>
 
-      {/* Task Detail Modal */}
+      {/* Task Detail / Approval Modal */}
       {selectedTask && (
         <Modal
           isOpen={showDetail}
-          onClose={() => setShowDetail(false)}
-          title="Detail Tugas"
-          size="md"
+          onClose={() => { setShowDetail(false); setShowRejectForm(false); }}
+          title={selectedTask.status === 'done' ? '📋 Tinjau Laporan Tugas' : 'Detail Tugas'}
+          size="lg"
           footer={
-            selectedTask.status === 'done' ? (
+            selectedTask.status === 'done' && !showRejectForm ? (
               <>
                 <Button variant="ghost" onClick={() => setShowDetail(false)}>Tutup</Button>
-                <Button variant="danger" onClick={() => handleReject(selectedTask)}>Tolak</Button>
-                <Button onClick={() => handleApprove(selectedTask)}>Setujui</Button>
+                <Button variant="danger" onClick={() => setShowRejectForm(true)}>
+                  Tolak & Minta Revisi
+                </Button>
+                <Button onClick={handleApprove} isLoading={isSaving}>✓ Setujui</Button>
+              </>
+            ) : selectedTask.status === 'done' && showRejectForm ? (
+              <>
+                <Button variant="ghost" onClick={() => setShowRejectForm(false)}>Kembali</Button>
+                <Button variant="danger" onClick={handleReject} isLoading={isSaving}>
+                  Kirim Penolakan
+                </Button>
               </>
             ) : (
               <Button variant="ghost" onClick={() => setShowDetail(false)}>Tutup</Button>
             )
           }
         >
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Task info */}
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-text-primary">{selectedTask.judul}</h3>
+              <h3 className="font-semibold text-text-primary text-base">{selectedTask.judul}</h3>
               <TaskStatusBadge status={selectedTask.status} />
             </div>
-            {selectedTask.deskripsi && <p className="text-sm text-text-muted">{selectedTask.deskripsi}</p>}
+            {selectedTask.deskripsi && (
+              <p className="text-sm text-text-muted">{selectedTask.deskripsi}</p>
+            )}
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div><span className="text-text-muted">Assignee:</span> <span className="text-text-primary">{selectedTask.assignee?.nama ?? '—'}</span></div>
               <div><span className="text-text-muted">NRP:</span> <span className="font-mono text-text-primary">{selectedTask.assignee?.nrp ?? '—'}</span></div>
-              <div><span className="text-text-muted">Prioritas:</span> <span className="text-text-primary">{selectedTask.prioritas}</span></div>
+              <div><span className="text-text-muted">Prioritas:</span> <span className="text-text-primary">{selectedTask.prioritas === 1 ? '🔴 Tinggi' : selectedTask.prioritas === 2 ? '🟡 Sedang' : '🟢 Rendah'}</span></div>
               <div><span className="text-text-muted">Deadline:</span> <span className="text-text-primary">{selectedTask.deadline ? new Date(selectedTask.deadline).toLocaleDateString('id-ID') : '—'}</span></div>
             </div>
+
+            {/* Task Report (only for 'done' tasks) */}
+            {selectedTask.status === 'done' && (
+              <div className="border-t border-surface pt-4">
+                <h4 className="text-sm font-semibold text-text-primary mb-2">📄 Laporan Prajurit</h4>
+                {loadingReport ? (
+                  <div className="space-y-2">
+                    <div className="h-4 animate-pulse bg-surface/70 rounded w-full" />
+                    <div className="h-4 animate-pulse bg-surface/70 rounded w-3/4" />
+                  </div>
+                ) : taskReport ? (
+                  <div className="bg-surface/30 rounded-lg p-3 text-sm text-text-primary whitespace-pre-line">
+                    {taskReport.isi_laporan}
+                    {taskReport.file_url && (
+                      <a
+                        href={taskReport.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 flex items-center gap-1 text-primary text-xs hover:underline"
+                      >
+                        📎 Lihat lampiran
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-text-muted italic">Tidak ada laporan terlampir.</p>
+                )}
+              </div>
+            )}
+
+            {/* Rejection form */}
+            {showRejectForm && (
+              <div className="border-t border-surface pt-4">
+                <h4 className="text-sm font-semibold text-accent-red mb-2">✗ Catatan Penolakan</h4>
+                <p className="text-xs text-text-muted mb-2">
+                  Jelaskan alasan penolakan. Tugas akan dikembalikan ke status "Dikerjakan" agar prajurit dapat merevisi.
+                </p>
+                <textarea
+                  className="w-full rounded-lg border border-surface bg-bg-card px-3 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-red"
+                  rows={4}
+                  placeholder="Tuliskan catatan penolakan dan hal yang perlu diperbaiki..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </Modal>
       )}

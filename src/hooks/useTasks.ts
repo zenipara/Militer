@@ -80,6 +80,29 @@ export function useTasks(options: UseTasksOptions = {}) {
     await fetchTasks();
   };
 
+  /**
+   * Approve a task: status → 'approved' and log the action.
+   */
+  const approveTask = async (taskId: string) => {
+    await updateTaskStatus(taskId, 'approved');
+  };
+
+  /**
+   * Reject a task per spec §8.3: status reverts to 'in_progress' so the
+   * prajurit can revise and resubmit. An optional rejection note is saved
+   * as a new task_report row (type = 'rejection').
+   */
+  const rejectTask = async (taskId: string, catatan?: string) => {
+    if (catatan?.trim()) {
+      await supabase.from('task_reports').insert({
+        task_id: taskId,
+        user_id: user?.id,
+        isi_laporan: `[DITOLAK] ${catatan.trim()}`,
+      });
+    }
+    await updateTaskStatus(taskId, 'in_progress');
+  };
+
   const submitTaskReport = async (taskId: string, isiLaporan: string, fileUrl?: string) => {
     const { error: reportError } = await supabase.from('task_reports').insert({
       task_id: taskId,
@@ -92,5 +115,30 @@ export function useTasks(options: UseTasksOptions = {}) {
     await updateTaskStatus(taskId, 'done');
   };
 
-  return { tasks, isLoading, error, refetch: fetchTasks, createTask, updateTaskStatus, submitTaskReport };
+  /**
+   * Fetch the most recent task report for a given task_id (for approval review).
+   */
+  const getTaskReport = async (taskId: string) => {
+    const { data } = await supabase
+      .from('task_reports')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .single();
+    return data;
+  };
+
+  return {
+    tasks,
+    isLoading,
+    error,
+    refetch: fetchTasks,
+    createTask,
+    updateTaskStatus,
+    approveTask,
+    rejectTask,
+    submitTaskReport,
+    getTaskReport,
+  };
 }
