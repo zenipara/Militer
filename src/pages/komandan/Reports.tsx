@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
+import BarChart from '../../components/ui/BarChart';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -9,7 +10,6 @@ import { AttendanceBadge, TaskStatusBadge, LeaveStatusBadge } from '../../compon
 import { CardListSkeleton, StatCardsSkeleton } from '../../components/common/Skeleton';
 import PageHeader from '../../components/ui/PageHeader';
 import type { Attendance, Task } from '../../types';
-import { useMemo } from 'react';
 
 function downloadCSV(rows: string[][], filename: string) {
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -95,10 +95,32 @@ export default function Reports() {
 
   const presentCount = attendances.filter((a) => a.status === 'hadir').length;
   const absenCount = attendances.filter((a) => a.status === 'alpa').length;
+  const sakitCount = attendances.filter((a) => a.status === 'sakit').length;
+  const izinCount = attendances.filter((a) => a.status === 'izin').length;
   const approvedTasks = tasks.filter((t) => t.status === 'approved').length;
+  const doneTasks = tasks.filter((t) => t.status === 'done').length;
   const pendingTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length;
+  const rejectedTasks = tasks.filter((t) => t.status === 'rejected').length;
   const pendingLeave = leaveRequests.filter((r) => r.status === 'pending').length;
   const attendanceRate = attendances.length > 0 ? Math.round((presentCount / attendances.length) * 100) : 0;
+
+  // Per-person task completion chart: top 8 assignees by task count
+  const taskByPerson = useMemo(() => {
+    const map = new Map<string, { nama: string; done: number; total: number }>();
+    tasks.forEach((t) => {
+      const key = t.assignee?.id ?? '';
+      const nama = t.assignee?.nama ?? '—';
+      const prev = map.get(key) ?? { nama, done: 0, total: 0 };
+      map.set(key, {
+        nama,
+        done: prev.done + (t.status === 'approved' || t.status === 'done' ? 1 : 0),
+        total: prev.total + 1,
+      });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+  }, [tasks]);
 
   const handleExportCSV = () => {
     const headers = ['Tanggal', 'NRP', 'Nama', 'Pangkat', 'Status', 'Check-In', 'Check-Out', 'Keterangan'];
@@ -185,6 +207,68 @@ export default function Reports() {
               <div className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}</div>
             </div>
           ))}
+        </div>
+
+        {/* Performance Charts */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Attendance breakdown bar chart */}
+          <div className="app-card p-5">
+            <h3 className="font-semibold text-text-primary mb-1">Distribusi Kehadiran</h3>
+            <p className="text-xs text-text-muted mb-4">Komposisi status absensi hari {new Date(selectedDate).toLocaleDateString('id-ID')}</p>
+            {attendances.length === 0 ? (
+              <p className="text-sm text-text-muted py-8 text-center">Belum ada data absensi</p>
+            ) : (
+              <BarChart
+                data={[
+                  { label: 'Hadir',     value: presentCount, color: 'var(--color-success)' },
+                  { label: 'Alpa',      value: absenCount,   color: 'var(--color-accent-red)' },
+                  { label: 'Sakit',     value: sakitCount,   color: 'var(--color-accent-gold)' },
+                  { label: 'Izin',      value: izinCount,    color: '#60a5fa' },
+                ]}
+                maxValue={attendances.length}
+                height={160}
+              />
+            )}
+          </div>
+
+          {/* Task status bar chart */}
+          <div className="app-card p-5">
+            <h3 className="font-semibold text-text-primary mb-1">Status Tugas Unit</h3>
+            <p className="text-xs text-text-muted mb-4">Distribusi status seluruh tugas aktif unit</p>
+            {tasks.length === 0 ? (
+              <p className="text-sm text-text-muted py-8 text-center">Belum ada data tugas</p>
+            ) : (
+              <BarChart
+                data={[
+                  { label: 'Pending',   value: tasks.filter((t) => t.status === 'pending').length,      color: '#94a3b8' },
+                  { label: 'Dikerjakan', value: tasks.filter((t) => t.status === 'in_progress').length, color: 'var(--color-accent-gold)' },
+                  { label: 'Selesai',   value: doneTasks,    color: '#60a5fa' },
+                  { label: 'Disetujui', value: approvedTasks, color: 'var(--color-success)' },
+                  { label: 'Ditolak',   value: rejectedTasks, color: 'var(--color-accent-red)' },
+                ]}
+                maxValue={tasks.length}
+                height={160}
+              />
+            )}
+          </div>
+
+          {/* Per-person task chart */}
+          {taskByPerson.length > 0 && (
+            <div className="app-card p-5 lg:col-span-2">
+              <h3 className="font-semibold text-text-primary mb-1">Beban Tugas per Personel</h3>
+              <p className="text-xs text-text-muted mb-4">Jumlah total tugas yang ditugaskan (max 8 personel)</p>
+              <BarChart
+                data={taskByPerson.map((p) => ({
+                  label: p.nama.split(' ')[0],
+                  value: p.total,
+                  color: p.done === p.total && p.total > 0 ? 'var(--color-success)' : 'var(--color-primary)',
+                }))}
+                maxValue={Math.max(...taskByPerson.map((p) => p.total), 1)}
+                height={160}
+                unit=" tugas"
+              />
+            </div>
+          )}
         </div>
 
         {/* Leave Requests Pending Approval */}
