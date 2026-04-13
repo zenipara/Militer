@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import AvatarUpload from '../../components/common/AvatarUpload';
 import { RoleBadge } from '../../components/common/Badge';
 import AttendanceHeatmap from '../../components/ui/AttendanceHeatmap';
 import PageHeader from '../../components/ui/PageHeader';
@@ -99,11 +100,21 @@ export default function Profile() {
         />
 
         {/* Avatar + basic info */}
-        <div className="app-card flex items-center gap-5 p-6">
-          <div className="h-16 w-16 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center text-2xl font-bold text-primary">
-            {user.nama.charAt(0).toUpperCase()}
+        <div className="app-card flex items-start gap-5 p-6">
+          <div className="flex-shrink-0">
+            {user.foto_url ? (
+              <img
+                src={user.foto_url}
+                alt={user.nama}
+                className="h-16 w-16 rounded-full object-cover border-2 border-primary/40"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center text-2xl font-bold text-primary">
+                {user.nama.charAt(0).toUpperCase()}
+              </div>
+            )}
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="text-xl font-bold text-text-primary">{user.nama}</h2>
             <p className="text-sm text-text-muted font-mono">{user.nrp}</p>
             <div className="mt-2">
@@ -188,6 +199,12 @@ export default function Profile() {
         {/* Attendance Heatmap */}
         <div className="app-card p-6">
           <AttendanceHeatmap attendances={attendances} />
+        </div>
+
+        {/* Avatar Upload */}
+        <div className="app-card p-6">
+          <h3 className="font-semibold text-text-primary mb-4">Foto Profil</h3>
+          <AvatarUpload />
         </div>
 
         {/* Change PIN */}

@@ -173,7 +173,7 @@ export default function AdminDashboard() {
     : [];
 
   return (
-    <DashboardLayout title="Control Center">
+    <DashboardLayout title="Pusat Kendali">
       <div className="space-y-6">
         <PageHeader
           title={`Selamat datang, ${user?.nama ?? 'Komandan'}`}
@@ -330,7 +330,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="app-card p-5">
-            <h3 className="text-lg font-bold text-text-primary">Health Metrics</h3>
+            <h3 className="text-lg font-bold text-text-primary">Metrik Sistem</h3>
             <p className="text-sm text-text-muted">Ringkasan cepat untuk status operasional saat ini.</p>
             <div className="mt-4 space-y-3">
               {[

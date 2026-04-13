@@ -100,9 +100,17 @@ export default function Sidebar() {
         {/* User info */}
         <div className="border-b border-surface/80 px-4 py-4">
           <div className="flex items-center gap-3 rounded-2xl border border-surface/70 bg-slate-50/70 p-3 dark:bg-surface/35">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 font-bold text-primary">
-              {user.nama.charAt(0).toUpperCase()}
-            </div>
+            {user.foto_url ? (
+              <img
+                src={user.foto_url}
+                alt={user.nama}
+                className="h-10 w-10 rounded-xl object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 font-bold text-primary flex-shrink-0">
+                {user.nama.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold text-text-primary">{user.nama}</div>
               <div className="truncate text-xs text-text-muted">

@@ -59,7 +59,7 @@ export default function KomandanDashboard() {
   const pinnedAnnouncements = announcements.filter((a) => a.is_pinned);
 
   return (
-    <DashboardLayout title="Ops Center">
+    <DashboardLayout title="Pusat Operasi">
       <div className="space-y-6">
         <PageHeader
           title={`${user?.pangkat ? `${user.pangkat} ` : ''}${user?.nama ?? 'Komandan'}`}
