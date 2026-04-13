@@ -4,6 +4,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
+import PageHeader from '../../components/ui/PageHeader';
 import { useLeaveRequests } from '../../hooks/useLeaveRequests';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -27,6 +28,7 @@ export default function LeaveRequest() {
   const [showCreate, setShowCreate] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedReq, setSelectedReq] = useState<LeaveRequest | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
 
   const today = new Date().toISOString().split('T')[0];
   const [form, setForm] = useState({
@@ -73,26 +75,56 @@ export default function LeaveRequest() {
 
   const pending = requests.filter((r) => r.status === 'pending').length;
   const approved = requests.filter((r) => r.status === 'approved').length;
+  const rejected = requests.filter((r) => r.status === 'rejected').length;
+  const filteredRequests = requests.filter((request) => filterStatus === 'all' || request.status === filterStatus);
 
   return (
     <DashboardLayout title="Permohonan Izin">
       <div className="space-y-5">
+        <PageHeader
+          title="Permohonan Izin"
+          subtitle="Ajukan izin dinas dan pantau status persetujuan secara transparan."
+          meta={
+            <>
+              <span>Disetujui: {approved}</span>
+              <span>Menunggu: {pending}</span>
+              <span>Ditolak: {rejected}</span>
+            </>
+          }
+          actions={<Button onClick={() => setShowCreate(true)}>+ Ajukan Izin</Button>}
+        />
+
         {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             { label: 'Total', value: requests.length, color: 'text-text-primary' },
             { label: 'Disetujui', value: approved, color: 'text-success' },
             { label: 'Menunggu', value: pending, color: 'text-accent-gold' },
+            { label: 'Ditolak', value: rejected, color: 'text-accent-red' },
           ].map((s) => (
-            <div key={s.label} className="bg-bg-card border border-surface rounded-xl p-4">
+            <div key={s.label} className="app-card p-4">
               <p className="text-xs text-text-muted mb-1">{s.label}</p>
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
             </div>
           ))}
         </div>
 
-        <div className="flex justify-end">
-          <Button onClick={() => setShowCreate(true)}>+ Ajukan Izin</Button>
+        <div className="app-card flex flex-wrap gap-2 p-3 sm:p-4">
+          {(['all', 'pending', 'approved', 'rejected'] as const).map((status) => (
+            <button
+              key={status}
+              type="button"
+              onClick={() => setFilterStatus(status)}
+              className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                filterStatus === status
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-surface/70 text-text-muted hover:border-primary hover:text-text-primary'
+              }`}
+            >
+              {status === 'all' ? 'Semua' : status === 'pending' ? 'Menunggu' : status === 'approved' ? 'Disetujui' : 'Ditolak'}
+            </button>
+          ))}
+          <span className="ml-auto text-xs text-text-muted self-center">Klik kartu permohonan untuk detail lengkap.</span>
         </div>
 
         {isLoading ? (
@@ -100,16 +132,20 @@ export default function LeaveRequest() {
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface border-t-primary" />
           </div>
         ) : requests.length === 0 ? (
-          <div className="bg-bg-card border border-surface rounded-xl p-10 text-center text-text-muted">
+          <div className="app-card p-10 text-center text-text-muted">
             Belum ada permohonan izin
+          </div>
+        ) : filteredRequests.length === 0 ? (
+          <div className="app-card p-10 text-center text-text-muted">
+            Tidak ada permohonan dengan status ini
           </div>
         ) : (
           <div className="space-y-3">
-            {requests.map((req) => (
+            {filteredRequests.map((req) => (
               <button
                 key={req.id}
                 onClick={() => setSelectedReq(req)}
-                className="w-full text-left bg-bg-card border border-surface rounded-xl p-4 hover:border-primary/50 transition-colors"
+                className="app-card w-full p-4 text-left transition-colors hover:border-primary/50"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -197,9 +233,9 @@ export default function LeaveRequest() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-text-primary">Jenis Izin</label>
+            <label className="text-sm font-semibold text-text-primary">Jenis Izin</label>
             <select
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control mt-1"
               value={form.jenis_izin}
               onChange={(e) => setForm({ ...form, jenis_izin: e.target.value as typeof form.jenis_izin })}
             >
@@ -225,9 +261,9 @@ export default function LeaveRequest() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-text-primary">Alasan *</label>
+            <label className="text-sm font-semibold text-text-primary">Alasan *</label>
             <textarea
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+              className="form-control mt-1 min-h-24"
               rows={4}
               placeholder="Jelaskan alasan permohonan izin Anda..."
               value={form.alasan}

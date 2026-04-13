@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
+import PageHeader from '../../components/ui/PageHeader';
 import { useMessages } from '../../hooks/useMessages';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import type { Message } from '../../types';
+import Input from '../../components/common/Input';
 
 type Tab = 'inbox' | 'sent';
 
@@ -21,6 +23,7 @@ export default function Messages() {
   const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
   const [showCompose, setShowCompose] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [searchRaw, setSearchRaw] = useState('');
   const [composeForm, setComposeForm] = useState({ to_user: '', isi: '' });
 
   const handleOpenMessage = async (msg: Message) => {
@@ -50,13 +53,48 @@ export default function Messages() {
   };
 
   const messages = tab === 'inbox' ? inbox : sent;
+  const filteredMessages = useMemo(() => {
+    const q = searchRaw.trim().toLowerCase();
+    if (!q) return messages;
+    return messages.filter((msg) => {
+      const contact = tab === 'inbox' ? msg.sender : msg.receiver;
+      return msg.isi.toLowerCase().includes(q)
+        || (contact?.nama?.toLowerCase().includes(q) ?? false)
+        || (contact?.nrp?.includes(q) ?? false);
+    });
+  }, [messages, searchRaw, tab]);
+
+  const inboxCount = inbox.length;
+  const sentCount = sent.length;
 
   return (
     <DashboardLayout title="Pesan">
       <div className="space-y-4">
+        <PageHeader
+          title="Pesan"
+          subtitle="Komunikasi internal satuan dengan status baca dan riwayat percakapan."
+          meta={
+            <>
+              <span>Belum dibaca: {unreadCount}</span>
+              <span>Masuk: {inboxCount}</span>
+              <span>Terkirim: {sentCount}</span>
+            </>
+          }
+          actions={
+            <>
+              {tab === 'inbox' && unreadCount > 0 && (
+                <Button size="sm" variant="ghost" onClick={markAllAsRead}>
+                  Tandai semua dibaca
+                </Button>
+              )}
+              <Button onClick={() => setShowCompose(true)}>✎ Tulis Pesan</Button>
+            </>
+          }
+        />
+
         {/* Tab bar + actions */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex bg-surface/40 rounded-lg p-1 gap-1">
+        <div className="app-card flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+          <div className="flex gap-1 rounded-lg bg-surface/40 p-1">
             {(['inbox', 'sent'] as Tab[]).map((t) => (
               <button
                 key={t}
@@ -74,14 +112,13 @@ export default function Messages() {
               </button>
             ))}
           </div>
-          <div className="flex gap-2">
-            {tab === 'inbox' && unreadCount > 0 && (
-              <Button size="sm" variant="ghost" onClick={markAllAsRead}>
-                Tandai semua dibaca
-              </Button>
-            )}
-            <Button onClick={() => setShowCompose(true)}>✎ Tulis Pesan</Button>
-          </div>
+          <Input
+            type="text"
+            placeholder="Cari nama atau isi pesan..."
+            value={searchRaw}
+            onChange={(e) => setSearchRaw(e.target.value)}
+            className="sm:max-w-sm"
+          />
         </div>
 
         {/* Message list */}
@@ -89,20 +126,22 @@ export default function Messages() {
           <div className="flex justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface border-t-primary" />
           </div>
-        ) : messages.length === 0 ? (
-          <div className="bg-bg-card border border-surface rounded-xl p-10 text-center text-text-muted">
-            {tab === 'inbox' ? 'Kotak masuk kosong' : 'Belum ada pesan terkirim'}
+        ) : filteredMessages.length === 0 ? (
+          <div className="app-card p-10 text-center text-text-muted">
+            {searchRaw.trim()
+              ? 'Tidak ada pesan yang cocok dengan pencarian'
+              : tab === 'inbox' ? 'Kotak masuk kosong' : 'Belum ada pesan terkirim'}
           </div>
         ) : (
           <div className="space-y-2">
-            {messages.map((msg) => {
+            {filteredMessages.map((msg) => {
               const isUnread = tab === 'inbox' && !msg.is_read;
               const contact = tab === 'inbox' ? msg.sender : msg.receiver;
               return (
                 <button
                   key={msg.id}
                   onClick={() => handleOpenMessage(msg)}
-                  className={`w-full text-left bg-bg-card border rounded-xl p-4 hover:border-primary/50 transition-colors ${
+                  className={`app-card w-full p-4 text-left transition-colors hover:border-primary/50 ${
                     isUnread ? 'border-primary/30' : 'border-surface'
                   }`}
                 >
@@ -182,9 +221,9 @@ export default function Messages() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-text-primary">Kepada *</label>
+            <label className="text-sm font-semibold text-text-primary">Kepada *</label>
             <select
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+              className="form-control mt-1"
               value={composeForm.to_user}
               onChange={(e) => setComposeForm({ ...composeForm, to_user: e.target.value })}
             >
@@ -199,9 +238,9 @@ export default function Messages() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-text-primary">Pesan *</label>
+            <label className="text-sm font-semibold text-text-primary">Pesan *</label>
             <textarea
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+              className="form-control mt-1 min-h-28"
               rows={5}
               placeholder="Tuliskan pesan Anda..."
               value={composeForm.isi}

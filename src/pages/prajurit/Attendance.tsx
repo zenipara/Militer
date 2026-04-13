@@ -5,6 +5,7 @@ import { useUIStore } from '../../store/uiStore';
 import { AttendanceBadge } from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import { Skeleton, CardListSkeleton } from '../../components/common/Skeleton';
+import PageHeader from '../../components/ui/PageHeader';
 import { useState } from 'react';
 
 export default function Attendance() {
@@ -45,8 +46,14 @@ export default function Attendance() {
   return (
     <DashboardLayout title="Absensi">
       <div className="space-y-6">
+        <PageHeader
+          title="Absensi"
+          subtitle="Pantau check-in, check-out, dan riwayat kehadiran Anda secara real-time."
+          meta={<span>{today}</span>}
+        />
+
         {/* Today's attendance card */}
-        <div className="bg-bg-card border border-surface rounded-xl p-6">
+        <div className="app-card p-6">
           <h2 className="font-semibold text-text-primary mb-1">Hari Ini</h2>
           <p className="text-sm text-text-muted mb-5">{today}</p>
 
@@ -54,8 +61,8 @@ export default function Attendance() {
             <div className="space-y-2">
               <Skeleton className="h-8 w-24 rounded-full" />
               <div className="grid grid-cols-2 gap-4">
-                <Skeleton className="h-16 rounded-lg" />
-                <Skeleton className="h-16 rounded-lg" />
+                  <Skeleton className="h-16 rounded-xl" />
+                  <Skeleton className="h-16 rounded-xl" />
               </div>
             </div>
           ) : todayAttendance ? (
@@ -65,7 +72,7 @@ export default function Attendance() {
                 <span className="text-sm text-text-muted">Status absensi Anda hari ini</span>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="bg-surface/40 rounded-lg p-3">
+                <div className="rounded-xl bg-surface/40 p-3">
                   <p className="text-text-muted text-xs mb-1">Check-In</p>
                   <p className="font-semibold text-text-primary">
                     {todayAttendance.check_in
@@ -73,7 +80,7 @@ export default function Attendance() {
                       : '—'}
                   </p>
                 </div>
-                <div className="bg-surface/40 rounded-lg p-3">
+                <div className="rounded-xl bg-surface/40 p-3">
                   <p className="text-text-muted text-xs mb-1">Check-Out</p>
                   <p className="font-semibold text-text-primary">
                     {todayAttendance.check_out
@@ -104,7 +111,7 @@ export default function Attendance() {
           {isLoading ? (
             <CardListSkeleton count={5} />
           ) : (
-            <div className="bg-bg-card border border-surface rounded-xl overflow-hidden">
+            <div className="app-card overflow-hidden">
               <div className="divide-y divide-surface/50">
                 {attendances.length === 0 ? (
                   <p className="text-center text-text-muted py-6">Belum ada data absensi</p>

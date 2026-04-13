@@ -4,6 +4,7 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { RoleBadge } from '../../components/common/Badge';
 import AttendanceHeatmap from '../../components/ui/AttendanceHeatmap';
+import PageHeader from '../../components/ui/PageHeader';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useAttendance } from '../../hooks/useAttendance';
@@ -91,8 +92,14 @@ export default function Profile() {
   return (
     <DashboardLayout title="Profil Saya">
       <div className="max-w-lg space-y-6">
+        <PageHeader
+          title="Profil Saya"
+          subtitle="Kelola informasi pribadi, statistik performa, dan keamanan akun Anda."
+          meta={<span>Role: {user.role}</span>}
+        />
+
         {/* Avatar + basic info */}
-        <div className="bg-bg-card border border-surface rounded-xl p-6 flex items-center gap-5">
+        <div className="app-card flex items-center gap-5 p-6">
           <div className="h-16 w-16 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center text-2xl font-bold text-primary">
             {user.nama.charAt(0).toUpperCase()}
           </div>
@@ -106,7 +113,7 @@ export default function Profile() {
         </div>
 
         {/* Detail info */}
-        <div className="bg-bg-card border border-surface rounded-xl p-6">
+        <div className="app-card p-6">
           <h3 className="font-semibold text-text-primary mb-4">Informasi Personel</h3>
           <div className="space-y-3">
             {[
@@ -123,7 +130,7 @@ export default function Profile() {
                   : 'Belum pernah',
               },
             ].map(({ label, value, mono }) => (
-              <div key={label} className="flex justify-between items-center py-2 border-b border-surface last:border-0">
+              <div key={label} className="flex items-center justify-between border-b border-surface/75 py-2 last:border-0">
                 <span className="text-sm text-text-muted">{label}</span>
                 <span className={`text-sm font-medium text-text-primary ${mono ? 'font-mono' : ''}`}>
                   {value}
@@ -134,7 +141,7 @@ export default function Profile() {
         </div>
 
         {/* Personal Stats */}
-        <div className="bg-bg-card border border-surface rounded-xl p-6">
+        <div className="app-card p-6">
           <h3 className="font-semibold text-text-primary mb-4">📊 Statistik Pribadi</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
@@ -167,7 +174,7 @@ export default function Profile() {
                   : 'text-accent-gold',
               },
             ].map((s) => (
-              <div key={s.label} className="bg-surface/30 rounded-xl p-4">
+              <div key={s.label} className="rounded-xl bg-surface/30 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-base">{s.icon}</span>
                   <p className="text-xs text-text-muted">{s.label}</p>
@@ -179,14 +186,15 @@ export default function Profile() {
         </div>
 
         {/* Attendance Heatmap */}
-        <div className="bg-bg-card border border-surface rounded-xl p-6">
+        <div className="app-card p-6">
           <AttendanceHeatmap attendances={attendances} />
         </div>
 
         {/* Change PIN */}
-        <div className="bg-bg-card border border-surface rounded-xl p-6">
+        <div className="app-card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-text-primary">Keamanan</h3>            {!changingPin && (
+            <h3 className="font-semibold text-text-primary">Keamanan</h3>
+            {!changingPin && (
               <Button size="sm" variant="outline" onClick={() => setChangingPin(true)}>
                 Ubah PIN
               </Button>

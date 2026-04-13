@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import TaskCard from '../../components/ui/TaskCard';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import PageHeader from '../../components/ui/PageHeader';
 import { useTasks } from '../../hooks/useTasks';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -13,6 +15,7 @@ export default function MyTasks() {
   const { user } = useAuthStore();
   const { showNotification } = useUIStore();
   const { tasks, isLoading, updateTaskStatus, submitTaskReport } = useTasks({ assignedTo: user?.id });
+  const navigate = useNavigate();
 
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -21,6 +24,9 @@ export default function MyTasks() {
   const [isSaving, setIsSaving] = useState(false);
 
   const filtered = tasks.filter((t) => !filterStatus || t.status === filterStatus);
+  const activeCount = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length;
+  const doneCount = tasks.filter((t) => t.status === 'done' || t.status === 'approved').length;
+  const rejectedCount = tasks.filter((t) => t.status === 'rejected').length;
 
   const handleStartTask = async (task: Task) => {
     try {
@@ -61,8 +67,41 @@ export default function MyTasks() {
   return (
     <DashboardLayout title="Tugas Saya">
       <div className="space-y-5">
+        <PageHeader
+          title="Tugas Saya"
+          subtitle="Daftar tugas aktif, progres pengerjaan, dan pelaporan hasil tugas Anda."
+          meta={
+            <>
+              <span>Total tugas: {tasks.length}</span>
+              <span>Aktif: {activeCount}</span>
+            </>
+          }
+          actions={
+            <>
+              <Link to="/prajurit/messages" className="inline-flex items-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary hover:border-primary">
+                Pesan
+              </Link>
+              <Button onClick={() => navigate('/prajurit/leave')} variant="outline">Ajukan Izin</Button>
+            </>
+          }
+        />
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: 'Aktif', value: activeCount, color: 'text-accent-gold' },
+            { label: 'Selesai', value: doneCount, color: 'text-success' },
+            { label: 'Ditolak', value: rejectedCount, color: 'text-accent-red' },
+            { label: 'Semua', value: tasks.length, color: 'text-text-primary' },
+          ].map((item) => (
+            <div key={item.label} className="app-card p-4">
+              <p className="text-xs text-text-muted">{item.label}</p>
+              <p className={`mt-1 text-2xl font-bold ${item.color}`}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+
         {/* Filter tabs */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="app-card flex flex-wrap gap-2 p-3 sm:p-4">
           {statusFilters.map((f) => (
             <button
               key={f.value}
@@ -86,7 +125,7 @@ export default function MyTasks() {
         {isLoading ? (
           <CardListSkeleton count={3} />
         ) : filtered.length === 0 ? (
-          <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
+          <div className="app-card p-8 text-center text-text-muted">
             Tidak ada tugas
           </div>
         ) : (
@@ -112,10 +151,10 @@ export default function MyTasks() {
                     </Button>
                   )}
                   {task.status === 'done' && (
-                    <span className="text-xs text-text-muted bg-surface px-3 py-1.5 rounded-lg">Menunggu persetujuan</span>
+                    <span className="rounded-lg bg-surface px-3 py-1.5 text-xs text-text-muted">Menunggu persetujuan</span>
                   )}
                   {task.status === 'approved' && (
-                    <span className="text-xs text-success bg-success/10 px-3 py-1.5 rounded-lg">✓ Disetujui</span>
+                    <span className="rounded-lg bg-success/10 px-3 py-1.5 text-xs text-success">✓ Disetujui</span>
                   )}
                 </div>
               </div>
@@ -142,7 +181,7 @@ export default function MyTasks() {
             Jelaskan apa yang sudah Anda lakukan untuk tugas ini.
           </p>
           <textarea
-            className="w-full rounded-lg border border-surface bg-bg-card px-3 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary"
+            className="form-control min-h-28"
             rows={5}
             placeholder="Tuliskan laporan penyelesaian tugas..."
             value={reportText}

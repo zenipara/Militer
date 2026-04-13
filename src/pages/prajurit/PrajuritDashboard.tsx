@@ -4,12 +4,15 @@ import TaskCard from '../../components/ui/TaskCard';
 import { useTasks } from '../../hooks/useTasks';
 import { useAttendance } from '../../hooks/useAttendance';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
+import { useMessages } from '../../hooks/useMessages';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import Button from '../../components/common/Button';
 import { AttendanceBadge } from '../../components/common/Badge';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import PageHeader from '../../components/ui/PageHeader';
 
 export default function PrajuritDashboard() {
   const { user } = useAuthStore();
@@ -17,6 +20,7 @@ export default function PrajuritDashboard() {
   const { tasks, isLoading: tasksLoading } = useTasks({ assignedTo: user?.id });
   const { todayAttendance, isLoading: attnLoading, checkIn, checkOut } = useAttendance();
   const { announcements, isLoading: annLoading } = useAnnouncements();
+  const { unreadCount } = useMessages();
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
 
@@ -56,37 +60,56 @@ export default function PrajuritDashboard() {
   return (
     <DashboardLayout title="Dashboard">
       <div className="space-y-6">
-        {/* Welcome */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-text-primary">
-              {user?.pangkat ? `${user.pangkat} ` : ''}
-              <span className="text-primary">{user?.nama}</span>
-            </h2>
-            <p className="text-text-muted mt-1">
-              {user?.satuan} — {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
+        <PageHeader
+          title={`${user?.pangkat ? `${user.pangkat} ` : ''}${user?.nama ?? 'Prajurit'}`}
+          subtitle={`${user?.satuan ?? '—'} · ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
+          meta={
+            <>
+              <span>{todayAttendance ? 'Absensi hari ini tercatat' : 'Belum check-in'}</span>
+              <span>{unreadCount} pesan belum dibaca</span>
+            </>
+          }
+          actions={
+            <>
+              {attnLoading ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-surface border-t-primary" />
+              ) : todayAttendance ? (
+                <div className="flex items-center gap-3">
+                  <AttendanceBadge status={todayAttendance.status} />
+                  {todayAttendance.check_in && !todayAttendance.check_out && (
+                    <Button size="sm" variant="secondary" onClick={handleCheckOut} isLoading={checkingOut}>
+                      Check-Out
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <Button size="sm" onClick={handleCheckIn} isLoading={checkingIn}>
+                  Check-In
+                </Button>
+              )}
+            </>
+          }
+        />
 
-          {/* Quick attendance */}
-          <div className="flex items-center gap-3">
-            {attnLoading ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-surface border-t-primary" />
-            ) : todayAttendance ? (
-              <div className="flex items-center gap-3">
-                <AttendanceBadge status={todayAttendance.status} />
-                {todayAttendance.check_in && !todayAttendance.check_out && (
-                  <Button size="sm" variant="secondary" onClick={handleCheckOut} isLoading={checkingOut}>
-                    Check-Out
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <Button size="sm" onClick={handleCheckIn} isLoading={checkingIn}>
-                Check-In
-              </Button>
-            )}
-          </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Link to="/prajurit/tasks" className="app-card p-4 transition-colors hover:border-primary/60">
+            <p className="text-xs text-text-muted">Tugas aktif</p>
+            <p className="mt-1 text-2xl font-bold text-text-primary">{activeTasks.length}</p>
+          </Link>
+          <Link to="/prajurit/messages" className="app-card p-4 transition-colors hover:border-primary/60">
+            <p className="text-xs text-text-muted">Pesan belum dibaca</p>
+            <p className="mt-1 text-2xl font-bold text-text-primary">{unreadCount}</p>
+          </Link>
+          <Link to="/prajurit/attendance" className="app-card p-4 transition-colors hover:border-primary/60">
+            <p className="text-xs text-text-muted">Status absensi</p>
+            <p className="mt-1 text-2xl font-bold text-text-primary">{todayAttendance ? 'Aktif' : 'Belum'}</p>
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link to="/prajurit/tasks" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Tugas Saya</Link>
+          <Link to="/prajurit/messages" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Pesan</Link>
+          <Link to="/prajurit/leave" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Ajukan Izin</Link>
         </div>
 
         {/* Alert: rejected tasks */}
@@ -159,7 +182,7 @@ export default function PrajuritDashboard() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-text-primary">Tugas Aktif Saya</h3>
-            <a href="/prajurit/tasks" className="text-sm text-primary hover:underline">Lihat semua →</a>
+            <Link to="/prajurit/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>
           </div>
 
           {tasksLoading ? (
