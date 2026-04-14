@@ -331,13 +331,27 @@ VITE_APP_NAME=Karyo OS
 VITE_APP_VERSION=1.0.0
 ```
 
+
 ### Production (Netlify)
 
 1. Di Netlify Dashboard → pilih site KARYO OS
 2. **Site configuration** → **Environment variables** → **Add a variable**
-3. Tambahkan variabel yang sama persis seperti di atas
+3. Tambahkan variabel yang sama persis seperti di atas (wajib: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
+4. Pastikan format dan value environment variable sama persis dengan `.env.local` (tanpa tanda kutip, tanpa spasi ekstra)
 
 > ⚠️ File `.env.local` tidak boleh di-commit ke Git (sudah ada di `.gitignore`).
+
+> 💡 **Tips:** Jika build Netlify gagal karena error environment (misal: Supabase URL/Key tidak terdeteksi), cek kembali penulisan dan value environment variable di dashboard Netlify.
+---
+
+## 12. Catatan Teknis Tambahan
+
+- **QR Code:** KARYO OS kini menggunakan package `react-qr-code` (bukan `qrcode.react`) agar build kompatibel dengan Vite/Netlify dan tidak error saat deploy.
+- **Realtime:** Aktifkan hanya tabel yang benar-benar digunakan realtime (lihat kode di `src/hooks/useNotifications.ts`, `useMessages.ts`, dsb).
+- **Testing:** File test sudah dikecualikan dari build (lihat `tsconfig.json` dan `tsconfig.app.json`).
+- **Optimalisasi:** Pastikan hanya dependensi yang diperlukan yang diinstall di production.
+
+---
 
 ---
 
