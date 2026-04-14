@@ -1,10 +1,11 @@
 [build]
-  command = "source $HOME/.cargo/env || true && npm run build"
+  command = "npm install --include=optional && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
+  TAILWIND_DISABLE_OXIDE = "1"
 
 [[redirects]]
   from = "/*"
@@ -22,7 +23,7 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
 [context.production]
-  command = "source $HOME/.cargo/env || true && npm run build"
+  command = "npm install --include=optional && npm run build"
 
 [context.deploy-preview]
-  command = "source $HOME/.cargo/env || true && npm run build"
+  command = "npm install --include=optional && npm run build"
