@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "preinstall": "curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path || true",
+    "prebuild": "npm rebuild @tailwindcss/oxide --build-from-source || true",
     "dev": "vite",
     "prebuild": "npm rebuild @tailwindcss/oxide --build-from-source || true",
     "build": "tsc -b && vite build",

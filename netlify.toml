@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "source $HOME/.cargo/env || true && npm run build"
   publish = "dist"
 
 [build.environment]
@@ -22,7 +22,7 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
 [context.production]
-  command = "npm run build"
+  command = "source $HOME/.cargo/env || true && npm run build"
 
 [context.deploy-preview]
-  command = "npm run build"
+  command = "source $HOME/.cargo/env || true && npm run build"
