@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -137,7 +138,7 @@ export default function AdminDashboard() {
   }, [dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, fetchData]);
 
   // Gunakan ref agar tidak terjadi duplicate subscription
-  const channelRef = useRef(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     // Cleanup channel sebelumnya jika ada

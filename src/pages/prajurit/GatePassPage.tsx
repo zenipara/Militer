@@ -18,7 +18,7 @@ export default function GatePassPage() {
       {overdue.length > 0 && showNotif && (
         <Notification
           message={`Anda memiliki ${overdue.length} Gate Pass yang overdue! Segera kembali ke batalion.`}
-          type="warning"
+          type={"warning"}
           onClose={() => setShowNotif(false)}
         />
       )}

@@ -1,5 +1,6 @@
 import { useUIStore } from '../../store/uiStore';
-import { icons } from '../../icons';
+import { ICONS, IconType } from '../../icons';
+import type { JSX } from 'react';
 
 export default function Notification() {
   const { notification, clearNotification } = useUIStore();
@@ -13,11 +14,11 @@ export default function Notification() {
     warning: 'bg-amber-50 border-amber-200 text-amber-700 dark:bg-accent-gold/20 dark:border-accent-gold dark:text-accent-gold',
   };
 
-  const iconMap = {
-    success: icons.check || (() => <span>✓</span>),
-    error: icons.x || (() => <span>✕</span>),
-    info: icons.info || (() => <span>ℹ</span>),
-    warning: icons.warning || (() => <span>⚠</span>),
+  const iconMap: Record<string, IconType | (() => JSX.Element)> = {
+    success: ICONS.Check || (() => <span>✓</span>),
+    error: ICONS.X || (() => <span>✕</span>),
+    info: ICONS.Info || (() => <span>ℹ</span>),
+    warning: ICONS.AlertTriangle || (() => <span>⚠</span>),
   };
 
   return (
@@ -37,7 +38,7 @@ export default function Notification() {
           className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
           aria-label="Tutup notifikasi"
         >
-          {icons.x ? <icons.x className="w-4 h-4" aria-hidden="true" /> : <span>✕</span>}
+          {ICONS.X ? <ICONS.X className="w-4 h-4" aria-hidden="true" /> : <span>✕</span>}
         </button>
       </div>
     </div>

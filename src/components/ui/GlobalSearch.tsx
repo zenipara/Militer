@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { icons } from '../../icons';
+
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -11,7 +11,7 @@ interface SearchResult {
   title: string;
   subtitle: string;
   href: string;
-  icon: keyof typeof icons;
+  icon: keyof typeof ICONS;
 }
 
 export default function GlobalSearch() {
@@ -185,7 +185,7 @@ export default function GlobalSearch() {
               >
                 <span className="text-lg flex-shrink-0">{
                   (() => {
-                    const Icon = icons[r.icon];
+                    const Icon = ICONS[r.icon];
                     return Icon ? <Icon className="w-5 h-5" aria-hidden="true" /> : null;
                   })()
                 }</span>

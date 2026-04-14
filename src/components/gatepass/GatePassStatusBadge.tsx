@@ -3,6 +3,7 @@ import React from 'react';
 
 interface Props {
   gatePass: GatePass;
+  guard?: string;
 }
 
 const GatePassStatusBadge: React.FC<Props> = ({ gatePass }) => {

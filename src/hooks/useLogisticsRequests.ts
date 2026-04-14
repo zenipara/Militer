@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { LogisticsRequest, LogisticsRequestStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -42,7 +43,7 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
 
   // Realtime subscription
   // Gunakan ref agar tidak terjadi duplicate subscription
-  const channelRef = useRef(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!user) return;

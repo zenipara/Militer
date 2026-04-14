@@ -6,6 +6,7 @@ interface BadgeProps {
   variant?: BadgeVariant;
   children: React.ReactNode;
   size?: 'sm' | 'md';
+  guard?: string;
 }
 
 const variants: Record<BadgeVariant, string> = {
@@ -29,7 +30,7 @@ export default function Badge({ variant = 'neutral', children, size = 'sm' }: Ba
 }
 
 // Convenience badge components
-export function TaskStatusBadge({ status }: { status: TaskStatus }) {
+export function TaskStatusBadge({ status }: { status: TaskStatus; guard?: string }) {
   const map: Record<TaskStatus, { label: string; variant: BadgeVariant }> = {
     pending: { label: 'Menunggu', variant: 'neutral' },
     in_progress: { label: 'Dikerjakan', variant: 'info' },
@@ -41,7 +42,7 @@ export function TaskStatusBadge({ status }: { status: TaskStatus }) {
   return <Badge variant={variant}>{label}</Badge>;
 }
 
-export function AttendanceBadge({ status }: { status: AttendanceStatus }) {
+export function AttendanceBadge({ status }: { status: AttendanceStatus; guard?: string }) {
   const map: Record<AttendanceStatus, { label: string; variant: BadgeVariant }> = {
     hadir: { label: 'Hadir', variant: 'success' },
     izin: { label: 'Izin', variant: 'warning' },
@@ -53,7 +54,7 @@ export function AttendanceBadge({ status }: { status: AttendanceStatus }) {
   return <Badge variant={variant}>{label}</Badge>;
 }
 
-export function LeaveStatusBadge({ status }: { status: LeaveStatus }) {
+export function LeaveStatusBadge({ status }: { status: LeaveStatus; guard?: string }) {
   const map: Record<LeaveStatus, { label: string; variant: BadgeVariant }> = {
     pending: { label: 'Menunggu', variant: 'warning' },
     approved: { label: 'Disetujui', variant: 'success' },
@@ -68,6 +69,7 @@ export function RoleBadge({ role }: { role: Role }) {
     admin: { label: 'Admin', variant: 'gold' },
     komandan: { label: 'Komandan', variant: 'info' },
     prajurit: { label: 'Prajurit', variant: 'neutral' },
+    guard: { label: 'Guard', variant: 'info' },
   };
   const { label, variant } = map[role];
   return <Badge variant={variant}>{label}</Badge>;

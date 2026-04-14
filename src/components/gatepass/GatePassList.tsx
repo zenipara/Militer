@@ -5,9 +5,10 @@ import GatePassQRCode from './GatePassQRCode';
 
 interface Props {
   gatePasses: GatePass[];
+  guard?: string;
 }
 
-const GatePassList: React.FC<Props> = ({ gatePasses }) => (
+const GatePassList: React.FC<Props> = ({ gatePasses, guard }) => (
   <div className="space-y-2">
     {gatePasses.map(gp => (
       <div key={gp.id} className="p-3 border rounded flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -16,7 +17,7 @@ const GatePassList: React.FC<Props> = ({ gatePasses }) => (
           <div className="text-xs text-gray-500">{gp.keperluan}</div>
           <div className="text-xs">{gp.waktu_keluar} - {gp.waktu_kembali}</div>
         </div>
-        <GatePassStatusBadge gatePass={gp} />
+        <GatePassStatusBadge gatePass={gp} guard={guard} />
         {gp.status === 'approved' || gp.status === 'out' ? <GatePassQRCode qrToken={gp.qr_token} /> : null}
       </div>
     ))}

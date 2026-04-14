@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { icons } from '../../icons';
+import { ICONS } from '../../icons';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useMessages } from '../../hooks/useMessages';
@@ -15,12 +15,14 @@ const PROFILE_PATH: Record<Role, string> = {
   prajurit: '/prajurit/profile',
   komandan: '/komandan/personnel',
   admin: '/admin/users',
+  guard: '/guard/gatepass-scan',
 };
 
 const SETTINGS_PATH: Record<Role, string> = {
   admin: '/admin/settings',
   komandan: '/admin/settings',
   prajurit: '/admin/settings',
+  guard: '/admin/settings',
 };
 
 export default function Navbar({ title }: NavbarProps) {
@@ -57,6 +59,7 @@ export default function Navbar({ title }: NavbarProps) {
     admin: 'Administrator',
     komandan: 'Komandan',
     prajurit: 'Prajurit',
+    guard: 'Guard',
   };
 
   return (
@@ -67,8 +70,8 @@ export default function Navbar({ title }: NavbarProps) {
           className="lg:hidden rounded-xl p-2 text-text-muted transition-colors hover:bg-slate-100 hover:text-text-primary dark:hover:bg-surface/75"
           aria-label="Toggle sidebar"
         >
-          {icons.menu ? (
-            <icons.menu className="h-5 w-5" aria-hidden="true" />
+          {ICONS.Menu ? (
+            <ICONS.Menu className="h-5 w-5" aria-hidden="true" />
           ) : (
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -100,7 +103,7 @@ export default function Navbar({ title }: NavbarProps) {
                 if (user?.role === 'prajurit') navigate('/prajurit/messages');
               }}
             >
-              <icons.notification className="h-4 w-4" aria-hidden="true" />
+              {ICONS.Bell ? <ICONS.Bell className="h-4 w-4" aria-hidden="true" /> : null}
             </button>
             {unreadCount > 0 && (
               <span className="pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-accent-red px-0.5 text-[10px] font-bold text-white">
@@ -117,9 +120,9 @@ export default function Navbar({ title }: NavbarProps) {
             title={isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
           >
             {isDarkMode ? (
-              icons.sun ? <icons.sun className="h-4 w-4" aria-hidden="true" /> : <span>🌞</span>
+              ICONS.Sun ? <ICONS.Sun className="h-4 w-4" aria-hidden="true" /> : <span>🌞</span>
             ) : (
-              icons.moon ? <icons.moon className="h-4 w-4" aria-hidden="true" /> : <span>🌙</span>
+              ICONS.Moon ? <ICONS.Moon className="h-4 w-4" aria-hidden="true" /> : <span>🌙</span>
             )}
           </button>
 
@@ -173,7 +176,7 @@ export default function Navbar({ title }: NavbarProps) {
                   onClick={() => setIsAvatarDropdownOpen(false)}
                   className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-text-primary transition-colors hover:bg-slate-100 dark:hover:bg-surface/60"
                 >
-                  <icons.user className="w-4 h-4 text-text-muted" aria-hidden="true" />
+                  {ICONS.User ? <ICONS.User className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
                   Profil Saya
                 </Link>
               )}
@@ -186,7 +189,7 @@ export default function Navbar({ title }: NavbarProps) {
                   onClick={() => setIsAvatarDropdownOpen(false)}
                   className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-text-primary transition-colors hover:bg-slate-100 dark:hover:bg-surface/60"
                 >
-                  <icons.settings className="w-4 h-4 text-text-muted" aria-hidden="true" />
+                  {ICONS.Settings ? <ICONS.Settings className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
                   Pengaturan
                 </Link>
               )}
@@ -199,7 +202,7 @@ export default function Navbar({ title }: NavbarProps) {
                 onClick={handleLogout}
                 className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-accent-red transition-colors hover:bg-accent-red/10"
               >
-                <icons.logout className="w-4 h-4" aria-hidden="true" />
+                {ICONS.LogOut ? <ICONS.LogOut className="w-4 h-4" aria-hidden="true" /> : null}
                 Keluar
               </button>
             </div>
