@@ -35,6 +35,13 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
     { path: '/prajurit/messages',   label: 'Pesan',   icon: <Megaphone size={20} aria-hidden="true" /> },
     { path: '/prajurit/profile',    label: 'Profil',  icon: <UserCheck size={20} aria-hidden="true" /> },
   ],
+  guard: [
+    { path: '/guard/dashboard', label: 'Beranda', icon: <LayoutDashboard size={20} aria-hidden="true" /> },
+    { path: '/guard/gate-scanner', label: 'Scan', icon: <CheckSquare size={20} aria-hidden="true" /> },
+    { path: '/guard/gatepass', label: 'Gate Pass', icon: <Package size={20} aria-hidden="true" /> },
+    { path: '/guard/attendance', label: 'Absensi', icon: <CalendarDays size={20} aria-hidden="true" /> },
+    { path: '/guard/settings', label: 'Setelan', icon: <Settings size={20} aria-hidden="true" /> },
+  ],
 };
 
 /**
@@ -47,6 +54,8 @@ export default function BottomTabBar() {
   if (!user) return null;
 
   const tabs = BOTTOM_TABS[user.role];
+
+  if (!tabs) return null;
 
   return (
     <nav

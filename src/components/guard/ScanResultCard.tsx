@@ -25,12 +25,12 @@ export default function ScanResultCard({ data }: { data: ScanResultData }) {
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         {data.status === 'out' && !data.actual_kembali && (
           <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1.5 text-primary text-sm font-semibold">
-            Scan Masuk
+            Izinkan Masuk
           </span>
         )}
         {data.status === 'approved' && !data.actual_keluar && (
           <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1.5 text-emerald-700 text-sm font-semibold">
-            Scan Keluar
+            Izinkan Keluar
           </span>
         )}
       </div>
