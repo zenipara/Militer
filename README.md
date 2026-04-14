@@ -1,28 +1,10 @@
 # 🪖 KARYO OS
-### Operational System — Command & Battalion Tracking
-
-> Sistem manajemen personel & operasional militer berbasis web dengan 3 layer akses: Admin, Komandan, dan Prajurit.
-
----
-
-## 📋 Daftar Isi
-
-- [Tentang Sistem](#tentang-sistem)
-- [Tech Stack](#tech-stack)
-- [Fitur Utama](#fitur-utama)
-- [Hierarki & Role](#hierarki--role)
-- [Alur Login](#alur-login)
 - [Struktur Proyek](#struktur-proyek)
-- [Setup Development](#setup-development)
 - [Konfigurasi Supabase](#konfigurasi-supabase)
 - [Deploy ke Netlify](#deploy-ke-netlify)
 - [Environment Variables](#environment-variables)
 - [Database Schema](#database-schema)
 - [Kontribusi](#kontribusi)
-- [Lisensi](#lisensi)
-
----
-
 ## Tentang Sistem
 
 **Karyo OS** adalah sistem manajemen operasional berbasis web yang dirancang untuk unit militer Indonesia. Sistem ini memungkinkan pengelolaan personel, tugas, kehadiran, dan komunikasi antar hierarki secara digital.
@@ -30,6 +12,20 @@
 Sistem menggunakan autentikasi berbasis **NRP (Nomor Registrasi Pokok)** dan **PIN 6 digit** — tanpa email, tanpa password kompleks — sesuai kebutuhan lapangan militer.
 
 ### Mengapa Karyo OS?
+# Gate Pass Fitur - Library QR
+
+Tambahkan ke package.json:
+
+```
+"qrcode.react": "^1.0.0",
+"html5-qrcode": "^2.4.0"
+```
+
+Install dengan:
+
+```
+npm install qrcode.react html5-qrcode
+```
 
 | Masalah Konvensional | Solusi Karyo OS |
 |---|---|

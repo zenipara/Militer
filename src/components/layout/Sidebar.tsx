@@ -24,6 +24,7 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
     { path: '/admin/announcements', label: 'Pengumuman',     icon: <Megaphone size={16} aria-hidden="true" /> },
     { path: '/admin/schedule',      label: 'Jadwal Shift',   icon: <CalendarDays size={16} aria-hidden="true" /> },
     { path: '/admin/attendance',    label: 'Rekap Absensi',  icon: <ClipboardCheck size={16} aria-hidden="true" /> },
+    { path: '/admin/gatepass-monitor', label: 'Gate Pass',   icon: <ClipboardCheck size={16} aria-hidden="true" /> },
     { path: '/admin/audit',         label: 'Audit Log',      icon: <ScrollText size={16} aria-hidden="true" /> },
     { path: '/admin/settings',      label: 'Pengaturan',     icon: <Settings size={16} aria-hidden="true" /> },
   ],
@@ -32,17 +33,23 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
     { path: '/komandan/tasks',              label: 'Tugas',                icon: <CheckSquare size={16} aria-hidden="true" /> },
     { path: '/komandan/personnel',          label: 'Personel',             icon: <Users size={16} aria-hidden="true" /> },
     { path: '/komandan/attendance',         label: 'Kehadiran',            icon: <CalendarDays size={16} aria-hidden="true" /> },
+    { path: '/komandan/gatepass-approval',  label: 'Approval Gate Pass',   icon: <ClipboardCheck size={16} aria-hidden="true" /> },
+    { path: '/komandan/gatepass-monitor',   label: 'Monitoring Gate Pass', icon: <BarChart2 size={16} aria-hidden="true" /> },
     { path: '/komandan/evaluation',         label: 'Evaluasi',             icon: <NotebookPen size={16} aria-hidden="true" /> },
     { path: '/komandan/reports',            label: 'Laporan',              icon: <BarChart2 size={16} aria-hidden="true" /> },
     { path: '/komandan/logistics-request',  label: 'Permintaan Logistik',  icon: <ClipboardList size={16} aria-hidden="true" /> },
   ],
   prajurit: [
     { path: '/prajurit/dashboard',  label: 'Beranda',           icon: <LayoutDashboard size={16} aria-hidden="true" /> },
+    { path: '/prajurit/gatepass',   label: 'Gate Pass',         icon: <ClipboardCheck size={16} aria-hidden="true" /> },
     { path: '/prajurit/tasks',      label: 'Tugas Saya',        icon: <CheckSquare size={16} aria-hidden="true" /> },
     { path: '/prajurit/attendance', label: 'Absensi',           icon: <CalendarDays size={16} aria-hidden="true" /> },
     { path: '/prajurit/messages',   label: 'Pesan',             icon: <Megaphone size={16} aria-hidden="true" /> },
     { path: '/prajurit/leave',      label: 'Permohonan Izin',   icon: <UserCheck size={16} aria-hidden="true" /> },
     { path: '/prajurit/profile',    label: 'Profil',            icon: <Users size={16} aria-hidden="true" /> },
+  ],
+  guard: [
+    { path: '/guard/gatepass-scan', label: 'Scan Gate Pass', icon: <ClipboardCheck size={16} aria-hidden="true" /> },
   ],
 };
 

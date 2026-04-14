@@ -32,6 +32,10 @@ const Attendance = lazy(() => import('../pages/prajurit/Attendance'));
 const Messages = lazy(() => import('../pages/prajurit/Messages'));
 const LeaveRequest = lazy(() => import('../pages/prajurit/LeaveRequest'));
 const Profile = lazy(() => import('../pages/prajurit/Profile'));
+const GatePassPage = lazy(() => import('../pages/prajurit/GatePassPage'));
+const GatePassApprovalPage = lazy(() => import('../pages/komandan/GatePassApprovalPage'));
+const GateScannerPage = lazy(() => import('../pages/guard/GateScannerPage'));
+const GatePassMonitorPage = lazy(() => import('../pages/admin/GatePassMonitorPage'));
 
 const wrap = (element: React.ReactNode) => (
   <Suspense fallback={<LoadingSpinner fullScreen />}>{element}</Suspense>
@@ -59,6 +63,7 @@ export const router = createBrowserRouter([
       { path: '/admin/schedule', element: wrap(<ShiftSchedule />) },
       { path: '/admin/attendance', element: wrap(<AttendanceReport />) },
       { path: '/admin/settings', element: wrap(<Settings />) },
+      { path: '/admin/gatepass-monitor', element: wrap(<GatePassMonitorPage />) },
     ],
   },
   // Komandan routes
@@ -72,6 +77,8 @@ export const router = createBrowserRouter([
       { path: '/komandan/evaluation', element: wrap(<Evaluation />) },
       { path: '/komandan/attendance', element: wrap(<KomandanAttendance />) },
       { path: '/komandan/logistics-request', element: wrap(<LogisticsRequest />) },
+      { path: '/komandan/gatepass-approval', element: wrap(<GatePassApprovalPage />) },
+      { path: '/komandan/gatepass-monitor', element: wrap(<GatePassMonitorPage />) },
     ],
   },
   // Prajurit routes
@@ -84,6 +91,14 @@ export const router = createBrowserRouter([
       { path: '/prajurit/messages', element: wrap(<Messages />) },
       { path: '/prajurit/leave', element: wrap(<LeaveRequest />) },
       { path: '/prajurit/profile', element: wrap(<Profile />) },
+      { path: '/prajurit/gatepass', element: wrap(<GatePassPage />) },
+    ],
+  },
+  // Guard route
+  {
+    element: <ProtectedRoute allowedRoles={['guard', 'admin']} />,
+    children: [
+      { path: '/guard/gatepass-scan', element: wrap(<GateScannerPage />) },
     ],
   },
   {
