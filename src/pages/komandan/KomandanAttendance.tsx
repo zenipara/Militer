@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import { AttendanceBadge } from '../../components/common/Badge';
@@ -47,14 +47,29 @@ export default function KomandanAttendance() {
 
   useEffect(() => { void fetchAttendance(); }, [fetchAttendance]);
 
+  // Gunakan ref agar tidak terjadi duplicate subscription
+  const channelRef = useRef(null);
+
   useEffect(() => {
     if (!user?.satuan) return undefined;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase
       .channel('komandan-attendance')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => { void fetchAttendance(); })
       .subscribe();
 
-    return () => { void supabase.removeChannel(channel); };
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [fetchAttendance, user?.satuan]);
 
   const total = attendances.length;

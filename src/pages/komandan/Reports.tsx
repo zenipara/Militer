@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import BarChart from '../../components/ui/BarChart';
@@ -66,8 +66,16 @@ export default function Reports() {
     if (user?.satuan) void fetchData();
   }, [user, fetchData]);
 
+  // Gunakan ref agar tidak terjadi duplicate subscription
+  const channelRef = useRef(null);
+
   useEffect(() => {
     if (!user?.satuan) return undefined;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase
       .channel('komandan-reports')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => { void fetchData(); })
@@ -75,7 +83,14 @@ export default function Reports() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => { void fetchData(); })
       .subscribe();
 
-    return () => { void supabase.removeChannel(channel); };
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [fetchData, user?.satuan]);
 
   const leaveByStatus = useMemo(() => ({

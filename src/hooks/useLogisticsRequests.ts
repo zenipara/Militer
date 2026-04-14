@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { LogisticsRequest, LogisticsRequestStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -41,15 +41,31 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
   }, [fetchRequests]);
 
   // Realtime subscription
+  // Gunakan ref agar tidak terjadi duplicate subscription
+  const channelRef = useRef(null);
+
   useEffect(() => {
     if (!user) return;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase
       .channel('logistics-requests-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'logistics_requests' }, () => {
         void fetchRequests();
       })
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [user, fetchRequests]);
 
   const submitRequest = async (data: {

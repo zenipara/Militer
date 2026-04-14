@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -135,7 +135,16 @@ export default function AdminDashboard() {
     return () => window.clearInterval(intervalId);
   }, [dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, fetchData]);
 
+  // Gunakan ref agar tidak terjadi duplicate subscription
+  const channelRef = useRef(null);
+
   useEffect(() => {
+    // Cleanup channel sebelumnya jika ada
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase
       .channel('admin-dashboard')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => { void fetchData(); })
@@ -147,7 +156,14 @@ export default function AdminDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, () => { void fetchData(); })
       .subscribe();
 
-    return () => { void supabase.removeChannel(channel); };
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [fetchData]);
 
   const handleRefresh = async () => {

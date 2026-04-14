@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -42,7 +42,15 @@ export default function KomandanDashboard() {
     void fetchStats();
   }, [fetchStats]);
 
+  // Gunakan ref agar tidak terjadi duplicate subscription
+  const channelRef = useRef(null);
+
   useEffect(() => {
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channel = supabase
       .channel('komandan-dashboard')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => { void fetchStats(); })
@@ -50,7 +58,14 @@ export default function KomandanDashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => { void fetchStats(); })
       .subscribe();
 
-    return () => { void supabase.removeChannel(channel); };
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [fetchStats, refetchTasks]);
 
   const pendingTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress');
