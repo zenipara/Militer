@@ -7,6 +7,7 @@ import type { Attendance } from '../types';
 
 const mockSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;
+  rpc: ReturnType<typeof vi.fn>;
   channel: ReturnType<typeof vi.fn>;
   removeChannel: ReturnType<typeof vi.fn>;
 };
@@ -110,23 +111,15 @@ describe('useAttendance', () => {
     });
 
     it('calls upsert when no prior check-in', async () => {
-      const upsertMock = vi.fn().mockResolvedValue({ error: null });
-      const fromMock = buildQuery({ data: mockAttendances, error: null }) as Record<string, unknown>;
-      fromMock.upsert = upsertMock;
-      mockSupabase.from.mockReturnValue(fromMock);
+      mockSupabase.rpc.mockResolvedValue({ error: null });
+      mockSupabase.from.mockReturnValue(buildQuery({ data: mockAttendances, error: null }));
 
       const { result } = renderHook(() => useAttendance());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await act(async () => { await result.current.checkIn(); });
 
-      expect(upsertMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          user_id: 'user-1',
-          tanggal: today,
-          status: 'hadir',
-        })
-      );
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('server_checkin', { p_user_id: 'user-1' });
     });
   });
 
@@ -164,21 +157,15 @@ describe('useAttendance', () => {
         ...mockAttendances[0],
         check_in: '2024-01-01T07:00:00Z',
       };
-      const eqMock = vi.fn().mockResolvedValue({ error: null });
-      const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
-      const fromMock = buildQuery({ data: [checkedIn], error: null }) as Record<string, unknown>;
-      fromMock.update = updateMock;
-      mockSupabase.from.mockReturnValue(fromMock);
+      mockSupabase.rpc.mockResolvedValue({ error: null });
+      mockSupabase.from.mockReturnValue(buildQuery({ data: [checkedIn], error: null }));
 
       const { result } = renderHook(() => useAttendance());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await act(async () => { await result.current.checkOut(); });
 
-      expect(updateMock).toHaveBeenCalledWith(
-        expect.objectContaining({ check_out: expect.any(String) })
-      );
-      expect(eqMock).toHaveBeenCalledWith('id', 'a1');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('server_checkout', { p_user_id: 'user-1' });
     });
   });
 

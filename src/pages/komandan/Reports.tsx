@@ -84,6 +84,24 @@ export default function Reports() {
     rejected: leaveRequests.filter((r) => r.status === 'rejected').length,
   }), [leaveRequests]);
 
+  // Per-person task completion chart: top 8 assignees by task count
+  const taskByPerson = useMemo(() => {
+    const map = new Map<string, { nama: string; done: number; total: number }>();
+    tasks.forEach((t) => {
+      const key = t.assignee?.id ?? '';
+      const nama = t.assignee?.nama ?? '—';
+      const prev = map.get(key) ?? { nama, done: 0, total: 0 };
+      map.set(key, {
+        nama,
+        done: prev.done + (t.status === 'approved' || t.status === 'done' ? 1 : 0),
+        total: prev.total + 1,
+      });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+  }, [tasks]);
+
   if (isLoading) return (
     <DashboardLayout title="Laporan Harian">
       <div className="space-y-6">
@@ -103,24 +121,6 @@ export default function Reports() {
   const rejectedTasks = tasks.filter((t) => t.status === 'rejected').length;
   const pendingLeave = leaveRequests.filter((r) => r.status === 'pending').length;
   const attendanceRate = attendances.length > 0 ? Math.round((presentCount / attendances.length) * 100) : 0;
-
-  // Per-person task completion chart: top 8 assignees by task count
-  const taskByPerson = useMemo(() => {
-    const map = new Map<string, { nama: string; done: number; total: number }>();
-    tasks.forEach((t) => {
-      const key = t.assignee?.id ?? '';
-      const nama = t.assignee?.nama ?? '—';
-      const prev = map.get(key) ?? { nama, done: 0, total: 0 };
-      map.set(key, {
-        nama,
-        done: prev.done + (t.status === 'approved' || t.status === 'done' ? 1 : 0),
-        total: prev.total + 1,
-      });
-    });
-    return Array.from(map.values())
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8);
-  }, [tasks]);
 
   const handleExportCSV = () => {
     const headers = ['Tanggal', 'NRP', 'Nama', 'Pangkat', 'Status', 'Check-In', 'Check-Out', 'Keterangan'];

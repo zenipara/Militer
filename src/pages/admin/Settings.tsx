@@ -62,7 +62,6 @@ export default function Settings() {
   const [isExporting, setIsExporting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
-  const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [restorePreview, setRestorePreview] = useState<BackupData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -96,7 +95,7 @@ export default function Settings() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setRestoreFile(file);
+    
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
@@ -106,7 +105,7 @@ export default function Settings() {
         setShowRestoreModal(true);
       } catch {
         showNotification('File backup tidak valid atau rusak', 'error');
-        setRestoreFile(null);
+        
       }
     };
     reader.readAsText(file);
@@ -128,7 +127,7 @@ export default function Settings() {
       showNotification('Data berhasil dipulihkan dari backup', 'success');
       setShowRestoreModal(false);
       setRestorePreview(null);
-      setRestoreFile(null);
+      
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal merestore data', 'error');
     } finally {
@@ -434,13 +433,13 @@ export default function Settings() {
       {showRestoreModal && restorePreview && (
         <Modal
           isOpen={showRestoreModal}
-          onClose={() => { setShowRestoreModal(false); setRestorePreview(null); setRestoreFile(null); }}
+          onClose={() => { setShowRestoreModal(false); setRestorePreview(null);  }}
           title="Konfirmasi Pulihkan Data"
           footer={
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"
-                onClick={() => { setShowRestoreModal(false); setRestorePreview(null); setRestoreFile(null); }}
+                onClick={() => { setShowRestoreModal(false); setRestorePreview(null);  }}
                 disabled={isRestoring}
               >
                 Batal
