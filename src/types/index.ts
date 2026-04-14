@@ -4,10 +4,6 @@
 
 export type Role = 'admin' | 'komandan' | 'prajurit' | 'guard';
 
-// For components that use a prop like: guard?: 'admin' | 'komandan' | 'prajurit'
-export interface GuardRoleProps {
-  guard?: 'admin' | 'komandan' | 'prajurit';
-}
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'approved' | 'rejected';
 export type AttendanceStatus = 'hadir' | 'izin' | 'sakit' | 'alpa' | 'dinas_luar';
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';

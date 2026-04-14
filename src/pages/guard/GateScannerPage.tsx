@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import GatePassScanner from '../../components/gatepass/GatePassScanner';
 import { useGatePassStore } from '../../store/gatePassStore';
+import Badge from '../../components/common/Badge';
 
 export default function GateScannerPage() {
   const scanGatePass = useGatePassStore(s => s.scanGatePass);
@@ -22,8 +23,16 @@ export default function GateScannerPage() {
     <div className="max-w-md mx-auto py-8 space-y-6">
       <h1 className="text-2xl font-bold">Scan Gate Pass</h1>
       <GatePassScanner onScan={handleScan} />
-      {result && <div className="alert alert-success">{result}</div>}
-      {error && <div className="alert alert-error">{error}</div>}
+      {result && (
+        <div className="flex items-center gap-2">
+          <Badge variant="success">{result}</Badge>
+        </div>
+      )}
+      {error && (
+        <div className="flex items-center gap-2">
+          <Badge variant="error">{error}</Badge>
+        </div>
+      )}
     </div>
   );
 }

@@ -136,7 +136,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         p_pin: pin,
       });
 
-      if (error) throw new Error('Terjadi kesalahan sistem. Coba lagi.');
+      if (error) {
+        // Log error detail to console for debugging
+        // @ts-ignore
+        if (typeof window !== 'undefined') console.error('Supabase verify_user_pin error:', error);
+        throw new Error('Terjadi kesalahan sistem. Coba lagi.');
+      }
       if (!data || (Array.isArray(data) && data.length === 0)) {
         throw new Error('NRP atau PIN salah, atau akun tidak aktif.');
       }
@@ -152,6 +157,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         .single();
 
       if (userError || !userData) {
+        // Log error detail to console for debugging
+        // @ts-ignore
+        if (typeof window !== 'undefined') console.error('Supabase users fetch error:', userError);
         throw new Error('Gagal memuat data pengguna.');
       }
 
@@ -191,6 +199,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (message.includes('NRP atau PIN salah')) {
         await supabase.rpc('increment_login_attempts', { p_nrp: nrp });
       }
+
+      // Log error detail to console for debugging
+      // @ts-ignore
+      if (typeof window !== 'undefined') console.error('Login error:', err);
 
       set({ isLoading: false, error: message, isAuthenticated: false, user: null });
       throw err;
