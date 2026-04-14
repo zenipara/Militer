@@ -48,8 +48,17 @@ export function useMessages() {
   }, [fetchMessages]);
 
   // Realtime subscription for new messages
+  // Use ref to avoid duplicate subscriptions and ensure cleanup
+  import { useRef } from 'react';
+  const channelRef = useRef(null);
+
   useEffect(() => {
     if (!user) return;
+    // Cleanup previous channel if exists
+    if (channelRef.current) {
+      void supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
     const channel = supabase
       .channel('messages-inbox')
       .on(
@@ -58,7 +67,13 @@ export function useMessages() {
         () => { void fetchMessages(); },
       )
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    channelRef.current = channel;
+    return () => {
+      if (channelRef.current) {
+        void supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, [user, fetchMessages]);
 
   const sendMessage = async (toUserId: string, isi: string) => {
