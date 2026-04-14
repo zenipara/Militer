@@ -11,7 +11,17 @@
     <meta name="description" content="Sistem manajemen operasional berbasis web untuk unit militer Indonesia" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Shown only if JavaScript fails to load/execute -->
+      <noscript>
+        <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0d1117;color:#e6edf3;font-family:sans-serif;text-align:center;padding:2rem">
+          <div>
+            <h1 style="font-size:1.5rem;margin-bottom:.5rem">JavaScript Diperlukan</h1>
+            <p style="color:#8b949e">Aktifkan JavaScript di browser Anda untuk menggunakan KARYO OS.</p>
+          </div>
+        </div>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

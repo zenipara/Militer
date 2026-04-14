@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import Notification from '../components/common/Notification';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 const ROLE_DEFAULT_PATH = {
   admin: '/admin/dashboard',
@@ -49,6 +50,28 @@ export default function Login() {
   };
 
   const displayError = localError ?? error;
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-military-dark p-6">
+        <div className="w-full max-w-md space-y-5 rounded-2xl border border-accent-red/30 bg-bg-card p-8 text-center">
+          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-accent-red/15">
+            <span className="text-3xl">⚠</span>
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-text-primary">Konfigurasi Tidak Lengkap</h1>
+            <p className="mt-2 text-sm text-text-muted">
+              Environment variables Supabase belum dikonfigurasi. Hubungi Administrator untuk mengatur{' '}
+              <code className="rounded bg-surface px-1 py-0.5 text-xs text-accent-red">VITE_SUPABASE_URL</code>
+              {' '}dan{' '}
+              <code className="rounded bg-surface px-1 py-0.5 text-xs text-accent-red">VITE_SUPABASE_ANON_KEY</code>
+              {' '}di Netlify.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="desktop-shell min-h-screen bg-military-dark p-4 sm:p-6">
