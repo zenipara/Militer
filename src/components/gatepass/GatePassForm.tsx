@@ -30,8 +30,9 @@ export default function GatePassForm() {
         waktu_kembali: waktuKembali,
       });
       setKeperluan(''); setTujuan(''); setWaktuKeluar(''); setWaktuKembali('');
-    } catch (e: any) {
-      setError(e.message || 'Gagal mengajukan izin');
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error('Gagal mengajukan izin');
+      setError(err.message);
     }
     setLoading(false);
   };

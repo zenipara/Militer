@@ -16,16 +16,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  base: '/',
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
+      reporter: ['text', 'text-summary', 'html', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/test/**', 'src/main.tsx', 'src/router/**', 'src/pages/**'],
+      exclude: ['src/test/**', 'src/tests/**', 'src/main.tsx'],
     },
   },
   build: {

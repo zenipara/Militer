@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useUsers } from '../hooks/useUsers';
-import { supabase } from '../lib/supabase';
-import type { User } from '../types';
+import { useUsers } from '../../hooks/useUsers';
+import { supabase } from '../../lib/supabase';
+import type { User } from '../../types';
 
 const mockSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;

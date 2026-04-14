@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/common/Button';
@@ -25,12 +25,12 @@ export default function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      // @ts-ignore
-      navigate(ROLE_DEFAULT_PATH[user.role] || '/login', { replace: true });
+      const redirectPath = ROLE_DEFAULT_PATH[user.role] ?? '/login';
+      navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLocalError(null);
     clearError();

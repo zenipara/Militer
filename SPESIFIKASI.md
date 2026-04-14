@@ -150,6 +150,7 @@ Sistem menggunakan **custom authentication** berbasis NRP + PIN — **tidak** me
 5. Baca field `role` → redirect ke dashboard yang sesuai:
    - role = 'admin'     → /admin/dashboard
    - role = 'komandan'  → /komandan/dashboard
+   - role = 'guard'      → /guard/gatepass-scan
    - role = 'prajurit'  → /prajurit/dashboard
 6. Update field `last_login` dan `is_online` pada tabel users
 ```
@@ -162,7 +163,7 @@ interface AuthState {
     id: string;
     nrp: string;
     nama: string;
-    role: 'admin' | 'komandan' | 'prajurit';
+    role: 'admin' | 'komandan' | 'guard' | 'prajurit';
     pangkat: string;
     satuan: string;
   } | null;
@@ -177,12 +178,13 @@ interface AuthState {
 
 #### Tabel Akses Halaman
 
-| Halaman | Admin | Komandan | Prajurit |
-|---|:---:|:---:|:---:|
-| `/login` | ✅ | ✅ | ✅ |
-| `/admin/*` | ✅ | ❌ | ❌ |
-| `/komandan/*` | ✅* | ✅ | ❌ |
-| `/prajurit/*` | ✅* | ✅* | ✅ |
+| Halaman | Admin | Komandan | Guard | Prajurit |
+|---|:---:|:---:|:---:|:---:|
+| `/login` | ✅ | ✅ | ✅ | ✅ |
+| `/admin/*` | ✅ | ❌ | ❌ | ❌ |
+| `/komandan/*` | ✅* | ✅ | ❌ | ❌ |
+| `/guard/*` | ✅* | ❌ | ✅ | ❌ |
+| `/prajurit/*` | ✅* | ✅* | ❌ | ✅ |
 
 *Admin dapat mengakses semua halaman untuk keperluan monitoring.
 

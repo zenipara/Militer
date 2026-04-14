@@ -12,8 +12,9 @@ export default function GateScannerPage() {
     try {
       const res = await scanGatePass(qrToken);
       setResult(res);
-    } catch (e: any) {
-      setError(e.message || 'QR tidak valid');
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error('QR tidak valid');
+      setError(err.message);
     }
   };
 

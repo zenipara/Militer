@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-// @ts-ignore
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
 interface Props {
@@ -20,7 +19,7 @@ const GatePassScanner: React.FC<Props> = ({ onScan }) => {
         onScan(decodedText);
         scanner.clear();
       },
-      (error: any) => {}
+      () => {}
     );
     return () => { scanner.clear().catch(() => {}); };
   }, [onScan]);

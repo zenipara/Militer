@@ -189,9 +189,10 @@ export default function AdminDashboard() {
         .from('gate_pass')
         .select('status', { count: 'exact', head: false });
       if (!error && Array.isArray(data)) {
+        const rows = data as Array<{ status?: string }>;
         setGatePassStats({
-          out: data.filter((g: any) => g.status === 'out').length,
-          overdue: data.filter((g: any) => g.status === 'overdue').length,
+          out: rows.filter((g) => g.status === 'out').length,
+          overdue: rows.filter((g) => g.status === 'overdue').length,
         });
       }
     })();

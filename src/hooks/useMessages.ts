@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Message } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -49,7 +49,6 @@ export function useMessages() {
 
   // Realtime subscription for new messages
   // Use ref to avoid duplicate subscriptions and ensure cleanup
-  import { useRef } from 'react';
   const channelRef = useRef(null);
 
   useEffect(() => {

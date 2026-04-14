@@ -12,16 +12,10 @@
 Sistem menggunakan autentikasi berbasis **NRP (Nomor Registrasi Pokok)** dan **PIN 6 digit** — tanpa email, tanpa password kompleks — sesuai kebutuhan lapangan militer.
 
 ### Mengapa Karyo OS?
-# Gate Pass Fitur - Library QR
 
-Tambahkan ke package.json:
+### Gate Pass & QR Scanner
 
-```
-"qrcode.react": "^1.0.0",
-"html5-qrcode": "^2.4.0"
-```
-
-Install dengan:
+KARYO OS menggunakan fitur QR untuk gate pass dan pemeriksaan keluar/masuk. Pastikan dependensi berikut terpasang:
 
 ```
 npm install qrcode.react html5-qrcode
@@ -48,6 +42,38 @@ npm install qrcode.react html5-qrcode
 | **Tailwind CSS** | 4.x | Styling |
 | **React Router** | 6.x | Client-side Routing |
 | **Netlify** | — | Hosting & Deployment |
+
+---
+
+## Pengujian
+
+Semua pengujian sekarang ditempatkan di folder terpusat `src/tests`.
+
+Gunakan perintah berikut untuk menjalankan tes:
+
+```bash
+npm test
+```
+
+Untuk menjalankan unit test saja:
+
+```bash
+npm run test:unit
+```
+
+Untuk menjalankan test halaman / e2e:
+
+```bash
+npm run test:e2e
+```
+
+Untuk menjalankan report cakupan:
+
+```bash
+npm run test:coverage
+```
+
+Hasil cakupan dibuat di folder `coverage/`, dan konfigurasi pengujian sudah mengabaikan direktori internal (`src/tests`) serta file entry app (`src/main.tsx`).
 
 ---
 
@@ -114,6 +140,7 @@ npm install qrcode.react html5-qrcode
 | `admin` | AD | Full system control |
 | `komandan` | KMD | Unit management |
 | `prajurit` | PRJ | Personal tasks & attendance |
+| `guard` | GRD | Gate pass scanning & verification |
 
 ---
 

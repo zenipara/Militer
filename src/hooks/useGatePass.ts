@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { GatePass } from '../types/gatepass';
 import { generateQrToken } from '../utils/gatepass';
@@ -8,12 +8,7 @@ export function useGatePass() {
   const [gatePasses, setGatePasses] = useState<GatePass[]>([]);
   const user = useAuthStore(s => s.user);
 
-  useEffect(() => {
-    if (!user) return;
-    fetchGatePasses();
-  }, [user]);
-
-  async function fetchGatePasses() {
+  const fetchGatePasses = useCallback(async () => {
     if (!user) return;
     const { data, error } = await supabase
       .from('gate_pass')
@@ -21,7 +16,12 @@ export function useGatePass() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     if (!error && data) setGatePasses(data);
-  }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    void fetchGatePasses();
+  }, [user, fetchGatePasses]);
 
   async function createGatePass(input: Partial<GatePass>) {
     if (!user) return;

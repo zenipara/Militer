@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act } from 'react';
-import { useAuthStore, saveSession } from '../store/authStore';
-import { supabase } from '../lib/supabase';
-import type { Role } from '../types';
+import { useAuthStore, saveSession } from '../../store/authStore';
+import { supabase } from '../../lib/supabase';
+import type { Role } from '../../types';
 
 const mockSupabase = supabase as unknown as {
   from: ReturnType<typeof vi.fn>;

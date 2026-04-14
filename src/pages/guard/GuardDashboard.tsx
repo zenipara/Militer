@@ -3,8 +3,18 @@ import QRScanner from '../../components/guard/QRScanner';
 import ScanResultCard from '../../components/guard/ScanResultCard';
 import { handleGatePassScan } from '../../utils/gatepassScanHandler';
 
+interface GatePassScanResult {
+  user?: {
+    nama?: string;
+    nrp?: string;
+  };
+  status?: 'pending' | 'approved' | 'rejected' | 'out' | 'returned' | 'overdue';
+  actual_keluar?: string | null;
+  actual_kembali?: string | null;
+}
+
 export default function GuardDashboard() {
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<GatePassScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const onScan = async (qr_token: string) => {
@@ -12,8 +22,9 @@ export default function GuardDashboard() {
     try {
       const res = await handleGatePassScan(qr_token);
       setResult(res);
-    } catch (e: any) {
-      setError(e.message || 'QR tidak valid');
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error('QR tidak valid');
+      setError(err.message);
       setResult(null);
     }
   };
