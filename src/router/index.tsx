@@ -37,6 +37,7 @@ const GatePassPage = lazy(() => import('../pages/prajurit/GatePassPage'));
 const GatePassApprovalPage = lazy(() => import('../pages/komandan/GatePassApprovalPage'));
 const GuardDashboard = lazy(() => import('../pages/guard/GuardDashboard'));
 const GatePassMonitorPage = lazy(() => import('../pages/admin/GatePassMonitorPage'));
+const ErrorPage = lazy(() => import('../pages/ErrorPage'));
 
 const wrap = (element: React.ReactNode) => (
   <Suspense fallback={<LoadingSpinner fullScreen />}>{element}</Suspense>
@@ -101,6 +102,10 @@ export const router = createBrowserRouter([
     children: [
       { path: '/guard/gatepass-scan', element: wrap(<GuardDashboard />) },
     ],
+  },
+  {
+    path: '/error',
+    element: wrap(<ErrorPage />),
   },
   {
     path: '*',

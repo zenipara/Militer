@@ -1,17 +1,44 @@
 import type { ReactNode } from 'react';
 
+/** Definisi satu kolom tabel */
 interface Column<T> {
+  /** Key dari objek data, atau string custom jika menggunakan `render` */
   key: keyof T | string;
+  /** Judul kolom yang ditampilkan di header */
   header: ReactNode;
+  /** Render custom untuk cell. Jika tidak ada, nilai diambil dari `row[key]` */
   render?: (row: T) => ReactNode;
+  /** Class CSS tambahan untuk kolom (header dan cell) */
   className?: string;
 }
 
+/**
+ * Table — komponen tabel generik yang dapat digunakan di seluruh aplikasi.
+ *
+ * @example
+ * ```tsx
+ * <Table
+ *   columns={[
+ *     { key: 'nama', header: 'Nama' },
+ *     { key: 'status', header: 'Status', render: (row) => <Badge>{row.status}</Badge> },
+ *   ]}
+ *   data={users}
+ *   keyExtractor={(u) => u.id}
+ *   isLoading={isLoading}
+ *   emptyMessage="Tidak ada pengguna"
+ * />
+ * ```
+ */
 interface TableProps<T> {
+  /** Definisi kolom-kolom tabel */
   columns: Column<T>[];
+  /** Data yang ditampilkan */
   data: T[];
+  /** Fungsi untuk mendapatkan key unik per baris (biasanya `id`) */
   keyExtractor: (row: T) => string;
+  /** Tampilkan skeleton loading jika true */
   isLoading?: boolean;
+  /** Pesan yang ditampilkan saat data kosong */
   emptyMessage?: string;
 }
 

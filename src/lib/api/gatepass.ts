@@ -11,6 +11,17 @@ export async function fetchGatePassesByUser(userId: string): Promise<GatePass[]>
   return (data as GatePass[]) ?? [];
 }
 
+export async function fetchGatePassesByUserAndStatus(userId: string, status: GatePass['status']): Promise<GatePass[]> {
+  const { data, error } = await supabase
+    .from('gate_pass')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', status)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data as GatePass[]) ?? [];
+}
+
 export async function fetchAllGatePasses(): Promise<GatePass[]> {
   const { data, error } = await supabase
     .from('gate_pass')

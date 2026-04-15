@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { fetchTasks as apiFetchTasks, insertTask, patchTaskStatus, insertTaskReport, fetchLatestTaskReport } from '../lib/api/tasks';
 import { handleError } from '../lib/handleError';
+import { SimpleCache } from '../lib/cache';
 import type { Task, TaskStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -12,13 +13,41 @@ interface UseTasksOptions {
   satuan?: string;
 }
 
+/** Module-level cache: data tasks di-cache 5 menit per kombinasi filter */
+const tasksCache = new SimpleCache<Task[]>();
+
+function buildCacheKey(opts: UseTasksOptions): string {
+  return JSON.stringify({
+    a: opts.assignedTo ?? '',
+    b: opts.assignedBy ?? '',
+    s: opts.status ?? '',
+    t: opts.satuan ?? '',
+  });
+}
+
+/** Hapus semua cache tugas — berguna untuk pengujian unit. */
+export function clearTasksCache(): void {
+  tasksCache.clear();
+}
+
 export function useTasks(options: UseTasksOptions = {}) {
   const { user } = useAuthStore();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cacheKey = buildCacheKey(options);
+
+  // Seed initial state from cache so the list renders immediately on revisit
+  const [tasks, setTasks] = useState<Task[]>(() => tasksCache.get(cacheKey) ?? []);
+  const [isLoading, setIsLoading] = useState(() => !tasksCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (force = false) => {
+    if (!force) {
+      const cached = tasksCache.get(cacheKey);
+      if (cached) {
+        setTasks(cached);
+        setIsLoading(false);
+        return;
+      }
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -28,13 +57,14 @@ export function useTasks(options: UseTasksOptions = {}) {
         status: options.status,
         satuan: options.satuan,
       });
+      tasksCache.set(cacheKey, data);
       setTasks(data);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat data tugas'));
     } finally {
       setIsLoading(false);
     }
-  }, [options.assignedTo, options.assignedBy, options.status, options.satuan]);
+  }, [cacheKey, options.assignedTo, options.assignedBy, options.status, options.satuan]);
 
   useEffect(() => {
     void fetchTasks();
@@ -61,12 +91,14 @@ export function useTasks(options: UseTasksOptions = {}) {
     satuan?: string;
   }) => {
     await insertTask({ ...taskData, assigned_by: user?.id });
-    await fetchTasks();
+    tasksCache.invalidate(cacheKey);
+    await fetchTasks(true);
   };
 
   const updateTaskStatus = async (taskId: string, status: TaskStatus) => {
     await patchTaskStatus(taskId, status);
-    await fetchTasks();
+    tasksCache.invalidate(cacheKey);
+    await fetchTasks(true);
   };
 
   /**
@@ -108,7 +140,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     tasks,
     isLoading,
     error,
-    refetch: fetchTasks,
+    refetch: () => fetchTasks(true),
     createTask,
     updateTaskStatus,
     approveTask,

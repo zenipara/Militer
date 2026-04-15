@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useTasks } from '../../hooks/useTasks';
+import { useTasks, clearTasksCache } from '../../hooks/useTasks';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import type { Task } from '../../types';
@@ -62,6 +62,7 @@ function buildQuery(result: { data: unknown; error: unknown }) {
 describe('useTasks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearTasksCache();
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
 
     // Default channel mock
