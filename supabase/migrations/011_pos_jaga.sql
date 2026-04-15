@@ -20,14 +20,14 @@ ALTER TABLE public.pos_jaga ENABLE ROW LEVEL SECURITY;
 
 -- Semua user terautentikasi dapat melihat pos jaga aktif
 CREATE POLICY pos_jaga_select ON public.pos_jaga
-  FOR SELECT USING (auth.role() = 'authenticated');
+  FOR SELECT USING (public.current_karyo_user_id() IS NOT NULL);
 
 -- Hanya admin dan guard yang dapat mengelola pos jaga
 CREATE POLICY pos_jaga_insert ON public.pos_jaga
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role IN ('admin', 'guard')
+      WHERE id = public.current_karyo_user_id() AND role IN ('admin', 'guard')
     )
   );
 
@@ -35,7 +35,7 @@ CREATE POLICY pos_jaga_update ON public.pos_jaga
   FOR UPDATE USING (
     EXISTS (
       SELECT 1 FROM public.users
-      WHERE id = auth.uid() AND role IN ('admin', 'guard')
+      WHERE id = public.current_karyo_user_id() AND role IN ('admin', 'guard')
     )
   );
 

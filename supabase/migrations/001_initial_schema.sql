@@ -221,7 +221,7 @@ BEGIN
   END IF;
 
   -- Verify PIN
-  IF v_user.pin_hash = crypt(p_pin, v_user.pin_hash) THEN
+  IF v_user.pin_hash = extensions.crypt(p_pin, v_user.pin_hash) THEN
     user_id := v_user.id;
     RETURN NEXT;
   END IF;
@@ -261,13 +261,21 @@ BEGIN
   INSERT INTO public.users (nrp, pin_hash, nama, role, satuan, pangkat, jabatan)
   VALUES (
     p_nrp,
-    crypt(p_pin, gen_salt('bf', 10)),
+    extensions.crypt(p_pin, extensions.gen_salt('bf', 10)),
     p_nama,
     p_role,
     p_satuan,
     p_pangkat,
     p_jabatan
   )
+  ON CONFLICT (nrp) DO UPDATE
+  SET pin_hash = EXCLUDED.pin_hash,
+      nama = EXCLUDED.nama,
+      role = EXCLUDED.role,
+      satuan = EXCLUDED.satuan,
+      pangkat = EXCLUDED.pangkat,
+      jabatan = EXCLUDED.jabatan,
+      updated_at = NOW()
   RETURNING id INTO v_id;
   RETURN v_id;
 END;
@@ -278,7 +286,7 @@ CREATE OR REPLACE FUNCTION public.reset_user_pin(p_user_id UUID, p_new_pin TEXT)
 RETURNS VOID AS $$
 BEGIN
   UPDATE public.users
-  SET pin_hash = crypt(p_new_pin, gen_salt('bf', 10)),
+  SET pin_hash = extensions.crypt(p_new_pin, extensions.gen_salt('bf', 10)),
       login_attempts = 0,
       locked_until = NULL,
       updated_at = NOW()
@@ -297,10 +305,10 @@ DECLARE
 BEGIN
   SELECT pin_hash INTO v_hash FROM public.users WHERE id = p_user_id;
   IF NOT FOUND THEN RETURN FALSE; END IF;
-  IF v_hash != crypt(p_old_pin, v_hash) THEN RETURN FALSE; END IF;
+  IF v_hash != extensions.crypt(p_old_pin, v_hash) THEN RETURN FALSE; END IF;
 
   UPDATE public.users
-  SET pin_hash = crypt(p_new_pin, gen_salt('bf', 10)),
+  SET pin_hash = extensions.crypt(p_new_pin, extensions.gen_salt('bf', 10)),
       updated_at = NOW()
   WHERE id = p_user_id;
   RETURN TRUE;
@@ -316,14 +324,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_users_updated_at ON public.users;
 CREATE TRIGGER trg_users_updated_at
   BEFORE UPDATE ON public.users
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_tasks_updated_at ON public.tasks;
 CREATE TRIGGER trg_tasks_updated_at
   BEFORE UPDATE ON public.tasks
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS trg_logistics_updated_at ON public.logistics_items;
 CREATE TRIGGER trg_logistics_updated_at
   BEFORE UPDATE ON public.logistics_items
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();

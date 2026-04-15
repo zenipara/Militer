@@ -6,7 +6,7 @@ CREATE POLICY "Guard dapat melihat gate pass scan" ON gate_pass
   FOR SELECT TO anon
   USING (
     EXISTS (
-      SELECT 1 FROM users u
+      SELECT 1 FROM public.users u
       WHERE u.id = current_karyo_user_id() AND u.role = 'guard'
     )
     AND (status = 'approved' OR status = 'out')
@@ -17,7 +17,7 @@ CREATE POLICY "Guard update status keluar/masuk" ON gate_pass
   FOR UPDATE TO anon
   USING (
     EXISTS (
-      SELECT 1 FROM users u
+      SELECT 1 FROM public.users u
       WHERE u.id = current_karyo_user_id() AND u.role = 'guard'
     )
     AND (status = 'approved' OR status = 'out')

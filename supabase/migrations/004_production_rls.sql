@@ -53,7 +53,7 @@ AS $$
 $$;
 
 -- ============================================================
--- DROP dev policies (idempotent — ignore errors if not exist)
+-- DROP existing policies so this migration can be replayed
 -- ============================================================
 DO $$
 DECLARE
@@ -62,8 +62,54 @@ BEGIN
   FOR p IN
     SELECT policyname, tablename
     FROM pg_policies
-    WHERE policyname LIKE 'dev_anon_all_%'
-      AND schemaname = 'public'
+    WHERE schemaname = 'public'
+      AND policyname IN (
+        'dev_anon_all_users',
+        'dev_anon_all_tasks',
+        'dev_anon_all_task_reports',
+        'dev_anon_all_attendance',
+        'dev_anon_all_leave_requests',
+        'dev_anon_all_announcements',
+        'dev_anon_all_messages',
+        'dev_anon_all_logistics_items',
+        'dev_anon_all_audit_logs',
+        'dev_anon_all_shift_schedules',
+        'dev_anon_all_documents',
+        'dev_anon_all_discipline_notes',
+        'users_admin_all',
+        'users_komandan_read_satuan',
+        'users_prajurit_own',
+        'users_login_rpc',
+        'tasks_admin_all',
+        'tasks_komandan_own',
+        'tasks_prajurit_assigned',
+        'tasks_prajurit_update_status',
+        'task_reports_admin_all',
+        'task_reports_komandan_read',
+        'task_reports_prajurit_own',
+        'attendance_admin_all',
+        'attendance_komandan_read_satuan',
+        'attendance_prajurit_own',
+        'leave_requests_admin_all',
+        'leave_requests_komandan_read_approve',
+        'leave_requests_prajurit_own',
+        'messages_own',
+        'announcements_admin_all',
+        'announcements_read_all',
+        'logistics_items_admin_all',
+        'logistics_items_read_authenticated',
+        'dev_anon_all_logistics_requests',
+        'logistics_requests_admin_all',
+        'logistics_requests_komandan_own',
+        'audit_logs_admin_all',
+        'shift_schedules_admin_all',
+        'shift_schedules_read_authenticated',
+        'documents_admin_all',
+        'documents_read_authenticated',
+        'discipline_notes_admin_all',
+        'discipline_notes_komandan_own_satuan',
+        'discipline_notes_prajurit_own'
+      )
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', p.policyname, p.tablename);
   END LOOP;

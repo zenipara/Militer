@@ -33,9 +33,10 @@ CREATE INDEX IF NOT EXISTS idx_logistics_requests_status
   ON public.logistics_requests(status);
 
 -- Trigger updated_at
+DROP TRIGGER IF EXISTS update_logistics_requests_updated_at ON public.logistics_requests;
 CREATE TRIGGER update_logistics_requests_updated_at
   BEFORE UPDATE ON public.logistics_requests
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
 -- RLS (dev: open)
 ALTER TABLE public.logistics_requests ENABLE ROW LEVEL SECURITY;
@@ -153,7 +154,7 @@ BEGIN
   END IF;
 
   UPDATE public.users
-  SET pin_hash  = crypt(p_new_pin, gen_salt('bf', 12)),
+  SET pin_hash  = extensions.crypt(p_new_pin, extensions.gen_salt('bf', 12)),
       updated_at = NOW()
   WHERE id = ANY(p_user_ids)
     AND is_active = TRUE;
