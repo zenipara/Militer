@@ -135,15 +135,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       // Step 1: Verify PIN and get user_id, user_role
-      const { data, error } = await supabase.rpc('verify_user_pin', { p_nrp: nrp, p_pin: pin }).single();
+      const { data, error } = await supabase.rpc('verify_user_pin', { p_nrp: nrp, p_pin: pin }).maybeSingle();
       if (error) throw new Error('Terjadi kesalahan sistem. Coba lagi nanti.');
-      // verify_user_pin returns an array; empty array means wrong credentials
-      const row = Array.isArray(data)
-        ? (data as VerifyUserPinRow[])[0]
-        : (data as VerifyUserPinRow | null);
+      const row = data as VerifyUserPinRow | null;
       if (!row) throw new Error('NRP atau PIN salah. Periksa kembali dan coba lagi.');
 
       const { user_id, user_role } = row;
+
+      // Step 1b: Bind role/user context for RLS-based queries.
+      await supabase.rpc('set_session_context', {
+        p_user_id: user_id,
+        p_role: user_role,
+      });
 
       // Step 2: Get user data via RPC (not direct select)
       const { data: userData, error: userError } = await supabase.rpc('get_user_by_id', { p_user_id: user_id }).single();
@@ -201,6 +204,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return;
     }
     try {
+      await supabase.rpc('set_session_context', {
+        p_user_id: session.user_id,
+        p_role: session.role,
+      });
+
       const { data: userData, error } = await supabase.rpc('get_user_by_id', { p_user_id: session.user_id }).single();
       if (error || !userData) {
         clearSession();
