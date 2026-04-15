@@ -40,6 +40,7 @@ export function useMessages() {
   // Realtime subscription for new messages
   // Use ref to avoid duplicate subscriptions and ensure cleanup
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelNonceRef = useRef(`msg-${Math.random().toString(36).slice(2, 10)}`);
 
   useEffect(() => {
     if (!user) return;
@@ -48,7 +49,10 @@ export function useMessages() {
       void supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
-    const channel = supabase.channel('messages-inbox');
+    // Use a unique channel topic per mounted hook instance.
+    // This avoids "cannot add postgres_changes callbacks ... after subscribe()"
+    // when StrictMode remounts quickly and the previous topic is still subscribed.
+    const channel = supabase.channel(`messages-inbox-${user.id}-${channelNonceRef.current}`);
     channel.on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `to_user=eq.${user.id}` },
