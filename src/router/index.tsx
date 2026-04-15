@@ -33,9 +33,11 @@ const Messages = lazy(() => import('../pages/prajurit/Messages'));
 const LeaveRequest = lazy(() => import('../pages/prajurit/LeaveRequest'));
 const Profile = lazy(() => import('../pages/prajurit/Profile'));
 const GatePassPage = lazy(() => import('../pages/prajurit/GatePassPage'));
+const ScanPosJagaPage = lazy(() => import('../pages/prajurit/ScanPosJagaPage'));
 const GatePassApprovalPage = lazy(() => import('../pages/komandan/GatePassApprovalPage'));
 const GuardDashboard = lazy(() => import('../pages/guard/GuardDashboard'));
 const GatePassMonitorPage = lazy(() => import('../pages/admin/GatePassMonitorPage'));
+const PosJagaPage = lazy(() => import('../pages/admin/PosJagaPage'));
 const ErrorPage = lazy(() => import('../pages/ErrorPage'));
 
 const wrap = (element: React.ReactNode) => (
@@ -65,6 +67,7 @@ export const router = createBrowserRouter([
       { path: '/admin/attendance', element: wrap(<AttendanceReport />) },
       { path: '/admin/settings', element: wrap(<Settings />) },
       { path: '/admin/gatepass-monitor', element: wrap(<GatePassMonitorPage />) },
+      { path: '/admin/pos-jaga',         element: wrap(<PosJagaPage />) },
     ],
   },
   // Komandan routes
@@ -93,6 +96,7 @@ export const router = createBrowserRouter([
       { path: '/prajurit/leave', element: wrap(<LeaveRequest />) },
       { path: '/prajurit/profile', element: wrap(<Profile />) },
       { path: '/prajurit/gatepass', element: wrap(<GatePassPage />) },
+      { path: '/prajurit/scan-pos', element: wrap(<ScanPosJagaPage />) },
     ],
   },
   // Guard route

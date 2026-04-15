@@ -255,6 +255,26 @@ export interface DisciplineNote {
 }
 
 // ============================================================
+// Pos Jaga (Static QR Guard Post)
+// ============================================================
+
+export interface PosJaga {
+  id: string;
+  nama: string;
+  qr_token: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+/** Result returned by the `scan_pos_jaga` RPC */
+export interface ScanPosJagaResult {
+  gate_pass_id: string;
+  pos_nama: string;
+  status: GatePassStatus;
+  message: string;
+}
+
+// ============================================================
 // Auth Session
 // ============================================================
 

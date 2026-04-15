@@ -44,6 +44,8 @@ import {
   ClipboardX,
   Clipboard,
   ClipboardEdit,
+  MapPin,
+  QrCode,
 } from 'lucide-react';
 
 
@@ -93,6 +95,8 @@ export const ICONS = {
   ClipboardX,
   Clipboard,
   ClipboardEdit,
+  MapPin,
+  QrCode,
 } as const;
 
 export type IconName = keyof typeof ICONS;

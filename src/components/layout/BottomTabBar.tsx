@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, CalendarDays, Megaphone,
-  UserCheck, Users, Package, Settings, BarChart2,
+  UserCheck, Users, Package, Settings, BarChart2, ScanLine,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import type { Role } from '../../types';
@@ -29,11 +29,11 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
     { path: '/komandan/reports',    label: 'Laporan',   icon: <BarChart2 size={20} aria-hidden="true" /> },
   ],
   prajurit: [
-    { path: '/prajurit/dashboard',  label: 'Beranda', icon: <LayoutDashboard size={20} aria-hidden="true" /> },
-    { path: '/prajurit/tasks',      label: 'Tugas',   icon: <CheckSquare size={20} aria-hidden="true" /> },
-    { path: '/prajurit/attendance', label: 'Absensi', icon: <CalendarDays size={20} aria-hidden="true" /> },
-    { path: '/prajurit/messages',   label: 'Pesan',   icon: <Megaphone size={20} aria-hidden="true" /> },
-    { path: '/prajurit/profile',    label: 'Profil',  icon: <UserCheck size={20} aria-hidden="true" /> },
+    { path: '/prajurit/dashboard',  label: 'Beranda',   icon: <LayoutDashboard size={20} aria-hidden="true" /> },
+    { path: '/prajurit/gatepass',   label: 'Gate Pass', icon: <CheckSquare size={20} aria-hidden="true" /> },
+    { path: '/prajurit/scan-pos',   label: 'Scan Pos',  icon: <ScanLine size={20} aria-hidden="true" /> },
+    { path: '/prajurit/attendance', label: 'Absensi',   icon: <CalendarDays size={20} aria-hidden="true" /> },
+    { path: '/prajurit/profile',    label: 'Profil',    icon: <UserCheck size={20} aria-hidden="true" /> },
   ],
   guard: [
     { path: '/guard/dashboard', label: 'Beranda', icon: <LayoutDashboard size={20} aria-hidden="true" /> },
