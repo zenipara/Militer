@@ -77,13 +77,11 @@ export default function Reports() {
       channelRef.current = null;
     }
 
-    const channel = supabase
-      .channel('komandan-reports')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => { void fetchData(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { void fetchData(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => { void fetchData(); })
-      .subscribe();
-
+    const channel = supabase.channel('komandan-reports');
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => { void fetchData(); });
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { void fetchData(); });
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => { void fetchData(); });
+    channel.subscribe();
     channelRef.current = channel;
 
     return () => {

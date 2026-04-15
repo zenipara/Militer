@@ -58,11 +58,9 @@ export default function KomandanAttendance() {
       channelRef.current = null;
     }
 
-    const channel = supabase
-      .channel('komandan-attendance')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => { void fetchAttendance(); })
-      .subscribe();
-
+    const channel = supabase.channel('komandan-attendance');
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => { void fetchAttendance(); });
+    channel.subscribe();
     channelRef.current = channel;
 
     return () => {

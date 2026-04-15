@@ -52,13 +52,11 @@ export default function KomandanDashboard() {
       channelRef.current = null;
     }
 
-    const channel = supabase
-      .channel('komandan-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => { void fetchStats(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { void refetchTasks(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => { void fetchStats(); })
-      .subscribe();
-
+    const channel = supabase.channel('komandan-dashboard');
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => { void fetchStats(); });
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { void refetchTasks(); });
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => { void fetchStats(); });
+    channel.subscribe();
     channelRef.current = channel;
 
     return () => {

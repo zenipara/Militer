@@ -13,50 +13,20 @@ interface GatePassState {
 }
 
 let gatePassChannel: unknown = null;
-
 export const useGatePassStore = create<GatePassState>((set, get) => {
   if (typeof window !== 'undefined' && !gatePassChannel) {
-    gatePassChannel = supabase
-      .channel('gate-pass-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'gate_pass' }, () => {
-        void get().fetchGatePasses();
-      })
-      .subscribe();
+    const channel = supabase.channel('gate-pass-realtime');
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'gate_pass' }, () => {
+      void get().fetchGatePasses();
+    });
+    channel.subscribe();
+    gatePassChannel = channel;
   }
 
   return {
     gatePasses: [],
 
     async fetchGatePasses() {
-      const user = useAuthStore.getState().user;
-      let query = supabase
-        .from('gate_pass')
-        .select(
-          'id,user_id,keperluan,tujuan,waktu_keluar,waktu_kembali,actual_keluar,actual_kembali,status,approved_by,qr_token,created_at'
-        )
-        .order('created_at', { ascending: false });
-
-      if (user?.role === 'prajurit') {
-        query = query.eq('user_id', user.id);
-      }
-
-      const { data, error } = await query;
-      if (!error && data) {
-        const now = new Date();
-        const updated = await Promise.all(
-          data.map(async (gp) => {
-            if (gp.status === 'out' && gp.waktu_kembali && new Date(gp.waktu_kembali) < now) {
-              await supabase.from('gate_pass').update({ status: 'overdue' }).eq('id', gp.id);
-              return { ...gp, status: 'overdue' };
-            }
-            return gp;
-          })
-        );
-        set({ gatePasses: updated });
-      }
-    },
-
-    async createGatePass(data) {
       const user = useAuthStore.getState().user;
       if (!user) throw new Error('User tidak ditemukan');
       const qr_token = generateQrToken();
