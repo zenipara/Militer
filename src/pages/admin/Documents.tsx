@@ -6,7 +6,8 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
-import { supabase } from '../../lib/supabase';
+import { fetchDocuments, insertDocument, deleteDocument } from '../../lib/api/documents';
+import { handleError } from '../../lib/handleError';
 import type { Document } from '../../types';
 
 export default function Documents() {
@@ -27,13 +28,15 @@ export default function Documents() {
 
   const fetchDocs = useCallback(async () => {
     setIsLoading(true);
-    const { data } = await supabase
-      .from('documents')
-      .select('*, uploader:uploaded_by(id,nama,nrp)')
-      .order('created_at', { ascending: false });
-    setDocs((data as Document[]) ?? []);
-    setIsLoading(false);
-  }, []);
+    try {
+      const data = await fetchDocuments();
+      setDocs(data);
+    } catch (err) {
+      showNotification(handleError(err, 'Gagal memuat dokumen'), 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showNotification]);
 
   useEffect(() => { void fetchDocs(); }, [fetchDocs]);
 
@@ -52,14 +55,13 @@ export default function Documents() {
     }
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('documents').insert({
+      await insertDocument({
         nama: form.nama,
         kategori: form.kategori || null,
         file_url: form.file_url,
         satuan: form.satuan || null,
         file_size: form.file_size ? Number(form.file_size) : null,
       });
-      if (error) throw error;
       showNotification('Dokumen berhasil ditambahkan', 'success');
       setShowCreate(false);
       setForm({ nama: '', kategori: '', file_url: '', satuan: '', file_size: '' });
@@ -74,8 +76,7 @@ export default function Documents() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Hapus dokumen ini?')) return;
     try {
-      const { error } = await supabase.from('documents').delete().eq('id', id);
-      if (error) throw error;
+      await deleteDocument(id);
       showNotification('Dokumen dihapus', 'success');
       await fetchDocs();
     } catch {

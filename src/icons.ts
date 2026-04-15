@@ -96,4 +96,4 @@ export const ICONS = {
 } as const;
 
 export type IconName = keyof typeof ICONS;
-export type IconType = React.ComponentType<any>;
+export type IconType = React.ComponentType<React.SVGProps<SVGSVGElement>>;

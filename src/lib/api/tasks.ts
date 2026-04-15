@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import type { Task, TaskStatus } from '../../types';
+import type { Task, TaskReport, TaskStatus } from '../../types';
 
 export interface FetchTasksParams {
   assignedTo?: string;
@@ -52,7 +52,7 @@ export async function insertTaskReport(report: {
   if (error) throw error;
 }
 
-export async function fetchLatestTaskReport(taskId: string) {
+export async function fetchLatestTaskReport(taskId: string): Promise<TaskReport | null> {
   const { data } = await supabase
     .from('task_reports')
     .select('*')
@@ -60,5 +60,5 @@ export async function fetchLatestTaskReport(taskId: string) {
     .order('submitted_at', { ascending: false })
     .limit(1)
     .single();
-  return data;
+  return (data as TaskReport | null) ?? null;
 }

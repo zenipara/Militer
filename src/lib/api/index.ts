@@ -7,3 +7,4 @@ export * from './leaveRequests';
 export * from './logistics';
 export * from './announcements';
 export * from './auditLogs';
+export * from './documents';

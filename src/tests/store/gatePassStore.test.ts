@@ -126,7 +126,7 @@ describe('gatePassStore', () => {
     expect(updateSpy).toHaveBeenCalledWith({ status: 'approved', approved_by: 'u1' });
   });
 
-  it('scans approved gate pass and returns success message', async () => {
+  it('scans approved gate pass and returns the updated GatePass object', async () => {
     useAuthStore.setState({
       user: { id: 'u2', nrp: '22222', nama: 'Guard A', role: 'guard', satuan: 'Pos X', is_active: true, is_online: true, login_attempts: 0, created_at: now.toISOString(), updated_at: now.toISOString() },
       isAuthenticated: true,
@@ -136,12 +136,14 @@ describe('gatePassStore', () => {
     });
 
     const rpcSpy = vi.fn(() => Promise.resolve({ data: { message: 'Keluar berhasil' }, error: null }));
-    mockSupabase.rpc = rpcSpy as any;
+    (mockSupabase as unknown as Record<string, unknown>).rpc = rpcSpy;
 
     const store = useGatePassStore.getState();
     const result = await store.scanGatePass('qr-1');
 
-    expect(result).toBe('Keluar berhasil');
+    // scanGatePass now returns the updated GatePass (fetched by qr_token after scan),
+    // not the plain success message string.
+    expect(result).toMatchObject({ id: approvedGatePass.id, status: approvedGatePass.status });
     expect(rpcSpy).toHaveBeenCalledWith('server_scan_gate_pass', { p_qr_token: 'qr-1' });
   });
 });
