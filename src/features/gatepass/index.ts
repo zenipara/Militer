@@ -9,6 +9,7 @@
 export { useGatePass } from '@/hooks/useGatePass';
 export { useGatePassStore } from '@/store/gatePassStore';
 export { useOverdueNotification } from '@/hooks/useOverdueNotification';
+export { useGatePassRealtime } from '@/hooks/useGatePassRealtime';
 export { default as GatePassForm } from '@/components/gatepass/GatePassForm';
 export { default as GatePassList } from '@/components/gatepass/GatePassList';
 export { default as GatePassQRCode } from '@/components/gatepass/GatePassQRCode';

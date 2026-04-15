@@ -1,26 +1,15 @@
-import { useEffect, useState } from 'react';
-import { fetchGatePassesByUserAndStatus } from '../lib/api/gatepass';
-import { GatePass } from '../types';
-import { useAuthStore } from '../store/authStore';
+import { useMemo } from 'react';
+import { useGatePassStore } from '../store/gatePassStore';
 
+/**
+ * Returns gate passes that are currently overdue (status === 'overdue').
+ *
+ * The overdue status is computed client-side in the store's fetchGatePasses()
+ * by comparing waktu_kembali with the current time for passes with status
+ * 'out'. Querying the database directly would always return an empty list
+ * because 'overdue' is never persisted to the database.
+ */
 export function useOverdueNotification() {
-  const [overdue, setOverdue] = useState<GatePass[]>([]);
-  const user = useAuthStore(s => s.user);
-
-  useEffect(() => {
-    if (!user) return;
-    const fetchOverdue = async () => {
-      try {
-        const data = await fetchGatePassesByUserAndStatus(user.id, 'overdue');
-        setOverdue(data);
-      } catch {
-        // Silently ignore — this is a background notification check
-      }
-    };
-    void fetchOverdue();
-    const interval = setInterval(() => { void fetchOverdue(); }, 60000); // cek tiap 1 menit
-    return () => clearInterval(interval);
-  }, [user]);
-
-  return overdue;
+  const gatePasses = useGatePassStore((s) => s.gatePasses);
+  return useMemo(() => gatePasses.filter((gp) => gp.status === 'overdue'), [gatePasses]);
 }

@@ -3,27 +3,20 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import QRScanner from '../../components/guard/QRScanner';
 import ScanResultCard from '../../components/guard/ScanResultCard';
 import { useGatePassStore } from '../../store/gatePassStore';
-
-interface GatePassScanResult {
-  user?: {
-    nama?: string;
-    nrp?: string;
-  };
-  status?: 'pending' | 'approved' | 'rejected' | 'out' | 'returned' | 'overdue';
-  actual_keluar?: string | null;
-  actual_kembali?: string | null;
-}
+import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
+import type { GatePass } from '../../types';
 
 export default function GuardDashboard() {
   const scanGatePass = useGatePassStore(s => s.scanGatePass);
-  const [result, setResult] = useState<GatePassScanResult | null>(null);
+  const [result, setResult] = useState<GatePass | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useGatePassRealtime();
 
   const onScan = async (qr_token: string) => {
     setError(null);
     try {
-      const res = await scanGatePass(qr_token);
-      setResult(res as GatePassScanResult);
+      const gatePass = await scanGatePass(qr_token);
+      setResult(gatePass);
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error('QR tidak valid');
       setError(err.message);

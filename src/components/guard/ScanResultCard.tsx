@@ -1,20 +1,12 @@
 
 
-interface ScanResultData {
-  user?: {
-    nama?: string;
-    nrp?: string;
-  };
-  status?: 'pending' | 'approved' | 'rejected' | 'out' | 'returned' | 'overdue';
-  actual_keluar?: string | null;
-  actual_kembali?: string | null;
-}
+import type { GatePass } from '../../types';
 
-export default function ScanResultCard({ data }: { data: ScanResultData }) {
+export default function ScanResultCard({ data }: { data: GatePass }) {
   return (
     <div className="rounded-3xl border border-surface bg-bg-card p-6 shadow-sm text-center">
-      <div className="text-2xl font-bold text-text-primary">{data.user?.nama}</div>
-      <div className="text-sm text-text-muted">{data.user?.nrp}</div>
+      <div className="text-2xl font-bold text-text-primary">{data.user?.nama ?? '—'}</div>
+      <div className="text-sm text-text-muted">{data.user?.nrp ?? '—'}</div>
       <div className="mt-3 text-xl font-semibold text-text-primary">
         {data.status === 'out'
           ? 'Sedang di luar'

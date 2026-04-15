@@ -27,6 +27,8 @@ export interface GatePass {
   approved_by?: string;
   qr_token: string;
   created_at: string;
+  // Joined field (populated when fetched with user join)
+  user?: User;
 }
 
 export type Role = 'admin' | 'komandan' | 'prajurit' | 'guard';

@@ -31,7 +31,17 @@ export async function fetchAllGatePasses(): Promise<GatePass[]> {
   return (data as GatePass[]) ?? [];
 }
 
-export async function insertGatePass(payload: Partial<GatePass> & { user_id: string; qr_token: string }): Promise<void> {
+export async function fetchGatePassByQrToken(qrToken: string): Promise<GatePass | null> {
+  const { data, error } = await supabase
+    .from('gate_pass')
+    .select('*, user:user_id(id,nama,nrp,pangkat,satuan)')
+    .eq('qr_token', qrToken)
+    .single();
+  if (error) return null;
+  return (data as GatePass) ?? null;
+}
+
+(payload: Partial<GatePass> & { user_id: string; qr_token: string }): Promise<void> {
   const { error } = await supabase.from('gate_pass').insert([payload]);
   if (error) throw error;
 }

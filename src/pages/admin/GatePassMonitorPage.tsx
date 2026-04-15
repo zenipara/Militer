@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
+import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 export default function GatePassMonitorPage() {
   const gatePasses = useGatePassStore(s => s.gatePasses);
   const fetchGatePasses = useGatePassStore(s => s.fetchGatePasses);
+  useGatePassRealtime();
 
   useEffect(() => { fetchGatePasses(); }, [fetchGatePasses]);
 

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
+import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
@@ -8,6 +9,7 @@ export default function GatePassApprovalPage() {
   const gatePasses = useGatePassStore(s => s.gatePasses);
   const fetchGatePasses = useGatePassStore(s => s.fetchGatePasses);
   const approveGatePass = useGatePassStore(s => s.approveGatePass);
+  useGatePassRealtime();
 
   useEffect(() => { fetchGatePasses(); }, [fetchGatePasses]);
 
