@@ -1,7 +1,7 @@
 # 🪖 KARYO OS
 - [Struktur Proyek](#struktur-proyek)
+- [Setup & Deploy via Terminal (Codespace)](#setup--deploy-via-terminal-codespace)
 - [Konfigurasi Supabase](#konfigurasi-supabase)
-- [Deploy ke Netlify](#deploy-ke-netlify)
 - [Environment Variables](#environment-variables)
 - [Database Schema](#database-schema)
 - [Kontribusi](#kontribusi)
@@ -235,41 +235,34 @@ karyo-os/
 
 ---
 
-## Setup Development
+## Setup & Deploy via Terminal (Codespace)
 
-### Prerequisites
+> **Cara tercepat** — jalankan dari terminal GitHub Codespaces atau Linux.
 
-- Node.js >= 18.x
-- npm >= 9.x atau pnpm >= 8.x
-- Akun [Supabase](https://supabase.com)
+### Prasyarat
+
+- Node.js >= 20.x
+- Akun [Supabase](https://supabase.com) + project yang sudah dibuat
 - Akun [Netlify](https://netlify.com)
 
-### 1. Clone Repositori
+### 1. Clone & Setup Pertama Kali
 
 ```bash
 git clone https://github.com/username/karyo-os.git
 cd karyo-os
+
+# Satu perintah untuk semua: install CLI, setup env, migrasi DB, build
+bash scripts/setup.sh
 ```
 
-### 2. Install Dependencies
+Script `setup.sh` akan secara interaktif:
+- Install Supabase CLI & Netlify CLI
+- Membuat `.env.local` (prompt masukkan URL + anon key Supabase)
+- Login & link ke project Supabase
+- Menjalankan semua migration database
+- Build production
 
-```bash
-npm install
-```
-
-### 3. Setup Environment Variables
-
-```bash
-cp .env.example .env.local
-```
-
-Isi `.env.local` dengan nilai dari dashboard Supabase kamu (lihat bagian [Environment Variables](#environment-variables)).
-
-### 4. Setup Database
-
-Jalankan migration di Supabase SQL Editor (lihat bagian [Database Schema](#database-schema)).
-
-### 5. Jalankan Dev Server
+### 2. Jalankan Dev Server
 
 ```bash
 npm run dev
@@ -277,92 +270,55 @@ npm run dev
 
 Akses di `http://localhost:5173`
 
-### 6. Build untuk Production
+### 3. Deploy ke Supabase + Netlify
 
 ```bash
-npm run build
+bash scripts/deploy.sh
 ```
+
+Script `deploy.sh` akan otomatis:
+- Menerapkan migration terbaru ke Supabase
+- Build production (`npm run build`)
+- Login & hubungkan ke Netlify site
+- Sinkronisasi env variables dari `.env.local` ke Netlify
+- Deploy ke production
+
+Untuk deploy ulang setiap ada perubahan kode, cukup jalankan `bash scripts/deploy.sh`.
 
 ---
 
 ## Konfigurasi Supabase
 
-### 1. Buat Project Baru
+### Cara Mendapatkan Credentials
 
-- Buka [supabase.com](https://supabase.com) → New Project
-- Catat `Project URL` dan `anon key` dari **Settings → API**
+1. Buka [supabase.com](https://supabase.com) → pilih project
+2. **Settings** → **API** → catat:
+   - **Project URL** → `VITE_SUPABASE_URL`
+   - **anon public** key → `VITE_SUPABASE_ANON_KEY`
+3. **Settings** → **General** → catat **Reference ID** (digunakan saat `supabase link`)
 
-### 2. Jalankan SQL Migration
+### Migration Database
 
-Di Supabase Dashboard → **SQL Editor**, jalankan file `supabase/migrations/001_init.sql`.
-
-### 3. Konfigurasi Row Level Security (RLS)
-
-RLS diaktifkan pada semua tabel. Policy sudah termasuk dalam migration file.
-
-### 4. Seed Data Awal (Opsional)
-
-```sql
--- Contoh insert user admin pertama
-INSERT INTO users (nrp, pin_hash, nama, role, satuan)
-VALUES ('100001', crypt('123456', gen_salt('bf')), 'Administrator', 'admin', 'MABES');
-```
-
-> Gunakan ekstensi `pgcrypto` untuk hashing PIN. Sudah diaktifkan di migration.
-
----
-
-## Deploy ke Netlify
-
-### Metode 1: Via Netlify CLI
+Migration dijalankan otomatis via `bash scripts/setup.sh`. Untuk menjalankan manual:
 
 ```bash
-# Install Netlify CLI
-npm install -g netlify-cli
-
-# Login
-netlify login
-
-# Init project
-netlify init
-
-# Deploy
-netlify deploy --prod
+supabase link --project-ref <PROJECT_ID>
+supabase db push
 ```
 
-### Metode 2: Via Netlify Dashboard (Recommended)
+File migration tersedia di `supabase/migrations/` dengan urutan:
+- `001_initial_schema.sql` — Tabel, RPC, trigger, RLS dev
+- `002_seed_data.sql` — Data sample (opsional, development)
+- `003_server_functions.sql` — Fungsi server-side tambahan
+- `004_production_rls.sql` — Policy RLS production (wajib sebelum go-live)
 
-1. Push kode ke GitHub
-2. Buka [netlify.com](https://netlify.com) → **Add new site → Import an existing project**
-3. Hubungkan ke repositori GitHub
-4. Konfigurasi build:
-   - **Build command:** `npm run build`
-   - **Publish directory:** `dist`
-5. Tambahkan environment variables (lihat bagian [Environment Variables](#environment-variables))
-6. Klik **Deploy site**
-
-### Konfigurasi `netlify.toml`
-
-File ini sudah ada di root proyek:
-
-```toml
-[build]
-  command = "npm run build"
-  publish = "dist"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-```
-
-> **Penting:** Redirect `/*` ke `index.html` wajib ada agar React Router berfungsi di Netlify.
+> RLS diaktifkan pada semua tabel. Policy sudah termasuk dalam migration file.
 
 ---
 
 ## Environment Variables
 
-Buat file `.env.local` (development) atau set di Netlify Dashboard (production):
+File `.env.local` dibuat otomatis oleh `bash scripts/setup.sh`. Format:
 
 ```env
 # Supabase
@@ -374,14 +330,14 @@ VITE_APP_NAME=Karyo OS
 VITE_APP_VERSION=1.0.0
 ```
 
-> **Penting:** Semua env variable yang diakses dari frontend React **wajib** diawali dengan `VITE_`.
+> **Penting:** Semua env variable frontend React **wajib** diawali `VITE_`. File `.env.local` tidak boleh di-commit ke Git (sudah ada di `.gitignore`).
 
-### Cara Mendapatkan Nilai Supabase
+Untuk production, `bash scripts/deploy.sh` otomatis menyinkronkan `.env.local` ke Netlify. Atau set manual:
 
-1. Buka Supabase Dashboard → Pilih project kamu
-2. Klik **Settings** (ikon gear) → **API**
-3. Salin nilai **Project URL** → `VITE_SUPABASE_URL`
-4. Salin nilai **anon public** → `VITE_SUPABASE_ANON_KEY`
+```bash
+netlify env:set VITE_SUPABASE_URL "https://xxxx.supabase.co"
+netlify env:set VITE_SUPABASE_ANON_KEY "eyJhbGci..."
+```
 
 ---
 

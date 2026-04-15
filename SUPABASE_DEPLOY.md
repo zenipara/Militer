@@ -1,117 +1,139 @@
-# 🗄️ Panduan Deploy Supabase — KARYO OS
+# 🚀 Panduan Deploy via Terminal (Codespace) — KARYO OS
 
-Panduan lengkap untuk menyiapkan backend Supabase bagi aplikasi KARYO OS dari nol hingga production-ready.
+Panduan lengkap untuk setup dan deploy **KARYO OS** ke Supabase + Netlify langsung dari terminal GitHub Codespaces — tanpa perlu membuka browser dashboard selama proses berlangsung.
 
 ---
 
 ## 📋 Daftar Isi
 
 1. [Prasyarat](#1-prasyarat)
-2. [Buat Project Supabase](#2-buat-project-supabase)
-3. [Ambil Kredensial API](#3-ambil-kredensial-api)
-4. [Jalankan Migrasi Database](#4-jalankan-migrasi-database)
-5. [Seed Data Awal](#5-seed-data-awal)
-6. [Aktifkan Realtime](#6-aktifkan-realtime)
-7. [Konfigurasi Storage](#7-konfigurasi-storage)
-8. [Konfigurasi Environment Variables](#8-konfigurasi-environment-variables)
-9. [Konfigurasi RLS Production](#9-konfigurasi-rls-production)
-10. [Verifikasi Deploy](#10-verifikasi-deploy)
-11. [Troubleshooting](#11-troubleshooting)
+2. [Setup Pertama Kali](#2-setup-pertama-kali)
+3. [Deploy ke Supabase + Netlify](#3-deploy-ke-supabase--netlify)
+4. [Seed Data Sample](#4-seed-data-sample)
+5. [Aktifkan Realtime](#5-aktifkan-realtime)
+6. [Verifikasi Deploy](#6-verifikasi-deploy)
+7. [Troubleshooting](#7-troubleshooting)
+8. [Referensi Perintah CLI](#8-referensi-perintah-cli)
 
 ---
 
 ## 1. Prasyarat
 
-- Akun [Supabase](https://supabase.com) (gratis)
-- Akses ke repository KARYO OS
-- File migration di folder `supabase/migrations/`
+Sebelum memulai, siapkan:
+
+| Kebutuhan | Keterangan |
+|---|---|
+| **GitHub Codespaces** | Atau Linux terminal dengan Node.js >= 20 |
+| **Akun Supabase** | Daftar gratis di [supabase.com](https://supabase.com) |
+| **Akun Netlify** | Daftar gratis di [netlify.com](https://netlify.com) |
+| **Supabase Project** | Buat project baru di dashboard, catat **Project ID** dan **API keys** |
+
+### Cara mendapatkan Supabase credentials:
+1. Buka [supabase.com](https://supabase.com) → pilih project kamu
+2. **Settings** → **API**
+3. Catat:
+   - **Project URL** → untuk `VITE_SUPABASE_URL`
+   - **anon public** key → untuk `VITE_SUPABASE_ANON_KEY`
+4. **Settings** → **General** → catat **Reference ID** → untuk `Project ID`
+
+> ⚠️ Gunakan hanya `anon public` key di frontend. Jangan gunakan `service_role` key.
 
 ---
 
-## 2. Buat Project Supabase
+## 2. Setup Pertama Kali
 
-1. Buka [supabase.com](https://supabase.com) → **Sign In**
-2. Di dashboard, klik **New project**
-3. Isi form berikut:
+Jalankan satu perintah ini di terminal Codespace:
 
-   | Field | Nilai |
-   |---|---|
-   | **Organization** | Pilih organisasi kamu |
-   | **Name** | `karyo-os` (atau nama lain) |
-   | **Database Password** | Buat password yang kuat — **simpan baik-baik!** |
-   | **Region** | `Southeast Asia (Singapore)` — terdekat untuk Indonesia |
-   | **Pricing Plan** | Free (cukup untuk production skala kecil) |
-
-4. Klik **Create new project** dan tunggu ±2 menit hingga project selesai provisioning
-
-> ⚠️ **Penting:** Catat database password yang dibuat. Password ini tidak dapat dilihat kembali setelah project dibuat.
-
----
-
-## 3. Ambil Kredensial API
-
-Setelah project aktif:
-
-1. Di sidebar kiri, klik **Project Settings** (ikon ⚙️)
-2. Pilih menu **API**
-3. Catat dua nilai berikut:
-
-   | Variabel | Lokasi di Dashboard |
-   |---|---|
-   | `VITE_SUPABASE_URL` | **Project URL** (contoh: `https://abcdefgh.supabase.co`) |
-   | `VITE_SUPABASE_ANON_KEY` | **Project API keys → anon public** |
-
-> ⚠️ **Jangan** gunakan `service_role` key di frontend. Hanya gunakan `anon public` key.
-
----
-
-## 4. Jalankan Migrasi Database
-
-Migration harus dijalankan **secara berurutan** menggunakan Supabase SQL Editor.
-
-### Cara Membuka SQL Editor
-
-Dashboard → **SQL Editor** (ikon 🗒️ di sidebar kiri) → **New query**
-
----
-
-### Migration 001 — Schema Awal
-
-Salin dan jalankan seluruh isi file:
-
-```
-supabase/migrations/001_initial_schema.sql
+```bash
+bash scripts/setup.sh
 ```
 
-File ini membuat:
-- Ekstensi `pgcrypto` untuk hashing PIN (bcrypt)
-- 12 tabel utama: `users`, `tasks`, `task_reports`, `attendance`, `leave_requests`, `announcements`, `messages`, `logistics_items`, `audit_logs`, `shift_schedules`, `documents`, `discipline_notes`
-- Index performa
-- Fungsi RPC: `verify_user_pin`, `create_user_with_pin`, `reset_user_pin`, `change_user_pin`, `increment_login_attempts`
-- Trigger `updated_at` otomatis
-- Row Level Security (RLS) diaktifkan — policy dev (open) untuk development
+Script ini secara otomatis akan:
 
-**Cara menjalankan:**
+| Langkah | Deskripsi |
+|---|---|
+| ✅ Cek Node.js | Memastikan versi >= 20 |
+| ✅ Install Supabase CLI | Via npm global |
+| ✅ Install Netlify CLI | Via npm global |
+| ✅ Install dependensi | `npm ci` |
+| ✅ Buat `.env.local` | Interaktif — masukkan URL + anon key Supabase |
+| ✅ Login Supabase | `supabase login` |
+| ✅ Link project | `supabase link --project-ref <ID>` |
+| ✅ Jalankan migrasi | `supabase db push` — semua file di `supabase/migrations/` |
+| ✅ Build production | `npm run build` |
 
-```sql
--- Di SQL Editor, klik "New query", paste isi file, lalu klik "Run" (Ctrl+Enter)
+### Contoh output:
+
 ```
+══════════════════════════════════════
+  4. Konfigurasi Environment Variables
+══════════════════════════════════════
+  VITE_SUPABASE_URL  (contoh: https://abcd.supabase.co) : https://xyzxyz.supabase.co
+  VITE_SUPABASE_ANON_KEY (anon public key)              : eyJhbGci...
 
-Pastikan muncul output: `Success. No rows returned` atau sejenisnya.
+✔  .env.local berhasil dibuat.
+
+══════════════════════════════════════
+  6. Jalankan Migrasi Database
+══════════════════════════════════════
+ℹ  Menjalankan semua migration ke Supabase cloud...
+Applying migration 001_initial_schema.sql...
+Applying migration 002_seed_data.sql...
+Applying migration 003_server_functions.sql...
+Applying migration 004_production_rls.sql...
+✔  Semua migration berhasil dijalankan.
+```
 
 ---
 
-### Migration 002 — Seed Data (Development / Testing)
+## 3. Deploy ke Supabase + Netlify
+
+Setelah setup selesai, jalankan:
+
+```bash
+bash scripts/deploy.sh
+```
+
+Script ini akan:
+
+| Langkah | Perintah yang dijalankan |
+|---|---|
+| Terapkan migrasi terbaru | `supabase db push` |
+| Build production | `npm run build` |
+| Login Netlify (jika belum) | `netlify login` |
+| Buat atau link site Netlify | `netlify sites:create` / `netlify link` |
+| Sinkronisasi env variables | `netlify env:set ...` (dari `.env.local`) |
+| Deploy ke production | `netlify deploy --dir=dist --prod` |
+
+### Catatan penting:
+- Script otomatis membaca `.env.local` dan menyinkronkannya ke Netlify
+- Jika sudah pernah deploy, script akan menggunakan site yang sama (dari `.netlify/state.json`)
+- Setiap kali ada perubahan kode, cukup jalankan ulang `bash scripts/deploy.sh`
+
+---
+
+## 4. Seed Data Sample
 
 > **Opsional** — hanya untuk development atau demo pertama kali.
 
-Salin dan jalankan:
+Setelah setup, jalankan langsung via Supabase CLI:
 
-```
-supabase/migrations/002_seed_data.sql
+```bash
+# Lihat daftar migration yang tersedia
+supabase migration list
+
+# Seed data sudah termasuk di migration 002_seed_data.sql
+# Jika belum dijalankan, push ulang:
+supabase db push
 ```
 
-Membuat akun sample berikut (semua PIN: **123456**):
+Atau jalankan SQL secara langsung via terminal:
+
+```bash
+supabase db execute --file supabase/migrations/002_seed_data.sql
+```
+
+Data sample yang dibuat (semua PIN: **123456**):
 
 | NRP | Nama | Role | Satuan |
 |---|---|---|---|
@@ -121,381 +143,219 @@ Membuat akun sample berikut (semua PIN: **123456**):
 | `3000002` | Hendra Wijaya | `prajurit` | Batalyon 1 |
 | `3000003` | Eko Susanto | `prajurit` | Batalyon 1 |
 
-> ⚠️ **Jangan jalankan migration 002 di production** dengan data nyata. Gunakan hanya untuk testing awal.
+Atau buat akun admin pertama secara manual:
+
+```bash
+supabase db execute --sql "SELECT public.create_user_with_pin('1000001','123456','Admin Karyo','admin','Batalyon 1','Letnan Kolonel','Komandan Batalyon');"
+```
+
+> ⚠️ **Production:** Ganti PIN default segera setelah login pertama.
 
 ---
 
-### Migration 003 — Server Functions
+## 5. Aktifkan Realtime
 
-Salin dan jalankan:
+Aktifkan Realtime untuk tabel yang diperlukan via CLI:
 
+```bash
+# Buka Supabase Studio di browser (opsional, untuk verifikasi)
+supabase studio
+
+# Atau aktifkan langsung via SQL
+supabase db execute --sql "
+  ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+  ALTER PUBLICATION supabase_realtime ADD TABLE announcements;
+  ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
+  ALTER PUBLICATION supabase_realtime ADD TABLE attendance;
+"
 ```
-supabase/migrations/003_server_functions.sql
-```
 
-Menambahkan:
-- Tabel `logistics_requests` (permintaan logistik Komandan → Admin)
-- Fungsi `server_checkin` / `server_checkout` — timestamp dari server (anti-manipulasi)
-- Fungsi `bulk_reset_pins` — reset PIN banyak user sekaligus
-- Fungsi `import_users_csv` — import user dari CSV
+| Tabel | Kegunaan |
+|---|---|
+| `messages` | Pesan real-time antar pengguna |
+| `announcements` | Pengumuman baru muncul langsung |
+| `tasks` | Update status tugas real-time |
+| `attendance` | Monitoring kehadiran live (opsional) |
 
 ---
 
-### Migration 004 — Production RLS
+## 6. Verifikasi Deploy
 
-> **Wajib** dijalankan sebelum go-live ke production.
+### Test login via terminal (opsional):
 
-Salin dan jalankan:
+```bash
+# Cek status Supabase project
+supabase status
 
-```
-supabase/migrations/004_production_rls.sql
-```
-
-Menghapus semua policy dev (open) dan menggantinya dengan policy production ketat:
-
-| Tabel | admin | komandan | prajurit |
-|---|---|---|---|
-| `users` | Full CRUD | Baca users sesatuan | Baca data sendiri |
-| `tasks` | Full CRUD | CRUD tugas yang dibuat | Baca+update tugas sendiri |
-| `attendance` | Full CRUD | Baca semua | CRUD absensi sendiri |
-| `messages` | Full CRUD | CRUD pesan sendiri | CRUD pesan sendiri |
-| `audit_logs` | Full CRUD | ❌ | ❌ |
-| `discipline_notes` | Full CRUD | CRUD notes | Baca data sendiri |
-
-Juga membuat fungsi helper:
-- `set_session_context(user_id, role)` — dipanggil saat login
-- `current_karyo_user_id()` — membaca sesi user aktif
-- `current_karyo_role()` — membaca role user aktif
-
----
-
-### Verifikasi Urutan Migration
-
-Setelah semua migration selesai, cek tabel yang terbuat:
-
-```sql
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema = 'public'
-ORDER BY table_name;
+# Cek daftar tabel yang terbuat
+supabase db execute --sql "
+  SELECT table_name
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+  ORDER BY table_name;
+"
 ```
 
 Harus tampil minimal 13 tabel:
-
 ```
-announcements
-attendance
-audit_logs
-discipline_notes
-documents
-leave_requests
-logistics_items
-logistics_requests
-messages
-shift_schedules
-task_reports
-tasks
-users
+announcements, attendance, audit_logs, discipline_notes, documents,
+leave_requests, logistics_items, logistics_requests, messages,
+shift_schedules, task_reports, tasks, users
 ```
 
----
+### Cek status Netlify:
 
-## 5. Seed Data Awal
-
-Jika tidak menjalankan migration 002, buat akun admin pertama secara manual:
-
-```sql
--- Ganti nilai sesuai kebutuhan
-SELECT public.create_user_with_pin(
-  '1000001',          -- NRP unik
-  '123456',           -- PIN 6 digit (ganti di production!)
-  'Admin Karyo',      -- Nama lengkap
-  'admin',            -- Role: admin / komandan / prajurit
-  'Batalyon 1',       -- Satuan
-  'Letnan Kolonel',   -- Pangkat (opsional)
-  'Komandan Batalyon' -- Jabatan (opsional)
-);
+```bash
+netlify status
+netlify open   # Buka site di browser
 ```
 
-> ⚠️ **Production:** Ganti PIN default segera setelah login pertama menggunakan fitur "Ganti PIN" di aplikasi.
+### Test RLS:
 
----
-
-## 6. Aktifkan Realtime
-
-KARYO OS menggunakan Supabase Realtime untuk fitur pesan dan notifikasi. Aktifkan untuk tabel yang diperlukan:
-
-1. Di dashboard, buka **Database** → **Replication**
-2. Di bagian **Supabase Realtime**, aktifkan tabel berikut:
-
-   | Tabel | Kegunaan |
-   |---|---|
-   | `messages` | Pesan real-time antar pengguna |
-   | `announcements` | Pengumuman baru muncul langsung |
-   | `tasks` | Update status tugas real-time |
-   | `attendance` | Monitoring kehadiran live (opsional) |
-
-3. Untuk setiap tabel, pastikan toggle **Enabled** aktif
-
-> 💡 Aktifkan hanya tabel yang benar-benar diperlukan untuk menjaga performa.
-
----
-
-## 7. Konfigurasi Storage
-
-KARYO OS menggunakan Supabase Storage untuk file upload. Buat bucket berikut:
-
-### Langkah Membuat Bucket
-
-1. Di dashboard → **Storage** → **New bucket**
-
----
-
-### Bucket 1: `avatars` (Foto Profil)
-
-| Setting | Nilai |
-|---|---|
-| Name | `avatars` |
-| Public | ✅ Ya |
-| File size limit | `5 MB` |
-| Allowed MIME types | `image/jpeg, image/png, image/webp` |
-
-```sql
--- Policy: user bisa upload foto sendiri, semua bisa lihat
-INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
-
-CREATE POLICY "avatars_public_read" ON storage.objects
-  FOR SELECT USING (bucket_id = 'avatars');
-
-CREATE POLICY "avatars_user_upload" ON storage.objects
-  FOR INSERT WITH CHECK (
-    bucket_id = 'avatars'
-    AND auth.role() = 'anon'
-  );
+```bash
+supabase db execute --sql "
+  SELECT * FROM public.verify_user_pin('1000001', '123456');
+"
 ```
-
----
-
-### Bucket 2: `documents` (Arsip Dokumen)
-
-| Setting | Nilai |
-|---|---|
-| Name | `documents` |
-| Public | ❌ Tidak |
-| File size limit | `50 MB` |
-| Allowed MIME types | `application/pdf, application/msword, application/vnd.openxmlformats-officedocument.*` |
-
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('documents', 'documents', false);
-
-CREATE POLICY "documents_authenticated_read" ON storage.objects
-  FOR SELECT USING (bucket_id = 'documents');
-
-CREATE POLICY "documents_admin_upload" ON storage.objects
-  FOR INSERT WITH CHECK (bucket_id = 'documents');
-```
-
----
-
-### Bucket 3: `task-reports` (File Laporan Tugas)
-
-| Setting | Nilai |
-|---|---|
-| Name | `task-reports` |
-| Public | ❌ Tidak |
-| File size limit | `20 MB` |
-| Allowed MIME types | `image/*, application/pdf` |
-
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('task-reports', 'task-reports', false);
-
-CREATE POLICY "task_reports_authenticated" ON storage.objects
-  FOR ALL USING (bucket_id = 'task-reports');
-```
-
----
-
-## 8. Konfigurasi Environment Variables
-
-### Development (lokal)
-
-Buat file `.env.local` di root project:
-
-```env
-# Supabase
-VITE_SUPABASE_URL=https://xxxxxxxxxxxxxxxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-# App Config
-VITE_APP_NAME=Karyo OS
-VITE_APP_VERSION=1.0.0
-```
-
-
-### Production (Netlify)
-
-1. Di Netlify Dashboard → pilih site KARYO OS
-2. **Site configuration** → **Environment variables** → **Add a variable**
-3. Tambahkan variabel yang sama persis seperti di atas (wajib: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
-4. Pastikan format dan value environment variable sama persis dengan `.env.local` (tanpa tanda kutip, tanpa spasi ekstra)
-
-> ⚠️ File `.env.local` tidak boleh di-commit ke Git (sudah ada di `.gitignore`).
-
-> 💡 **Tips:** Jika build Netlify gagal karena error environment (misal: Supabase URL/Key tidak terdeteksi), cek kembali penulisan dan value environment variable di dashboard Netlify.
----
-
-## 12. Catatan Teknis Tambahan
-
-- **QR Code:** KARYO OS kini menggunakan package `react-qr-code` (bukan `qrcode.react`) agar build kompatibel dengan Vite/Netlify dan tidak error saat deploy.
-- **Realtime:** Aktifkan hanya tabel yang benar-benar digunakan realtime (lihat kode di `src/hooks/useNotifications.ts`, `useMessages.ts`, dsb).
-- **Testing:** File test sudah dikecualikan dari build (lihat `tsconfig.json` dan `tsconfig.app.json`).
-- **Optimalisasi:** Pastikan hanya dependensi yang diperlukan yang diinstall di production.
-
----
-
----
-
-## 9. Konfigurasi RLS Production
-
-Setelah menjalankan migration 004, verifikasi bahwa policy production aktif:
-
-```sql
--- Cek semua policy aktif di database
-SELECT schemaname, tablename, policyname, roles, cmd
-FROM pg_policies
-WHERE schemaname = 'public'
-ORDER BY tablename, policyname;
-```
-
-Pastikan **tidak ada** policy yang namanya diawali `dev_anon_all_`. Jika masih ada, jalankan ulang migration 004.
 
 ### Checklist Keamanan Production
 
-- [ ] Migration 004 (production RLS) sudah dijalankan
-- [ ] Tidak ada policy `dev_anon_all_*` yang tersisa
-- [ ] PIN admin default sudah diganti
+- [ ] Migration 004 (production RLS) sudah dijalankan — `supabase db push`
+- [ ] PIN admin default sudah diganti setelah login pertama
 - [ ] Database password Supabase disimpan di tempat aman
+- [ ] `.env.local` tidak di-commit ke Git (sudah ada di `.gitignore`)
 - [ ] `service_role` key tidak diekspos ke frontend
 - [ ] Realtime hanya aktif untuk tabel yang diperlukan
-- [ ] Storage bucket `documents` dan `task-reports` bersifat private
 
 ---
 
-## 10. Verifikasi Deploy
+## 7. Troubleshooting
 
-### Test Login
+### ❌ `supabase: command not found`
 
-1. Buka aplikasi KARYO OS
-2. Login dengan NRP `1000001` dan PIN `123456`
-3. Pastikan redirect ke `/admin/dashboard`
-
-### Test Database
-
-Cek data masuk di Supabase Dashboard → **Table Editor** → pilih tabel `users`. Harus tampil akun yang sudah di-seed.
-
-### Test RPC
-
-Di SQL Editor, coba jalankan:
-
-```sql
--- Test verify PIN
-SELECT * FROM public.verify_user_pin('1000001', '123456');
--- Harus mengembalikan user_id
-
--- Test session context
-SELECT public.set_session_context(
-  (SELECT id FROM public.users WHERE nrp = '1000001'),
-  'admin'
-);
-SELECT public.current_karyo_role(); -- harus mengembalikan 'admin'
+```bash
+npm install -g supabase
+# atau
+npx supabase --version
 ```
 
-### Test Realtime
+### ❌ `netlify: command not found`
 
-1. Buka dua tab browser, login sebagai dua user berbeda
-2. Kirim pesan dari satu user ke yang lain
-3. Pesan harus muncul di tab lain tanpa refresh halaman
-
----
-
-## 11. Troubleshooting
-
-### ❌ Error: `pgcrypto extension not found`
-
-**Solusi:** Aktifkan ekstensi secara manual:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```bash
+npm install -g netlify-cli
 ```
 
-Atau via dashboard: **Database** → **Extensions** → cari `pgcrypto` → **Enable**
+### ❌ `Error: project not linked`
 
----
+```bash
+supabase link --project-ref <PROJECT_ID>
+```
 
-### ❌ Error: `relation "users" does not exist`
+Project ID ada di Supabase Dashboard → **Settings** → **General** → **Reference ID**.
 
-**Solusi:** Pastikan migration 001 sudah dijalankan sebelum migration lainnya.
+### ❌ `supabase db push` gagal — migration error
 
----
+```bash
+# Lihat status migration
+supabase migration list
 
-### ❌ Error: `function update_updated_at_column() does not exist`
+# Repair jika ada yang stuck
+supabase migration repair --status applied <versi_migration>
+```
 
-Migration 003 bergantung pada fungsi dari migration 001. Pastikan urutan migration benar (001 → 002 → 003 → 004).
+### ❌ Build Netlify gagal — env variable tidak terdeteksi
 
----
+```bash
+# Lihat env yang tersimpan di Netlify
+netlify env:list
+
+# Set ulang secara manual
+netlify env:set VITE_SUPABASE_URL "https://xxxx.supabase.co"
+netlify env:set VITE_SUPABASE_ANON_KEY "eyJhbGci..."
+
+# Deploy ulang
+netlify deploy --dir=dist --prod
+```
 
 ### ❌ Login gagal padahal NRP & PIN benar
 
-**Kemungkinan penyebab:**
-1. Migration 004 dijalankan tapi `set_session_context` belum dipanggil — ini normal, RLS memerlukan session context
-2. Cek `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` sudah benar di `.env.local`
-3. Pastikan project Supabase statusnya **Active** (bukan paused)
-
----
-
-### ❌ Data tidak muncul setelah login (query kosong)
-
-**Kemungkinan penyebab:** RLS policy memblokir query. Cek:
-
-```sql
--- Pastikan set_session_context terpanggil dengan benar
-SELECT current_setting('karyo.current_user_id', TRUE);
-SELECT current_setting('karyo.current_user_role', TRUE);
+```bash
+# Cek apakah RLS session context aktif
+supabase db execute --sql "
+  SELECT current_setting('karyo.current_user_id', TRUE);
+  SELECT current_setting('karyo.current_user_role', TRUE);
+"
 ```
 
 Jika kosong, berarti `authStore` tidak memanggil `set_session_context` setelah login.
 
----
-
-### ❌ Realtime tidak berfungsi
-
-1. Pastikan tabel sudah diaktifkan di **Database → Replication**
-2. Cek Supabase plan — Free plan mendukung Realtime dengan batasan koneksi concurrent
-3. Pastikan client Supabase menggunakan `anon key` yang benar
-
----
-
 ### ⚡ Project Supabase "Paused" (Free Plan)
 
-Project Free Supabase akan di-pause otomatis setelah **7 hari tidak ada aktivitas**.
+```bash
+# Tidak bisa resume via CLI — buka dashboard
+supabase projects list  # cek status project
+# Buka https://supabase.com/dashboard → Restore project
+```
 
-**Solusi:**
-- Buka dashboard Supabase → klik **Restore project**
-- Tunggu ±1-2 menit hingga aktif kembali
-- Upgrade ke Pro plan untuk menghindari auto-pause di production
+---
+
+## 8. Referensi Perintah CLI
+
+### Supabase CLI
+
+```bash
+supabase login                        # Login ke Supabase
+supabase projects list                # Daftar semua project
+supabase link --project-ref <ID>      # Hubungkan ke project
+supabase db push                      # Terapkan semua migration
+supabase migration list               # Lihat daftar migration
+supabase db execute --sql "<SQL>"     # Jalankan SQL langsung
+supabase db execute --file <file.sql> # Jalankan file SQL
+supabase status                       # Status project
+supabase studio                       # Buka Supabase Studio di browser
+supabase logout                       # Logout
+```
+
+### Netlify CLI
+
+```bash
+netlify login                         # Login ke Netlify
+netlify sites:list                    # Daftar semua site
+netlify sites:create --name <nama>    # Buat site baru
+netlify link --id <SITE_ID>           # Hubungkan ke site
+netlify env:list                      # Lihat env variables
+netlify env:set <KEY> <VALUE>         # Set env variable
+netlify deploy --dir=dist --prod      # Deploy ke production
+netlify deploy --dir=dist             # Deploy preview (bukan prod)
+netlify status                        # Status site
+netlify open                          # Buka site di browser
+netlify logout                        # Logout
+```
+
+### Script proyek
+
+```bash
+bash scripts/setup.sh    # Setup lengkap (sekali jalan)
+bash scripts/deploy.sh   # Deploy ke Supabase + Netlify
+npm run dev              # Dev server lokal
+npm run build            # Build production
+npm run lint             # ESLint
+npm run type-check       # TypeScript check
+npm test                 # Jalankan test
+```
 
 ---
 
 ## 📚 Referensi
 
-- [Supabase Documentation](https://supabase.com/docs)
-- [Supabase SQL Editor](https://supabase.com/docs/guides/database/sql-editor)
+- [Supabase CLI Docs](https://supabase.com/docs/reference/cli)
+- [Netlify CLI Docs](https://docs.netlify.com/cli/get-started/)
 - [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
 - [Supabase Realtime](https://supabase.com/docs/guides/realtime)
-- [Supabase Storage](https://supabase.com/docs/guides/storage)
+- [Vite + Netlify Deploy](https://vitejs.dev/guide/static-deploy.html#netlify)
 
 ---
 
 <div align="center">
-  <strong>KARYO OS</strong> — Panduan Supabase Deployment 🇮🇩
+  <strong>KARYO OS</strong> — Setup & Deploy via Terminal 🇮🇩
 </div>
