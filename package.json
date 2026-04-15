@@ -17,6 +17,7 @@
     "test:watch": "vitest",
     "test:unit": "vitest run src/tests/**/*.{test,spec}.{ts,tsx}",
     "test:e2e": "vitest run src/tests/pages/**/*.test.tsx",
+    "test:smoke:prod": "E2E_USE_WEBSERVER=false playwright test smoke-prod.spec.ts --project=chromium --reporter=line",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {

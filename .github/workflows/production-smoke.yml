@@ -1,0 +1,49 @@
+name: Production Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Production URL to test
+        required: true
+        default: https://karyo-os-862.netlify.app
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Smoke Test Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run production smoke tests
+        env:
+          E2E_BASE_URL: ${{ inputs.base_url }}
+          E2E_USE_WEBSERVER: 'false'
+        run: npx playwright test smoke-prod.spec.ts --project=chromium --reporter=line --retries=1
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-production-smoke
+          path: playwright-report
+          if-no-files-found: ignore

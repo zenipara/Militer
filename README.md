@@ -73,6 +73,15 @@ Untuk menjalankan report cakupan:
 npm run test:coverage
 ```
 
+Untuk menjalankan smoke test ke environment production (Playwright):
+
+```bash
+E2E_BASE_URL=https://karyo-os-862.netlify.app npm run test:smoke:prod
+```
+
+Workflow GitHub Actions manual juga tersedia di `.github/workflows/production-smoke.yml`.
+Gunakan menu **Actions → Production Smoke → Run workflow**, lalu isi `base_url` jika ingin menguji URL lain.
+
 Hasil cakupan dibuat di folder `coverage/`, dan konfigurasi pengujian sudah mengabaikan direktori internal (`src/tests`) serta file entry app (`src/main.tsx`).
 
 ---
