@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { fetchGatePassesByUser, insertGatePass, patchGatePassStatus, rpcScanGatePass } from '../lib/api/gatepass';
-import { GatePass, GatePassStatus } from '../types/gatepass';
+import { GatePass, GatePassStatus } from '../types';
 import { generateQrToken } from '../utils/gatepass';
 import { useAuthStore } from './authStore';
 

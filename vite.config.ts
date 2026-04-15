@@ -25,12 +25,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./src/tests/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'html', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/test/**', 'src/tests/**', 'src/main.tsx'],
+      exclude: ['src/tests/**', 'src/main.tsx'],
     },
   },
   build: {
@@ -44,7 +44,7 @@ export default defineConfig({
           supabase: ['@supabase/supabase-js'],
           state: ['zustand'],
           icons: ['lucide-react'],
-          qr: ['html5-qrcode', 'qrcode.react', 'react-qr-code'],
+          qr: ['html5-qrcode', 'react-qr-code'],
         },
       },
     },

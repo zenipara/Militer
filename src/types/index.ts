@@ -2,6 +2,33 @@
 // Core Types
 // ============================================================
 
+// ============================================================
+// Gate Pass
+// ============================================================
+
+export type GatePassStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'out'
+  | 'returned'
+  | 'overdue';
+
+export interface GatePass {
+  id: string;
+  user_id: string;
+  keperluan: string;
+  tujuan: string;
+  waktu_keluar: string;
+  waktu_kembali: string;
+  actual_keluar?: string;
+  actual_kembali?: string;
+  status: GatePassStatus;
+  approved_by?: string;
+  qr_token: string;
+  created_at: string;
+}
+
 export type Role = 'admin' | 'komandan' | 'prajurit' | 'guard';
 
 export type TaskStatus = 'pending' | 'in_progress' | 'done' | 'approved' | 'rejected';

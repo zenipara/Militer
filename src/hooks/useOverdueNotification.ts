@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchGatePassesByUserAndStatus } from '../lib/api/gatepass';
-import { GatePass } from '../types/gatepass';
+import { GatePass } from '../types';
 import { useAuthStore } from '../store/authStore';
 
 export function useOverdueNotification() {

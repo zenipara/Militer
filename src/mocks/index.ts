@@ -9,7 +9,7 @@
  *   vi.mock('@/lib/api/users', () => ({ fetchUsers: async () => mockUsers }));
  */
 import type { User, Task, Attendance, Message, LeaveRequest, Announcement, AuditLog } from '../types';
-import type { GatePass } from '../types/gatepass';
+import type { GatePass } from '../types';
 
 // ============================================================
 // Users

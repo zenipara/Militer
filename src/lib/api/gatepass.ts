@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import type { GatePass } from '../../types/gatepass';
+import type { GatePass } from '../../types';
 
 export async function fetchGatePassesByUser(userId: string): Promise<GatePass[]> {
   const { data, error } = await supabase

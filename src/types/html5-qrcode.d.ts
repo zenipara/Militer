@@ -13,15 +13,3 @@ declare module 'html5-qrcode' {
     clear(): Promise<void>;
   }
 }
-
-declare module 'qrcode.react' {
-  import * as React from 'react';
-  export interface QRCodeProps {
-    value: string;
-    size?: number;
-    level?: 'L' | 'M' | 'Q' | 'H';
-    includeMargin?: boolean;
-  }
-  const QRCode: React.FC<QRCodeProps>;
-  export default QRCode;
-}

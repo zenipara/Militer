@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchGatePassesByUser, insertGatePass } from '../lib/api/gatepass';
 import { handleError } from '../lib/handleError';
-import { GatePass } from '../types/gatepass';
+import { GatePass } from '../types';
 import { generateQrToken } from '../utils/gatepass';
 import { useAuthStore } from '../store/authStore';
 

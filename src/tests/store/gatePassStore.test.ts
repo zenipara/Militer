@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { supabase } from '../../lib/supabase';
 import { useGatePassStore } from '../../store/gatePassStore';
 import { useAuthStore } from '../../store/authStore';
-import type { GatePass } from '../../types/gatepass';
+import type { GatePass } from '../../types';
 
 type MockQuery = {
   _table: string;

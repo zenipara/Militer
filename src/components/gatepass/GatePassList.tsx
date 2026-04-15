@@ -1,5 +1,5 @@
 import React from 'react';
-import { GatePass } from '../../types/gatepass';
+import { GatePass } from '../../types';
 import GatePassStatusBadge from './GatePassStatusBadge';
 import GatePassQRCode from './GatePassQRCode';
 

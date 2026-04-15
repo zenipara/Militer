@@ -16,4 +16,4 @@ export { default as GatePassScanner } from '@/components/gatepass/GatePassScanne
 export { default as GatePassStatusBadge } from '@/components/gatepass/GatePassStatusBadge';
 export { default as QRScanner } from '@/components/guard/QRScanner';
 export { default as ScanResultCard } from '@/components/guard/ScanResultCard';
-export type { GatePass, GatePassStatus } from '@/types/gatepass';
+export type { GatePass, GatePassStatus } from '@/types';

@@ -1,4 +1,4 @@
-import { GatePass } from '../../types/gatepass';
+import { GatePass } from '../../types';
 import React from 'react';
 
 interface Props {

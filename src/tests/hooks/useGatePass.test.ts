@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useGatePass } from '../../hooks/useGatePass';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
-import type { GatePass } from '../../types/gatepass';
+import type { GatePass } from '../../types';
 
 type MockQuery = {
   _table: string;
