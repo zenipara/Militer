@@ -10,8 +10,9 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    name: Lint · Type-check · Test · Build
+  # ── Job 1: Lint + Type-check (berjalan paralel dengan test) ─────────────────
+  quality:
+    name: Lint · Type-check
     runs-on: ubuntu-latest
 
     steps:
@@ -33,8 +34,45 @@ jobs:
       - name: Type-check
         run: npm run type-check
 
+  # ── Job 2: Unit tests (berjalan paralel dengan quality) ─────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Test
         run: npm test
+
+  # ── Job 3: Build (menunggu quality + test lulus) ─────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build
         env:

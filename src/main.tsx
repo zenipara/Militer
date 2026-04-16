@@ -12,6 +12,10 @@ import { useAuthStore } from './store/authStore';
 import { usePlatformStore } from './store/platformStore';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import { measurePageLoad } from './lib/metrics';
+
+// Mulai pengukuran load halaman sebelum render pertama
+measurePageLoad();
 
 export function App() {
   const { restoreSession, isLoading } = useAuthStore();

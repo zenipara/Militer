@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useAnnouncements } from '../../hooks/useAnnouncements';
+import { useAnnouncements, clearAnnouncementsCache } from '../../hooks/useAnnouncements';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import type { Announcement } from '../../types';
@@ -21,6 +21,7 @@ const sampleAnnouncements: Announcement[] = [
 describe('useAnnouncements', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAnnouncementsCache();
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
   });
 

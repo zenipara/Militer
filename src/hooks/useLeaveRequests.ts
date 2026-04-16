@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchLeaveRequests as apiFetchLeaveRequests, insertLeaveRequest, patchLeaveRequestStatus } from '../lib/api/leaveRequests';
 import { handleError } from '../lib/handleError';
+import { SimpleCache } from '../lib/cache';
 import type { LeaveRequest, LeaveStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -9,17 +10,43 @@ interface UseLeaveRequestsOptions {
   satuan?: string;
 }
 
+/** Module-level cache: data permintaan izin di-cache 5 menit per kombinasi filter */
+const leaveRequestsCache = new SimpleCache<LeaveRequest[]>();
+
+function buildLeaveKey(userId?: string, satuan?: string): string {
+  return JSON.stringify({ u: userId ?? '', s: satuan ?? '' });
+}
+
+/** Hapus semua cache permintaan izin — berguna untuk pengujian unit. */
+export function clearLeaveRequestsCache(): void {
+  leaveRequestsCache.clear();
+}
+
 export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
   const { user } = useAuthStore();
-  const [requests, setRequests] = useState<LeaveRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const cacheKey = useMemo(
+    () => buildLeaveKey(options.userId, options.satuan),
+    [options.userId, options.satuan],
+  );
+
+  const [requests, setRequests] = useState<LeaveRequest[]>(() => leaveRequestsCache.get(cacheKey) ?? []);
+  const [isLoading, setIsLoading] = useState(() => !leaveRequestsCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRequests = useCallback(async () => {
+  const fetchRequests = useCallback(async (force = false) => {
     if (!user) {
       setRequests([]);
       setIsLoading(false);
       return;
+    }
+    if (!force) {
+      const cached = leaveRequestsCache.get(cacheKey);
+      if (cached) {
+        setRequests(cached);
+        setIsLoading(false);
+        return;
+      }
     }
     setIsLoading(true);
     setError(null);
@@ -35,13 +62,14 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
         result = result.filter((r) => r.user?.satuan === options.satuan);
       }
 
+      leaveRequestsCache.set(cacheKey, result);
       setRequests(result);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat permintaan izin'));
     } finally {
       setIsLoading(false);
     }
-  }, [user, options.userId, options.satuan]);
+  }, [user, cacheKey, options.userId, options.satuan]);
 
   useEffect(() => {
     void fetchRequests();
@@ -55,20 +83,22 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
   }) => {
     if (!user) throw new Error('Not authenticated');
     await insertLeaveRequest(user.id, user.role, { ...data, user_id: user.id });
-    await fetchRequests();
+    leaveRequestsCache.invalidate(cacheKey);
+    await fetchRequests(true);
   };
 
   const reviewLeaveRequest = async (id: string, status: LeaveStatus) => {
     if (!user) throw new Error('Not authenticated');
     await patchLeaveRequestStatus(user.id, user.role, id, status, user.id);
-    await fetchRequests();
+    leaveRequestsCache.invalidate(cacheKey);
+    await fetchRequests(true);
   };
 
   return {
     requests,
     isLoading,
     error,
-    refetch: fetchRequests,
+    refetch: () => fetchRequests(true),
     submitLeaveRequest,
     reviewLeaveRequest,
   };

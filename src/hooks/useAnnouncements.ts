@@ -1,35 +1,65 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchAnnouncements as apiFetchAnnouncements, insertAnnouncement, patchAnnouncement, deleteAnnouncement as apiDeleteAnnouncement } from '../lib/api/announcements';
 import { handleError } from '../lib/handleError';
+import { SimpleCache } from '../lib/cache';
 import type { Announcement, Role } from '../types';
 import { useAuthStore } from '../store/authStore';
 
+/** Module-level cache: data pengumuman di-cache 5 menit per user */
+const announcementsCache = new SimpleCache<Announcement[]>();
+
+/** Hapus semua cache pengumuman — berguna untuk pengujian unit. */
+export function clearAnnouncementsCache(): void {
+  announcementsCache.clear();
+}
+
 export function useAnnouncements() {
   const { user } = useAuthStore();
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const cacheKey = useMemo(() => `${user?.id ?? ''}:${user?.role ?? ''}`, [user?.id, user?.role]);
+
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => announcementsCache.get(cacheKey) ?? []);
+  const [isLoading, setIsLoading] = useState(() => !announcementsCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAnnouncements = useCallback(async () => {
+  const fetchAnnouncements = useCallback(async (force = false) => {
     if (!user) return;
+    if (!force) {
+      const cached = announcementsCache.get(cacheKey);
+      if (cached) {
+        setAnnouncements(cached);
+        setIsLoading(false);
+        return;
+      }
+    }
     setIsLoading(true);
     setError(null);
     try {
       const data = await apiFetchAnnouncements(user.id, user.role);
+      announcementsCache.set(cacheKey, data);
       setAnnouncements(data);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat pengumuman'));
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, cacheKey]);
 
-  const fetchAnnouncementsOrThrow = useCallback(async () => {
+  const fetchAnnouncementsOrThrow = useCallback(async (force = false) => {
     if (!user) throw new Error('Not authenticated');
+    if (!force) {
+      const cached = announcementsCache.get(cacheKey);
+      if (cached) {
+        setAnnouncements(cached);
+        setIsLoading(false);
+        return;
+      }
+    }
     setIsLoading(true);
     setError(null);
     try {
       const data = await apiFetchAnnouncements(user.id, user.role);
+      announcementsCache.set(cacheKey, data);
       setAnnouncements(data);
     } catch (err) {
       const message = handleError(err, 'Gagal memuat pengumuman');
@@ -38,7 +68,7 @@ export function useAnnouncements() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, cacheKey]);
 
   useEffect(() => {
     void fetchAnnouncements();
@@ -53,21 +83,22 @@ export function useAnnouncements() {
   }) => {
     if (!user) throw new Error('Not authenticated');
     await insertAnnouncement(user.id, user.role, { ...data, created_by: user.id });
-    // Refresh list after creation; use the non-throwing variant so a temporary
-    // read failure does not mask the successful publish.
-    void fetchAnnouncements();
+    announcementsCache.invalidate(cacheKey);
+    void fetchAnnouncements(true);
   };
 
   const updateAnnouncement = async (id: string, updates: Partial<Announcement>) => {
     if (!user) throw new Error('Not authenticated');
     await patchAnnouncement(user.id, user.role, id, updates);
-    await fetchAnnouncementsOrThrow();
+    announcementsCache.invalidate(cacheKey);
+    await fetchAnnouncementsOrThrow(true);
   };
 
   const deleteAnnouncement = async (id: string) => {
     if (!user) throw new Error('Not authenticated');
     await apiDeleteAnnouncement(user.id, user.role, id);
-    await fetchAnnouncementsOrThrow();
+    announcementsCache.invalidate(cacheKey);
+    await fetchAnnouncementsOrThrow(true);
   };
 
   const togglePin = async (id: string, isPinned: boolean) => {
@@ -78,7 +109,7 @@ export function useAnnouncements() {
     announcements,
     isLoading,
     error,
-    refetch: fetchAnnouncements,
+    refetch: () => fetchAnnouncements(true),
     createAnnouncement,
     updateAnnouncement,
     deleteAnnouncement,

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useLeaveRequests } from '../../hooks/useLeaveRequests';
+import { useLeaveRequests, clearLeaveRequestsCache } from '../../hooks/useLeaveRequests';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import type { LeaveRequest } from '../../types';
@@ -21,6 +21,7 @@ const mockRequests: LeaveRequest[] = [
 describe('useLeaveRequests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearLeaveRequestsCache();
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
   });
 

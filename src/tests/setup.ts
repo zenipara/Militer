@@ -13,6 +13,26 @@ vi.mock('../lib/supabase', () => ({
   },
 }));
 
+// Suppress expected noise produced during tests:
+//   • [KARYO OS] – handleError's intentional DEV-mode console.error for mocked errors
+//   • React Router Future Flag Warning – v6 warnings suppressed until v7 migration
+const _origError = console.error;
+const _origWarn = console.warn;
+beforeAll(() => {
+  console.error = (...args: unknown[]) => {
+    if (String(args[0] ?? '') === '[KARYO OS]') return;
+    _origError(...args);
+  };
+  console.warn = (...args: unknown[]) => {
+    if (String(args[0] ?? '').includes('React Router Future Flag Warning')) return;
+    _origWarn(...args);
+  };
+});
+afterAll(() => {
+  console.error = _origError;
+  console.warn = _origWarn;
+});
+
 // Reset localStorage between tests
 beforeEach(() => {
   localStorage.clear();
