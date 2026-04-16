@@ -7,6 +7,8 @@ interface UseUsersOptions {
   role?: Role;
   satuan?: string;
   isActive?: boolean;
+  orderBy?: 'nama' | 'created_at';
+  ascending?: boolean;
 }
 
 export function useUsers(options: UseUsersOptions = {}) {
@@ -18,7 +20,13 @@ export function useUsers(options: UseUsersOptions = {}) {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiFetchUsers({ role: options.role, satuan: options.satuan, isActive: options.isActive });
+      const data = await apiFetchUsers({
+        role: options.role,
+        satuan: options.satuan,
+        isActive: options.isActive,
+        orderBy: options.orderBy,
+        ascending: options.ascending,
+      });
       setUsers(data);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat data user'));

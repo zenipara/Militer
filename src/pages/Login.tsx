@@ -69,7 +69,7 @@ export default function Login() {
               <code className="rounded bg-surface px-1 py-0.5 text-xs text-accent-red">VITE_SUPABASE_URL</code>
               {' '}dan{' '}
               <code className="rounded bg-surface px-1 py-0.5 text-xs text-accent-red">VITE_SUPABASE_ANON_KEY</code>
-              {' '}di Netlify.
+              {' '}di environment deployment.
             </p>
           </div>
         </div>

@@ -235,7 +235,6 @@ karyo-os/
 ├── .env.example
 ├── .gitignore
 ├── index.html
-├── netlify.toml
 ├── package.json
 ├── tailwind.config.ts
 ├── tsconfig.json
@@ -252,7 +251,7 @@ karyo-os/
 
 - Node.js >= 20.x
 - Akun [Supabase](https://supabase.com) + project yang sudah dibuat
-- Akun [Netlify](https://netlify.com)
+- Akun GitHub dengan GitHub Pages aktif
 
 ### 1. Clone & Setup Pertama Kali
 
@@ -265,7 +264,7 @@ bash scripts/setup.sh
 ```
 
 Script `setup.sh` akan secara interaktif:
-- Install Supabase CLI & Netlify CLI
+- Install Supabase CLI
 - Membuat `.env.local` (prompt masukkan URL + anon key Supabase)
 - Login & link ke project Supabase
 - Menjalankan semua migration database
@@ -279,7 +278,7 @@ npm run dev
 
 Akses di `http://localhost:5173`
 
-### 3. Deploy ke Supabase + Netlify
+### 3. Deploy ke Supabase + GitHub Pages
 
 ```bash
 bash scripts/deploy.sh
@@ -288,11 +287,10 @@ bash scripts/deploy.sh
 Script `deploy.sh` akan otomatis:
 - Menerapkan migration terbaru ke Supabase
 - Build production (`npm run build`)
-- Login & hubungkan ke Netlify site
-- Sinkronisasi env variables dari `.env.local` ke Netlify
-- Deploy ke production
+- Menyiapkan artefak frontend untuk GitHub Pages
+- GitHub Actions yang mendorong deployment production
 
-Untuk deploy ulang setiap ada perubahan kode, cukup jalankan `bash scripts/deploy.sh`.
+Untuk deploy ulang frontend, push ke branch `main` atau jalankan workflow GitHub Actions deploy production.
 
 ---
 
@@ -341,11 +339,11 @@ VITE_APP_VERSION=1.0.0
 
 > **Penting:** Semua env variable frontend React **wajib** diawali `VITE_`. File `.env.local` tidak boleh di-commit ke Git (sudah ada di `.gitignore`).
 
-Untuk production, `bash scripts/deploy.sh` otomatis menyinkronkan `.env.local` ke Netlify. Atau set manual:
+Untuk production, simpan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` di GitHub repository secrets / environment yang dipakai workflow. Secara lokal, `.env.local` tetap dipakai oleh `bash scripts/deploy.sh`. Contoh format:
 
 ```bash
-netlify env:set VITE_SUPABASE_URL "https://xxxx.supabase.co"
-netlify env:set VITE_SUPABASE_ANON_KEY "eyJhbGci..."
+VITE_SUPABASE_URL="https://xxxx.supabase.co"
+VITE_SUPABASE_ANON_KEY="eyJhbGci..."
 ```
 
 ---

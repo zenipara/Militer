@@ -60,8 +60,8 @@ Karyo OS dirancang untuk:
 
 ```
 ┌─────────────────────────────────────────────┐
-│                  NETLIFY CDN                │
-│         (Static File Hosting + Edge)        │
+│                GITHUB PAGES                 │
+│          (Static File Hosting)              │
 └──────────────────┬──────────────────────────┘
                    │ HTTPS
 ┌──────────────────▼──────────────────────────┐
@@ -869,85 +869,34 @@ APPROVED  REJECTED
 
 ## 11. Spesifikasi Deployment
 
-### 11.1 Netlify Configuration
+### 11.1 GitHub Pages Configuration
 
-**`netlify.toml` (lengkap):**
+Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 
-```toml
-[build]
-  command = "npm run build"
-  publish = "dist"
-
-[build.environment]
-  NODE_VERSION = "18"
-  NPM_VERSION = "9"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; style-src 'self' 'unsafe-inline'; script-src 'self'"
-
-[context.production]
-  command = "npm run build"
-
-[context.deploy-preview]
-  command = "npm run build"
-```
+- Hash router agar refresh dan deep-link aman di subpath Pages
+- Base path `/v/` untuk repository project page
+- `public/404.html` sebagai fallback redirect SPA
+- Build production dijalankan oleh workflow GitHub Actions
 
 ### 11.2 Vite Configuration
 
-```typescript
-// vite.config.ts
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-  build: {
-    target: 'es2020',
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
-          state: ['zustand'],
-        }
-      }
-    }
-  },
-  server: {
-    port: 5173,
-    host: true
-  }
-});
-```
+`vite.config.ts` menggunakan base path dari `VITE_BASE_PATH` agar build bisa dipakai di GitHub Pages maupun environment lain.
 
 ### 11.3 Checklist Sebelum Deploy
 
-- [ ] Semua env variables diset di Netlify Dashboard
-- [ ] `netlify.toml` sudah ada di root project
+- [ ] Secret GitHub Actions untuk Supabase sudah diset
+- [ ] Build lokal berhasil (`npm run build`)
 - [ ] Migration SQL sudah dijalankan di Supabase
 - [ ] RLS sudah diaktifkan pada semua tabel
-- [ ] Build lokal berhasil (`npm run build`)
 - [ ] Tidak ada `console.log` yang tertinggal
 - [ ] TypeScript tidak ada error (`npm run type-check`)
 - [ ] Semua route protected sudah diuji
 
 ### 11.4 Domain & SSL
 
-- Netlify menyediakan domain gratis: `karyo-os.netlify.app`
-- SSL/TLS otomatis via Let's Encrypt
-- Custom domain dapat dikonfigurasi di Netlify Settings → Domain Management
+- GitHub Pages menyediakan domain gratis: `yuniamagsila.github.io/v/`
+- HTTPS otomatis disediakan oleh GitHub Pages
+- Custom domain dapat dikonfigurasi di GitHub Pages Settings
 
 ---
 
@@ -987,7 +936,7 @@ export default defineConfig({
 
 ### 12.4 Proteksi CSRF & XSS
 
-- Content Security Policy header via `netlify.toml`
+- Content Security Policy header via konfigurasi aplikasi dan build pipeline
 - Input sanitization pada semua form input
 - Tidak menggunakan `dangerouslySetInnerHTML`
 - Semua data dari Supabase di-escape sebelum ditampilkan
@@ -1042,7 +991,7 @@ export default defineConfig({
 - [ ] Dashboard Prajurit (core features)
 - [ ] Dashboard Komandan (core features)
 - [ ] Dashboard Admin (core features)
-- [ ] Deploy ke Netlify
+- [ ] Deploy ke GitHub Pages
 
 ### Phase 2 — Enhancement (v1.5)
 - [ ] Notifikasi push (browser notifications)

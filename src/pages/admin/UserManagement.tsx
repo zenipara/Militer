@@ -30,7 +30,7 @@ function parseCSV(text: string): Record<string, string>[] {
 }
 
 export default function UserManagement() {
-  const { users, isLoading, createUser, updateUser, toggleUserActive, resetUserPin, getUserById } = useUsers();
+  const { users, isLoading, createUser, updateUser, toggleUserActive, resetUserPin, getUserById } = useUsers({ orderBy: 'created_at', ascending: false });
   const { showNotification } = useUIStore();
 
   const [searchRaw, setSearchRaw] = useState('');
@@ -81,6 +81,7 @@ export default function UserManagement() {
     try {
       await createUser({ ...form, is_active: true });
       showNotification('Personel berhasil ditambahkan', 'success');
+      setPage(1);
       setShowCreate(false);
       setForm({ nrp: '', nama: '', pin: '', role: 'prajurit', satuan: '', pangkat: '' });
     } catch (err) {
@@ -181,6 +182,7 @@ export default function UserManagement() {
       setImportResult(result);
       if (result.success > 0) {
         showNotification(`${result.success} personel berhasil diimpor`, 'success');
+        setPage(1);
       }
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal mengimpor data', 'error');

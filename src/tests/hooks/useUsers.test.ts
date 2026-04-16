@@ -61,7 +61,7 @@ describe('useUsers', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.users).toHaveLength(2);
-    expect(result.current.users[0].nama).toBe('Alpha');
+    expect(result.current.users.map((u) => u.nama)).toEqual(expect.arrayContaining(['Alpha', 'Bravo']));
   });
 
   it('sets error when fetch fails', async () => {

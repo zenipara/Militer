@@ -13,8 +13,8 @@ if (!isSupabaseConfigured) {
   // Keeping the module loadable lets the app render and show a proper UI.
   console.error(
     '[KARYO OS] Missing Supabase environment variables. ' +
-      'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Netlify ' +
-      'environment variables (Site Settings → Environment Variables). ' +
+      'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your deployment ' +
+      'environment variables. ' +
       'All Supabase API calls will fail until this is resolved.',
   );
 }

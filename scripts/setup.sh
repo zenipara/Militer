@@ -40,23 +40,13 @@ else
   success "Supabase CLI terpasang: $(supabase --version)"
 fi
 
-# ── 2. Install Netlify CLI ───────────────────────────────────
-section "2. Install Netlify CLI"
-if command -v netlify &>/dev/null; then
-  success "Netlify CLI sudah terpasang: $(netlify --version)"
-else
-  info "Menginstall Netlify CLI via npm..."
-  npm install -g netlify-cli
-  success "Netlify CLI terpasang: $(netlify --version)"
-fi
-
-# ── 3. Install dependencies proyek ──────────────────────────
-section "3. Install dependensi proyek"
+# ── 2. Install dependencies proyek ──────────────────────────
+section "2. Install dependensi proyek"
 npm ci
 success "Dependensi proyek terinstall."
 
-# ── 4. Konfigurasi .env.local ───────────────────────────────
-section "4. Konfigurasi Environment Variables"
+# ── 3. Konfigurasi .env.local ───────────────────────────────
+section "3. Konfigurasi Environment Variables"
 ENV_FILE=".env.local"
 
 if [[ -f "$ENV_FILE" ]]; then
@@ -89,8 +79,8 @@ EOF
   success "$ENV_FILE berhasil dibuat."
 fi
 
-# ── 5. Login & link Supabase ─────────────────────────────────
-section "5. Login & Link Supabase"
+# ── 4. Login & link Supabase ─────────────────────────────────
+section "4. Login & Link Supabase"
 info "Membuka login Supabase di browser (atau gunakan access token)..."
 supabase login
 
@@ -103,20 +93,20 @@ read -r -p "  Project ID: " SB_PROJECT_ID
 supabase link --project-ref "$SB_PROJECT_ID"
 success "Supabase project berhasil di-link: $SB_PROJECT_ID"
 
-# ── 6. Jalankan migrasi database ────────────────────────────
-section "6. Jalankan Migrasi Database"
+# ── 5. Jalankan migrasi database ────────────────────────────
+section "5. Jalankan Migrasi Database"
 info "Menjalankan semua migration ke Supabase cloud..."
 supabase db push
 success "Semua migration berhasil dijalankan."
 
-# ── 7. Verifikasi tabel database ────────────────────────────
-section "7. Verifikasi Database"
+# ── 6. Verifikasi tabel database ────────────────────────────
+section "6. Verifikasi Database"
 info "Cek tabel yang terbuat (via Supabase CLI):"
 supabase db dump --schema public --linked 2>/dev/null | grep "^CREATE TABLE" | awk '{print "   ✔", $3}' || \
   warn "Tidak bisa dump schema otomatis. Verifikasi manual via Supabase Dashboard → Table Editor."
 
-# ── 8. Build proyek ─────────────────────────────────────────
-section "8. Build Proyek (Production)"
+# ── 7. Build proyek ─────────────────────────────────────────
+section "7. Build Proyek (Production)"
 info "Menjalankan TypeScript check + Vite build..."
 npm run build
 success "Build berhasil. Output: dist/"
@@ -126,7 +116,7 @@ section "✅ Setup Selesai!"
 echo ""
 echo -e "  ${GREEN}Langkah selanjutnya:${NC}"
 echo -e "  1. Jalankan dev server  : ${CYAN}npm run dev${NC}"
-echo -e "  2. Deploy ke Netlify    : ${CYAN}bash scripts/deploy.sh${NC}"
+echo -e "  2. Deploy frontend      : ${CYAN}push ke main atau jalankan workflow GitHub Actions Deploy Production${NC}"
 echo ""
 echo -e "  ${YELLOW}Jika ingin seed data sample, jalankan di Supabase SQL Editor:${NC}"
 echo -e "  ${CYAN}supabase/migrations/002_seed_data.sql${NC}"

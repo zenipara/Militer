@@ -8,10 +8,15 @@ export interface FetchUsersParams {
   role?: Role;
   satuan?: string;
   isActive?: boolean;
+  orderBy?: 'nama' | 'created_at';
+  ascending?: boolean;
 }
 
 export async function fetchUsers(params: FetchUsersParams = {}): Promise<User[]> {
-  let query = supabase.from('users').select(USER_COLUMNS).order('nama');
+  let query = supabase
+    .from('users')
+    .select(USER_COLUMNS)
+    .order(params.orderBy ?? 'nama', { ascending: params.ascending ?? true });
   if (params.role) query = query.eq('role', params.role);
   if (params.satuan) query = query.eq('satuan', params.satuan);
   if (params.isActive !== undefined) query = query.eq('is_active', params.isActive);
