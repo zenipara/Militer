@@ -65,27 +65,24 @@ jobs:
           fi
 
       - name: Validate production frontend environment
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
         run: |
-          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ] || [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
-            echo "❌ VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY belum diset."
-            echo "Tambahkan ke GitHub Secrets agar frontend terhubung ke Supabase."
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "❌ VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY tidak ditemukan di Secrets maupun Variables."
+            echo "Pastikan sudah ditambahkan di: GitHub → Settings → Secrets and variables → Actions"
+            echo "  • Tab 'Secrets' → secret name: VITE_SUPABASE_URL"
+            echo "  • Tab 'Secrets' → secret name: VITE_SUPABASE_ANON_KEY"
             exit 1
           fi
 
-      - name: Inject Supabase build environment
-        run: |
-          cat > .env <<EOF
-          VITE_BASE_PATH=/v/
-          VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          EOF
-
       - name: Build production bundle
+        env:
+          VITE_BASE_PATH: /v/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
-
-      - name: Remove injected environment file
-        if: always()
-        run: rm -f .env
 
       - name: Create SPA fallback
         run: cp public/404.html dist/404.html
