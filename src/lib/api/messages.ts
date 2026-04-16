@@ -1,7 +1,7 @@
 import { supabase } from '../supabase';
 import type { Message } from '../../types';
 
-export async function fetchInbox(callerId: string, callerRole: string, userId: string): Promise<Message[]> {
+export async function fetchInbox(callerId: string, callerRole: string): Promise<Message[]> {
   const { data, error } = await supabase.rpc('api_get_inbox', {
     p_user_id: callerId,
     p_role: callerRole,
@@ -10,7 +10,7 @@ export async function fetchInbox(callerId: string, callerRole: string, userId: s
   return (data as Message[]) ?? [];
 }
 
-export async function fetchSent(callerId: string, callerRole: string, userId: string): Promise<Message[]> {
+export async function fetchSent(callerId: string, callerRole: string): Promise<Message[]> {
   const { data, error } = await supabase.rpc('api_get_sent', {
     p_user_id: callerId,
     p_role: callerRole,
@@ -39,7 +39,7 @@ export async function markMessageRead(callerId: string, callerRole: string, mess
   if (error) throw error;
 }
 
-export async function markAllMessagesRead(callerId: string, callerRole: string, toUserId: string): Promise<void> {
+export async function markAllMessagesRead(callerId: string, callerRole: string): Promise<void> {
   const { error } = await supabase.rpc('api_mark_all_messages_read', {
     p_caller_id: callerId,
     p_caller_role: callerRole,

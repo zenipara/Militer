@@ -38,7 +38,7 @@ export function useUsers(options: UseUsersOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, options.role, options.satuan, options.isActive]);
+  }, [user, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
 
   useEffect(() => {
     void fetchUsers();
