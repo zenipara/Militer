@@ -53,7 +53,9 @@ export function useAnnouncements() {
   }) => {
     if (!user) throw new Error('Not authenticated');
     await insertAnnouncement(user.id, user.role, { ...data, created_by: user.id });
-    await fetchAnnouncementsOrThrow();
+    // Refresh list after creation; use the non-throwing variant so a temporary
+    // read failure does not mask the successful publish.
+    void fetchAnnouncements();
   };
 
   const updateAnnouncement = async (id: string, updates: Partial<Announcement>) => {

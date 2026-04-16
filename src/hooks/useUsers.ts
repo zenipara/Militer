@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchUsers as apiFetchUsers, fetchUsersDirect as apiFetchUsersDirect, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
 import { handleError } from '../lib/handleError';
 import type { User, Role } from '../types';
@@ -20,7 +20,9 @@ export function useUsers(options: UseUsersOptions = {}) {
 
   const canUseDirectFallback = user?.role === 'admin' && options.role === undefined && options.satuan === undefined && options.isActive === undefined;
 
-  const requestParams = {
+  // Memoize requestParams so its reference only changes when actual values change,
+  // preventing useCallback/useEffect from re-running on every render.
+  const requestParams = useMemo(() => ({
     callerId: user?.id ?? '',
     callerRole: user?.role ?? '',
     role: options.role,
@@ -28,7 +30,7 @@ export function useUsers(options: UseUsersOptions = {}) {
     isActive: options.isActive,
     orderBy: options.orderBy,
     ascending: options.ascending,
-  };
+  }), [user?.id, user?.role, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
 
   const loadUsersData = useCallback(async () => {
     if (!user) return [] as User[];
@@ -91,7 +93,9 @@ export function useUsers(options: UseUsersOptions = {}) {
       pangkat: rest.pangkat,
       jabatan: rest.jabatan,
     });
-    await fetchUsersOrThrow();
+    // Refresh the list after creation; use the non-throwing variant so a
+    // temporary read failure does not mask the successful create.
+    void fetchUsers();
     return data;
   };
 
