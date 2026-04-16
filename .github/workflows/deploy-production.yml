@@ -57,6 +57,7 @@ jobs:
             echo "::warning::Supabase link gagal (cek SUPABASE_PROJECT_REF/SUPABASE_DB_PASSWORD). Build frontend tetap dilanjutkan."
             exit 0
           fi
+          npx supabase@latest migration repair 20260416180536 --status reverted --password "$SUPABASE_DB_PASSWORD" --yes
           npx supabase@latest db push --password "$SUPABASE_DB_PASSWORD" --yes
           PUSH_EXIT=$?
           if [ $PUSH_EXIT -ne 0 ]; then
