@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useAttendance } from '../../hooks/useAttendance';
+import { useAttendance, clearAttendanceCache } from '../../hooks/useAttendance';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import type { Attendance } from '../../types';
@@ -26,6 +26,7 @@ const mockAttendances: Attendance[] = [
 describe('useAttendance', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAttendanceCache();
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
     mockSupabase.channel.mockReturnValue({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() });
     mockSupabase.removeChannel.mockResolvedValue(undefined);

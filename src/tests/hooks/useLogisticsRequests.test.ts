@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useLogisticsRequests } from '../../hooks/useLogisticsRequests';
+import { useLogisticsRequests, clearLogisticsRequestsCache } from '../../hooks/useLogisticsRequests';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import type { LogisticsRequest } from '../../types';
@@ -25,6 +25,7 @@ const sampleRequests: LogisticsRequest[] = [
 describe('useLogisticsRequests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearLogisticsRequestsCache();
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
     mockSupabase.channel.mockReturnValue({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() });
     mockSupabase.removeChannel.mockResolvedValue(undefined);

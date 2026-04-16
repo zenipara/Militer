@@ -31,6 +31,8 @@ export default defineConfig({
     outDir: 'dist',
     target: 'es2020',
     sourcemap: false,
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks: {

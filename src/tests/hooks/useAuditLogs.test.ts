@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useAuditLogs } from '../../hooks/useAuditLogs';
+import { useAuditLogs, clearAuditLogsCache } from '../../hooks/useAuditLogs';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import type { AuditLog } from '../../types';
@@ -21,6 +21,7 @@ const sampleLogs: AuditLog[] = [
 describe('useAuditLogs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearAuditLogsCache();
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
   });
 
