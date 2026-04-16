@@ -41,10 +41,12 @@ export default function ScanPosJagaPage() {
   const [result, setResult] = useState<ScanPosJagaResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const isProcessingScanRef = useRef(false);
+  const isProcessingScanRef = useRef<boolean>(false);
 
   const handleScan = useCallback(
     async (token: string) => {
+      // Ref is intentionally excluded from dependency array because useRef
+      // returns a stable object across renders.
       if (state === 'success' || state === 'error' || isProcessingScanRef.current) return;
       isProcessingScanRef.current = true;
       setState('scanning');
