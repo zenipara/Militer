@@ -4,7 +4,7 @@ import '@testing-library/jest-dom';
 vi.mock('../lib/supabase', () => ({
   supabase: {
     from: vi.fn(),
-    rpc: vi.fn(),
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     channel: vi.fn(() => ({
       on: vi.fn().mockReturnThis(),
       subscribe: vi.fn().mockReturnThis(),

@@ -2,10 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useAuditLogs } from '../../hooks/useAuditLogs';
 import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/authStore';
 import type { AuditLog } from '../../types';
 
-const mockSupabase = supabase as unknown as {
-  from: ReturnType<typeof vi.fn>;
+const mockSupabase = supabase as unknown as { rpc: ReturnType<typeof vi.fn> };
+
+const mockUser = {
+  id: 'u-admin', nrp: '11111', nama: 'Admin A', role: 'admin' as const,
+  satuan: 'Satuan X', is_active: true, is_online: true, login_attempts: 0,
+  created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z',
 };
 
 const sampleLogs: AuditLog[] = [
@@ -13,25 +18,14 @@ const sampleLogs: AuditLog[] = [
   { id: 'l2', user_id: 'u1', action: 'GATE_PASS_CREATE', created_at: '2024-01-01T09:00:00Z' },
 ] as AuditLog[];
 
-function buildQuery(result: { data: unknown; error: unknown }) {
-  const q: Record<string, unknown> = {};
-  const chain = () => q;
-  q.select = chain;
-  q.eq = chain;
-  q.order = chain;
-  q.limit = chain;
-  q.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve);
-  q.catch = (reject: (e: unknown) => unknown) => Promise.resolve(result).catch(reject);
-  return q;
-}
-
 describe('useAuditLogs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useAuthStore.setState({ user: mockUser, isAuthenticated: true });
   });
 
   it('loads audit logs on mount', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: sampleLogs, error: null }));
+    mockSupabase.rpc.mockResolvedValue({ data: sampleLogs, error: null });
 
     const { result } = renderHook(() => useAuditLogs());
     expect(result.current.isLoading).toBe(true);
@@ -42,7 +36,7 @@ describe('useAuditLogs', () => {
   });
 
   it('sets error when fetch fails', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: null, error: new Error('db error') }));
+    mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('db error') });
 
     const { result } = renderHook(() => useAuditLogs());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -51,7 +45,7 @@ describe('useAuditLogs', () => {
   });
 
   it('returns empty list for empty dataset', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: [], error: null }));
+    mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
 
     const { result } = renderHook(() => useAuditLogs());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -60,42 +54,37 @@ describe('useAuditLogs', () => {
   });
 
   it('refetch re-fetches audit logs', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: sampleLogs, error: null }));
+    mockSupabase.rpc.mockResolvedValue({ data: sampleLogs, error: null });
 
     const { result } = renderHook(() => useAuditLogs());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const callsBefore = (mockSupabase.from as ReturnType<typeof vi.fn>).mock.calls.length;
+    const callsBefore = (mockSupabase.rpc as ReturnType<typeof vi.fn>).mock.calls.length;
 
-    await act(async () => {
-      await result.current.refetch();
-    });
+    await act(async () => { await result.current.refetch(); });
 
-    expect((mockSupabase.from as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(callsBefore);
+    expect((mockSupabase.rpc as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(callsBefore);
   });
 
-  it('filters by userId when option is provided', async () => {
-    const filteredQuery = buildQuery({ data: [sampleLogs[1]], error: null }) as Record<string, unknown>;
-    const eqSpy = vi.fn().mockReturnValue(filteredQuery);
-    filteredQuery.eq = eqSpy;
-    mockSupabase.from.mockReturnValue(filteredQuery);
+  it('passes userId filter to RPC when option is provided', async () => {
+    mockSupabase.rpc.mockResolvedValue({ data: [sampleLogs[1]], error: null });
 
     const { result } = renderHook(() => useAuditLogs({ userId: 'u1' }));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    // eq should have been called with 'user_id'
-    expect(eqSpy).toHaveBeenCalledWith('user_id', 'u1');
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_get_audit_logs',
+      expect.objectContaining({ p_filter_user_id: 'u1' })
+    );
   });
 
-  it('filters by action when option is provided', async () => {
-    const filteredQuery = buildQuery({ data: [sampleLogs[0]], error: null }) as Record<string, unknown>;
-    const eqSpy = vi.fn().mockReturnValue(filteredQuery);
-    filteredQuery.eq = eqSpy;
-    mockSupabase.from.mockReturnValue(filteredQuery);
+  it('passes action filter to RPC when option is provided', async () => {
+    mockSupabase.rpc.mockResolvedValue({ data: [sampleLogs[0]], error: null });
 
     const { result } = renderHook(() => useAuditLogs({ action: 'LOGIN' }));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(eqSpy).toHaveBeenCalledWith('action', 'LOGIN');
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_get_audit_logs',
+      expect.objectContaining({ p_action_filter: 'LOGIN' })
+    );
   });
 });

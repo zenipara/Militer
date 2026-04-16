@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase';
 import type { LogisticsRequest } from '../../types';
 
 const mockSupabase = supabase as unknown as {
-  from: ReturnType<typeof vi.fn>;
+  rpc: ReturnType<typeof vi.fn>;
   channel: ReturnType<typeof vi.fn>;
   removeChannel: ReturnType<typeof vi.fn>;
 };
@@ -18,45 +18,20 @@ const mockUser = {
 };
 
 const sampleRequests: LogisticsRequest[] = [
-  {
-    id: 'req1', nama_item: 'Peluru', jumlah: 100, satuan_item: 'butir',
-    alasan: 'Latihan', requested_by: 'u1', satuan: 'Satuan X',
-    status: 'pending', created_at: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: 'req2', nama_item: 'Seragam', jumlah: 5, satuan_item: 'buah',
-    alasan: 'Rusak', requested_by: 'u2', satuan: 'Satuan Y',
-    status: 'approved', created_at: '2024-01-02T00:00:00Z',
-  },
+  { id: 'req1', nama_item: 'Peluru', jumlah: 100, satuan_item: 'butir', alasan: 'Latihan', requested_by: 'u1', satuan: 'Satuan X', status: 'pending', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'req2', nama_item: 'Seragam', jumlah: 5, satuan_item: 'buah', alasan: 'Rusak', requested_by: 'u2', satuan: 'Satuan Y', status: 'approved', created_at: '2024-01-02T00:00:00Z' },
 ] as LogisticsRequest[];
-
-function buildQuery(result: { data: unknown; error: unknown }) {
-  const q: Record<string, unknown> = {};
-  const chain = () => q;
-  q.select = chain;
-  q.eq = chain;
-  q.order = chain;
-  q.update = vi.fn(() => q);
-  q.insert = vi.fn(() => Promise.resolve(result));
-  q.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve);
-  q.catch = (reject: (e: unknown) => unknown) => Promise.resolve(result).catch(reject);
-  return q;
-}
 
 describe('useLogisticsRequests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
-
-    mockSupabase.channel.mockReturnValue({
-      on: vi.fn().mockReturnThis(),
-      subscribe: vi.fn().mockReturnThis(),
-    });
+    mockSupabase.channel.mockReturnValue({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() });
     mockSupabase.removeChannel.mockResolvedValue(undefined);
   });
 
   it('loads logistics requests on mount', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: sampleRequests, error: null }));
+    mockSupabase.rpc.mockResolvedValue({ data: sampleRequests, error: null });
 
     const { result } = renderHook(() => useLogisticsRequests());
     expect(result.current.isLoading).toBe(true);
@@ -67,7 +42,7 @@ describe('useLogisticsRequests', () => {
   });
 
   it('sets error when fetch fails', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: null, error: new Error('fetch error') }));
+    mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('fetch error') });
 
     const { result } = renderHook(() => useLogisticsRequests());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -76,7 +51,7 @@ describe('useLogisticsRequests', () => {
   });
 
   it('returns empty list for empty dataset', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: [], error: null }));
+    mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
 
     const { result } = renderHook(() => useLogisticsRequests());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -85,78 +60,57 @@ describe('useLogisticsRequests', () => {
   });
 
   describe('submitRequest', () => {
-    it('inserts request with correct data and refreshes', async () => {
-      const insertMock = vi.fn().mockResolvedValue({ error: null });
-      const q = buildQuery({ data: sampleRequests, error: null }) as Record<string, unknown>;
-      q.insert = insertMock;
-      mockSupabase.from.mockReturnValue(q);
+    it('calls rpc for insert with correct data', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: sampleRequests, error: null });
 
       const { result } = renderHook(() => useLogisticsRequests());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await act(async () => {
-        await result.current.submitRequest({
-          nama_item: 'Baju', jumlah: 2, alasan: 'Perlu',
-        });
+        await result.current.submitRequest({ nama_item: 'Baju', jumlah: 2, alasan: 'Perlu' });
       });
 
-      expect(insertMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          nama_item: 'Baju', requested_by: 'u1', satuan: 'Satuan X', status: 'pending',
-        })
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_insert_logistics_request',
+        expect.objectContaining({ p_nama_item: 'Baju', p_jumlah: 2 })
       );
     });
 
     it('throws when not authenticated', async () => {
       useAuthStore.setState({ user: null, isAuthenticated: false });
-      mockSupabase.from.mockReturnValue(buildQuery({ data: [], error: null }));
+      mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
 
       const { result } = renderHook(() => useLogisticsRequests());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await expect(
-        act(async () => {
-          await result.current.submitRequest({ nama_item: 'X', jumlah: 1, alasan: 'Y' });
-        })
+        act(async () => { await result.current.submitRequest({ nama_item: 'X', jumlah: 1, alasan: 'Y' }); })
       ).rejects.toThrow('Not authenticated');
     });
   });
 
   describe('reviewRequest', () => {
-    it('updates status to approved with reviewer info', async () => {
-      const eqMock = vi.fn().mockResolvedValue({ error: null });
-      const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
-      const q = buildQuery({ data: sampleRequests, error: null }) as Record<string, unknown>;
-      q.update = updateMock;
-      mockSupabase.from.mockReturnValue(q);
+    it('calls rpc for update with approved status and reviewer info', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: sampleRequests, error: null });
 
       const { result } = renderHook(() => useLogisticsRequests());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      await act(async () => {
-        await result.current.reviewRequest('req1', 'approved', 'Disetujui');
-      });
+      await act(async () => { await result.current.reviewRequest('req1', 'approved', 'Disetujui'); });
 
-      expect(updateMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: 'approved',
-          reviewed_by: 'u1',
-          admin_note: 'Disetujui',
-        })
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_logistics_status',
+        expect.objectContaining({ p_id: 'req1', p_status: 'approved', p_admin_note: 'Disetujui' })
       );
     });
 
     it('throws when not authenticated', async () => {
       useAuthStore.setState({ user: null, isAuthenticated: false });
-      mockSupabase.from.mockReturnValue(buildQuery({ data: [], error: null }));
+      mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
 
       const { result } = renderHook(() => useLogisticsRequests());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await expect(
-        act(async () => {
-          await result.current.reviewRequest('req1', 'rejected');
-        })
+        act(async () => { await result.current.reviewRequest('req1', 'rejected'); })
       ).rejects.toThrow('Not authenticated');
     });
   });

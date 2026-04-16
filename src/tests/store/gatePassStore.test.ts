@@ -4,93 +4,41 @@ import { useGatePassStore } from '../../store/gatePassStore';
 import { useAuthStore } from '../../store/authStore';
 import type { GatePass } from '../../types';
 
-type MockQuery = {
-  _table: string;
-  _single?: boolean;
-  _select?: string;
-  _data?: unknown;
-  select: (columns: string, opts?: unknown) => MockQuery;
-  eq: (...args: unknown[]) => MockQuery;
-  order: (...args: unknown[]) => MockQuery;
-  insert: (value: unknown) => MockQuery;
-  update: (value: unknown) => MockQuery;
-  single: () => Promise<unknown>;
-  then: <T>(resolve: (value: unknown) => T) => Promise<T>;
-  catch: (reject: (error: unknown) => unknown) => Promise<unknown>;
+// Supabase mocks typed
+const mockSupabase = supabase as unknown as {
+  rpc: ReturnType<typeof vi.fn>;
+  from: ReturnType<typeof vi.fn>;
+  channel: ReturnType<typeof vi.fn>;
 };
 
 const now = new Date();
 const overdueTime = new Date(now.getTime() - 1000 * 60 * 60).toISOString();
 const gatePassOut: GatePass = {
-  id: 'gp1',
-  user_id: 'u1',
-  keperluan: 'Cuti',
-  tujuan: 'Rumah',
-  waktu_keluar: now.toISOString(),
-  waktu_kembali: overdueTime,
-  actual_keluar: now.toISOString(),
-  actual_kembali: null,
-  status: 'out',
-  approved_by: 'u2',
-  qr_token: 'qr-1',
-  created_at: now.toISOString(),
-  updated_at: now.toISOString(),
+  id: 'gp1', user_id: 'u1', keperluan: 'Cuti', tujuan: 'Rumah',
+  waktu_keluar: now.toISOString(), waktu_kembali: overdueTime,
+  actual_keluar: now.toISOString(), actual_kembali: null,
+  status: 'out', approved_by: 'u2', qr_token: 'qr-1',
+  created_at: now.toISOString(), updated_at: now.toISOString(),
 };
 
-const approvedGatePass = {
-  id: 'gp2',
-  status: 'approved',
-  actual_keluar: null,
-  actual_kembali: null,
+const approvedGatePass: GatePass = {
+  id: 'gp2', user_id: 'u1', keperluan: 'Urusan', tujuan: 'Kota',
   waktu_keluar: now.toISOString(),
   waktu_kembali: new Date(now.getTime() + 1000 * 60 * 60).toISOString(),
+  actual_keluar: null, actual_kembali: null, status: 'approved',
+  qr_token: 'qr-2', created_at: now.toISOString(), updated_at: now.toISOString(),
 };
 
-type MockRealtimeChannel = {
-  on: (...args: unknown[]) => MockRealtimeChannel;
-  subscribe: () => MockRealtimeChannel;
-};
-
-const mockSupabase = supabase as unknown as {
-  from: (table: string) => MockQuery;
-  channel: () => MockRealtimeChannel;
-};
-
-function queryResult(q: MockQuery) {
-  if (q._single) {
-    return { data: q._data ?? approvedGatePass, error: null };
-  }
-  return { data: q._data ?? [gatePassOut], error: null };
-}
-
-function buildQuery(table: string) {
-  const q = {
-    _table: table,
-    _single: false,
-    _data: undefined,
-  } as MockQuery;
-
-  q.select = (columns: string, opts?: unknown) => {
-    void opts;
-    q._select = columns;
-    return q;
-  };
-  q.eq = (...args: unknown[]) => {
-    void args;
-    return q;
-  };
-  q.order = (...args: unknown[]) => {
-    void args;
-    return q;
-  };
-  q.insert = vi.fn(() => q);
-  q.update = vi.fn(() => q);
-  q.single = () => {
-    q._single = true;
-    return Promise.resolve(queryResult(q));
-  };
-  q.then = async (resolve) => resolve(queryResult(q));
-  q.catch = async (reject) => reject(null);
+// For fetchGatePassByQrToken which still uses supabase.from
+function buildFromQuery(data: unknown) {
+  const q: Record<string, unknown> = {};
+  const chain = () => q;
+  q.select = chain;
+  q.eq = chain;
+  q.order = chain;
+  q.single = () => Promise.resolve({ data, error: null });
+  q.then = (resolve: (v: unknown) => unknown) => Promise.resolve({ data, error: null }).then(resolve);
+  q.catch = (reject: (e: unknown) => unknown) => Promise.resolve({ data, error: null }).catch(reject);
   return q;
 }
 
@@ -100,63 +48,64 @@ describe('gatePassStore', () => {
     useGatePassStore.setState({ gatePasses: [] });
     useAuthStore.setState({
       user: { id: 'u1', nrp: '11111', nama: 'Prajurit A', role: 'prajurit', satuan: 'Satuan X', is_active: true, is_online: true, login_attempts: 0, created_at: now.toISOString(), updated_at: now.toISOString() },
-      isAuthenticated: true,
-      isLoading: false,
-      isInitialized: true,
-      error: null,
+      isAuthenticated: true, isLoading: false, isInitialized: true, error: null,
     });
-    mockSupabase.from = vi.fn((table: string) => buildQuery(table));
-    mockSupabase.channel = vi.fn(() => ({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() }));
+    mockSupabase.channel.mockReturnValue({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() });
   });
 
   it('fetches gate passes and updates overdue status for prajurit', async () => {
+    // fetchGatePassesByUser uses rpc('api_get_gate_passes')
+    mockSupabase.rpc.mockResolvedValue({ data: [gatePassOut], error: null });
+
     const store = useGatePassStore.getState();
     await store.fetchGatePasses();
-    expect(mockSupabase.from).toHaveBeenCalledWith('gate_pass');
+
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_get_gate_passes', expect.objectContaining({ p_target_user_id: 'u1' }));
     expect(useGatePassStore.getState().gatePasses[0].status).toBe('overdue');
   });
 
-  it('creates a gate pass and refreshes list', async () => {
-    const insertQuery = buildQuery('gate_pass');
-    const insertSpy = vi.spyOn(insertQuery, 'insert');
-    mockSupabase.from = vi.fn((table: string) => (table === 'gate_pass' ? insertQuery : buildQuery(table)));
+  it('creates a gate pass via rpc and refreshes list', async () => {
+    mockSupabase.rpc.mockResolvedValue({ data: [approvedGatePass], error: null });
+
     const store = useGatePassStore.getState();
+    await store.createGatePass({ tujuan: 'Aman', keperluan: 'Urusan' });
 
-    await store.createGatePass({ tujuan: 'Aman' });
-
-    expect(insertSpy).toHaveBeenCalled();
-    expect(insertSpy.mock.calls[0][0][0]).toMatchObject({ user_id: 'u1', tujuan: 'Aman' });
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_insert_gate_pass',
+      expect.objectContaining({ p_user_id: 'u1', p_tujuan: 'Aman' })
+    );
   });
 
-  it('approves a gate pass successfully', async () => {
-    const updateQuery = buildQuery('gate_pass');
-    const updateSpy = vi.spyOn(updateQuery, 'update');
-    mockSupabase.from = vi.fn(() => updateQuery);
+  it('approves a gate pass via rpc', async () => {
+    mockSupabase.rpc.mockResolvedValue({ data: [approvedGatePass], error: null });
 
     const store = useGatePassStore.getState();
     await store.approveGatePass('gp2', true);
 
-    expect(updateSpy).toHaveBeenCalledWith({ status: 'approved', approved_by: 'u1' });
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_gate_pass_status',
+      expect.objectContaining({ p_id: 'gp2', p_status: 'approved', p_approved_by: 'u1' })
+    );
   });
 
-  it('scans approved gate pass and returns the updated GatePass object', async () => {
+  it('scans gate pass and returns the updated GatePass object', async () => {
     useAuthStore.setState({
       user: { id: 'u2', nrp: '22222', nama: 'Guard A', role: 'guard', satuan: 'Pos X', is_active: true, is_online: true, login_attempts: 0, created_at: now.toISOString(), updated_at: now.toISOString() },
-      isAuthenticated: true,
-      isLoading: false,
-      isInitialized: true,
-      error: null,
+      isAuthenticated: true, isLoading: false, isInitialized: true, error: null,
     });
 
-    const rpcSpy = vi.fn(() => Promise.resolve({ data: { message: 'Keluar berhasil' }, error: null }));
-    (mockSupabase as unknown as Record<string, unknown>).rpc = rpcSpy;
+    // scanGatePass calls rpcScanGatePass then fetchGatePassByQrToken
+    // rpcScanGatePass → rpc('server_scan_gate_pass')
+    // fetchGatePassByQrToken → rpc('set_session_context') then from('gate_pass').select...single()
+    mockSupabase.rpc.mockImplementation((rpcName: string) => {
+      if (rpcName === 'server_scan_gate_pass') return Promise.resolve({ data: { message: 'Keluar berhasil' }, error: null });
+      if (rpcName === 'set_session_context') return Promise.resolve({ data: null, error: null });
+      return Promise.resolve({ data: null, error: null });
+    });
+    mockSupabase.from.mockReturnValue(buildFromQuery(approvedGatePass));
 
     const store = useGatePassStore.getState();
     const result = await store.scanGatePass('qr-1');
 
-    // scanGatePass now returns the updated GatePass (fetched by qr_token after scan),
-    // not the plain success message string.
     expect(result).toMatchObject({ id: approvedGatePass.id, status: approvedGatePass.status });
-    expect(rpcSpy).toHaveBeenCalledWith('server_scan_gate_pass', { p_qr_token: 'qr-1' });
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('server_scan_gate_pass', { p_qr_token: 'qr-1' });
   });
 });

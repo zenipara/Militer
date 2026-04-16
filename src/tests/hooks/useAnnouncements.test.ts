@@ -5,9 +5,7 @@ import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import type { Announcement } from '../../types';
 
-const mockSupabase = supabase as unknown as {
-  from: ReturnType<typeof vi.fn>;
-};
+const mockSupabase = supabase as unknown as { rpc: ReturnType<typeof vi.fn> };
 
 const mockUser = {
   id: 'u1', nrp: '11111', nama: 'Admin A', role: 'admin' as const,
@@ -20,20 +18,6 @@ const sampleAnnouncements: Announcement[] = [
   { id: 'a2', judul: 'Jadwal Piket', isi: 'Piket minggu ini', is_pinned: false, created_at: '2024-01-02T00:00:00Z' },
 ];
 
-function buildQuery(result: { data: unknown; error: unknown }) {
-  const q: Record<string, unknown> = {};
-  const chain = () => q;
-  q.select = chain;
-  q.eq = chain;
-  q.order = chain;
-  q.update = vi.fn(() => q);
-  q.insert = vi.fn(() => Promise.resolve(result));
-  q.delete = vi.fn(() => q);
-  q.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve);
-  q.catch = (reject: (e: unknown) => unknown) => Promise.resolve(result).catch(reject);
-  return q;
-}
-
 describe('useAnnouncements', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -41,7 +25,7 @@ describe('useAnnouncements', () => {
   });
 
   it('loads announcements on mount', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: sampleAnnouncements, error: null }));
+    mockSupabase.rpc.mockResolvedValue({ data: sampleAnnouncements, error: null });
 
     const { result } = renderHook(() => useAnnouncements());
     expect(result.current.isLoading).toBe(true);
@@ -52,7 +36,7 @@ describe('useAnnouncements', () => {
   });
 
   it('sets error when fetch fails', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: null, error: new Error('fetch error') }));
+    mockSupabase.rpc.mockResolvedValue({ data: null, error: new Error('fetch error') });
 
     const { result } = renderHook(() => useAnnouncements());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -61,7 +45,7 @@ describe('useAnnouncements', () => {
   });
 
   it('returns empty list for empty dataset', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: [], error: null }));
+    mockSupabase.rpc.mockResolvedValue({ data: [], error: null });
 
     const { result } = renderHook(() => useAnnouncements());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -70,107 +54,81 @@ describe('useAnnouncements', () => {
   });
 
   describe('createAnnouncement', () => {
-    it('calls insert and refreshes list', async () => {
-      const insertMock = vi.fn().mockResolvedValue({ error: null });
-      const q = buildQuery({ data: sampleAnnouncements, error: null }) as Record<string, unknown>;
-      q.insert = insertMock;
-      mockSupabase.from.mockReturnValue(q);
+    it('calls rpc for insert and refreshes list', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: sampleAnnouncements, error: null });
 
       const { result } = renderHook(() => useAnnouncements());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await act(async () => {
-        await result.current.createAnnouncement({
-          judul: 'Baru',
-          isi: 'Isi baru',
-        });
+        await result.current.createAnnouncement({ judul: 'Baru', isi: 'Isi baru' });
       });
 
-      expect(insertMock).toHaveBeenCalledWith(
-        expect.objectContaining({ judul: 'Baru', created_by: 'u1' })
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_insert_announcement',
+        expect.objectContaining({ p_judul: 'Baru', p_created_by: 'u1' })
       );
     });
   });
 
   describe('updateAnnouncement', () => {
-    it('calls update and refreshes list', async () => {
-      const eqMock = vi.fn().mockResolvedValue({ error: null });
-      const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
-      const q = buildQuery({ data: sampleAnnouncements, error: null }) as Record<string, unknown>;
-      q.update = updateMock;
-      mockSupabase.from.mockReturnValue(q);
+    it('calls rpc for update and refreshes list', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: sampleAnnouncements, error: null });
 
       const { result } = renderHook(() => useAnnouncements());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      await act(async () => {
-        await result.current.updateAnnouncement('a1', { judul: 'Updated' });
-      });
+      await act(async () => { await result.current.updateAnnouncement('a1', { judul: 'Updated' }); });
 
-      expect(updateMock).toHaveBeenCalledWith({ judul: 'Updated' });
-      expect(eqMock).toHaveBeenCalledWith('id', 'a1');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_announcement',
+        expect.objectContaining({ p_id: 'a1', p_updates: { judul: 'Updated' } })
+      );
     });
   });
 
   describe('deleteAnnouncement', () => {
-    it('calls delete with correct id', async () => {
-      const eqMock = vi.fn().mockResolvedValue({ error: null });
-      const deleteMock = vi.fn().mockReturnValue({ eq: eqMock });
-      const q = buildQuery({ data: sampleAnnouncements, error: null }) as Record<string, unknown>;
-      q.delete = deleteMock;
-      mockSupabase.from.mockReturnValue(q);
+    it('calls rpc for delete with correct id', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: sampleAnnouncements, error: null });
 
       const { result } = renderHook(() => useAnnouncements());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      await act(async () => {
-        await result.current.deleteAnnouncement('a2');
-      });
+      await act(async () => { await result.current.deleteAnnouncement('a2'); });
 
-      expect(deleteMock).toHaveBeenCalled();
-      expect(eqMock).toHaveBeenCalledWith('id', 'a2');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_delete_announcement',
+        expect.objectContaining({ p_id: 'a2' })
+      );
     });
   });
 
   describe('togglePin', () => {
-    it('toggles is_pinned for an announcement', async () => {
-      const eqMock = vi.fn().mockResolvedValue({ error: null });
-      const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
-      const q = buildQuery({ data: sampleAnnouncements, error: null }) as Record<string, unknown>;
-      q.update = updateMock;
-      mockSupabase.from.mockReturnValue(q);
+    it('toggles is_pinned for an announcement via update rpc', async () => {
+      mockSupabase.rpc.mockResolvedValue({ data: sampleAnnouncements, error: null });
 
       const { result } = renderHook(() => useAnnouncements());
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-      // Toggle from false to true
-      await act(async () => {
-        await result.current.togglePin('a2', false);
-      });
+      await act(async () => { await result.current.togglePin('a2', false); });
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_announcement',
+        expect.objectContaining({ p_updates: { is_pinned: true } })
+      );
 
-      expect(updateMock).toHaveBeenCalledWith({ is_pinned: true });
-
-      // Toggle from true to false
-      await act(async () => {
-        await result.current.togglePin('a1', true);
-      });
-
-      expect(updateMock).toHaveBeenCalledWith({ is_pinned: false });
+      await act(async () => { await result.current.togglePin('a1', true); });
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_update_announcement',
+        expect.objectContaining({ p_updates: { is_pinned: false } })
+      );
     });
   });
 
   it('refetch re-fetches announcements', async () => {
-    mockSupabase.from.mockReturnValue(buildQuery({ data: sampleAnnouncements, error: null }));
+    mockSupabase.rpc.mockResolvedValue({ data: sampleAnnouncements, error: null });
 
     const { result } = renderHook(() => useAnnouncements());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const callsBefore = (mockSupabase.from as ReturnType<typeof vi.fn>).mock.calls.length;
+    const callsBefore = (mockSupabase.rpc as ReturnType<typeof vi.fn>).mock.calls.length;
 
-    await act(async () => {
-      await result.current.refetch();
-    });
+    await act(async () => { await result.current.refetch(); });
 
-    expect((mockSupabase.from as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(callsBefore);
+    expect((mockSupabase.rpc as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(callsBefore);
   });
 });
