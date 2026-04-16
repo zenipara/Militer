@@ -18,11 +18,11 @@ const PROFILE_PATH: Record<Role, string> = {
   guard: '/guard/gatepass-scan',
 };
 
-const SETTINGS_PATH: Record<Role, string> = {
-  admin: '/admin/settings',
-  komandan: '/admin/settings',
-  prajurit: '/admin/settings',
-  guard: '/admin/settings',
+/** Rute inbox pesan per role. Guard tidak memiliki halaman pesan. */
+const MESSAGES_PATH: Partial<Record<Role, string>> = {
+  prajurit: '/prajurit/messages',
+  komandan: '/prajurit/messages',
+  admin: '/prajurit/messages',
 };
 
 export default function Navbar({ title }: NavbarProps) {
@@ -97,16 +97,20 @@ export default function Navbar({ title }: NavbarProps) {
           <div className="relative">
             <button
               className="rounded-xl border border-surface bg-slate-50 p-2 text-text-muted transition-colors hover:text-text-primary dark:bg-surface/45"
-              aria-label={`Notifikasi${unreadCount > 0 ? ` — ${unreadCount} belum dibaca` : ''}`}
-              title="Notifikasi"
+              aria-label={`Pesan${unreadCount > 0 ? ` — ${unreadCount} belum dibaca` : ''}`}
+              title="Pesan & Notifikasi"
               onClick={() => {
-                if (user?.role === 'prajurit') navigate('/prajurit/messages');
+                const path = user?.role ? MESSAGES_PATH[user.role] : undefined;
+                if (path) navigate(path);
               }}
             >
               {ICONS.Bell ? <ICONS.Bell className="h-4 w-4" aria-hidden="true" /> : null}
             </button>
             {unreadCount > 0 && (
-              <span className="pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-accent-red px-0.5 text-[10px] font-bold text-white">
+              <span
+                className="pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-accent-red px-0.5 text-[10px] font-bold text-white"
+                aria-hidden="true"
+              >
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
@@ -120,9 +124,9 @@ export default function Navbar({ title }: NavbarProps) {
             title={isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
           >
             {isDarkMode ? (
-              ICONS.Sun ? <ICONS.Sun className="h-4 w-4" aria-hidden="true" /> : <span>🌞</span>
+              ICONS.Sun ? <ICONS.Sun className="h-4 w-4" aria-hidden="true" /> : <span aria-hidden="true">🌞</span>
             ) : (
-              ICONS.Moon ? <ICONS.Moon className="h-4 w-4" aria-hidden="true" /> : <span>🌙</span>
+              ICONS.Moon ? <ICONS.Moon className="h-4 w-4" aria-hidden="true" /> : <span aria-hidden="true">🌙</span>
             )}
           </button>
 
@@ -143,7 +147,7 @@ export default function Navbar({ title }: NavbarProps) {
                   className="h-7 w-7 rounded-lg object-cover"
                 />
               ) : (
-                <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/15 text-xs font-semibold text-primary">
+                <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary/15 text-xs font-semibold text-primary" aria-hidden="true">
                   {user?.nama?.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -184,7 +188,7 @@ export default function Navbar({ title }: NavbarProps) {
               {/* Pengaturan link — admin only */}
               {user?.role === 'admin' && (
                 <Link
-                  to={SETTINGS_PATH.admin}
+                  to="/admin/settings"
                   role="menuitem"
                   onClick={() => setIsAvatarDropdownOpen(false)}
                   className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-text-primary transition-colors hover:bg-slate-100 dark:hover:bg-surface/60"

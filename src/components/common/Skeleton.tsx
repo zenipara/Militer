@@ -15,13 +15,14 @@ export function Skeleton({ className = '' }: SkeletonProps) {
 /** Pre-built skeleton for a stat card grid (4 cards) */
 export function StatCardsSkeleton() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div role="status" aria-label="Memuat statistik..." className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="bg-bg-card border border-surface rounded-2xl p-5 space-y-3 shadow-sm shadow-slate-900/[0.03]">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-8 w-16" />
         </div>
       ))}
+      <span className="sr-only">Memuat...</span>
     </div>
   );
 }
@@ -29,7 +30,7 @@ export function StatCardsSkeleton() {
 /** Pre-built skeleton for a list of cards */
 export function CardListSkeleton({ count = 3 }: { count?: number }) {
   return (
-    <div className="space-y-3">
+    <div role="status" aria-label="Memuat daftar..." className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="bg-bg-card border border-surface rounded-2xl p-4 space-y-3 shadow-sm shadow-slate-900/[0.03]">
           <div className="flex items-start justify-between gap-4">
@@ -45,6 +46,7 @@ export function CardListSkeleton({ count = 3 }: { count?: number }) {
           </div>
         </div>
       ))}
+      <span className="sr-only">Memuat...</span>
     </div>
   );
 }
@@ -52,7 +54,7 @@ export function CardListSkeleton({ count = 3 }: { count?: number }) {
 /** Pre-built skeleton for a table */
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="bg-bg-card border border-surface rounded-xl overflow-hidden">
+    <div role="status" aria-label="Memuat tabel..." className="bg-bg-card border border-surface rounded-xl overflow-hidden">
       {/* Header */}
       <div className="flex gap-4 px-5 py-3 border-b border-surface">
         {Array.from({ length: cols }).map((_, i) => (
@@ -67,6 +69,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
           ))}
         </div>
       ))}
+      <span className="sr-only">Memuat...</span>
     </div>
   );
 }

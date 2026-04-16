@@ -41,6 +41,8 @@ export default function Button({
         ${variants[variant]} ${sizes[size]} ${className}
       `}
       disabled={disabled || isLoading}
+      aria-disabled={disabled || isLoading}
+      aria-busy={isLoading}
       {...props}
     >
       {isLoading ? (

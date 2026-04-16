@@ -31,37 +31,37 @@ export default function Badge({ variant = 'neutral', children, size = 'sm' }: Ba
 
 // Convenience badge components
 export function TaskStatusBadge({ status }: { status: TaskStatus; guard?: string }) {
-  const map: Record<TaskStatus, { label: string; variant: BadgeVariant }> = {
-    pending: { label: 'Menunggu', variant: 'neutral' },
-    in_progress: { label: 'Dikerjakan', variant: 'info' },
-    done: { label: 'Selesai', variant: 'warning' },
-    approved: { label: 'Disetujui', variant: 'success' },
-    rejected: { label: 'Ditolak', variant: 'error' },
+  const map: Record<TaskStatus, { label: string; variant: BadgeVariant; icon: string }> = {
+    pending: { label: 'Menunggu', variant: 'neutral', icon: '○' },
+    in_progress: { label: 'Dikerjakan', variant: 'info', icon: '◑' },
+    done: { label: 'Selesai', variant: 'warning', icon: '●' },
+    approved: { label: 'Disetujui', variant: 'success', icon: '✓' },
+    rejected: { label: 'Ditolak', variant: 'error', icon: '✕' },
   };
-  const { label, variant } = map[status];
-  return <Badge variant={variant}>{label}</Badge>;
+  const { label, variant, icon } = map[status];
+  return <Badge variant={variant}><span aria-hidden="true">{icon}</span>{label}</Badge>;
 }
 
 export function AttendanceBadge({ status }: { status: AttendanceStatus; guard?: string }) {
-  const map: Record<AttendanceStatus, { label: string; variant: BadgeVariant }> = {
-    hadir: { label: 'Hadir', variant: 'success' },
-    izin: { label: 'Izin', variant: 'warning' },
-    sakit: { label: 'Sakit', variant: 'info' },
-    alpa: { label: 'Alpa', variant: 'error' },
-    dinas_luar: { label: 'Dinas Luar', variant: 'neutral' },
+  const map: Record<AttendanceStatus, { label: string; variant: BadgeVariant; icon: string }> = {
+    hadir: { label: 'Hadir', variant: 'success', icon: '✓' },
+    izin: { label: 'Izin', variant: 'warning', icon: '~' },
+    sakit: { label: 'Sakit', variant: 'info', icon: '+' },
+    alpa: { label: 'Alpa', variant: 'error', icon: '✕' },
+    dinas_luar: { label: 'Dinas Luar', variant: 'neutral', icon: '↗' },
   };
-  const { label, variant } = map[status];
-  return <Badge variant={variant}>{label}</Badge>;
+  const { label, variant, icon } = map[status];
+  return <Badge variant={variant}><span aria-hidden="true">{icon}</span>{label}</Badge>;
 }
 
 export function LeaveStatusBadge({ status }: { status: LeaveStatus; guard?: string }) {
-  const map: Record<LeaveStatus, { label: string; variant: BadgeVariant }> = {
-    pending: { label: 'Menunggu', variant: 'warning' },
-    approved: { label: 'Disetujui', variant: 'success' },
-    rejected: { label: 'Ditolak', variant: 'error' },
+  const map: Record<LeaveStatus, { label: string; variant: BadgeVariant; icon: string }> = {
+    pending: { label: 'Menunggu', variant: 'warning', icon: '○' },
+    approved: { label: 'Disetujui', variant: 'success', icon: '✓' },
+    rejected: { label: 'Ditolak', variant: 'error', icon: '✕' },
   };
-  const { label, variant } = map[status];
-  return <Badge variant={variant}>{label}</Badge>;
+  const { label, variant, icon } = map[status];
+  return <Badge variant={variant}><span aria-hidden="true">{icon}</span>{label}</Badge>;
 }
 
 export function RoleBadge({ role }: { role: Role }) {

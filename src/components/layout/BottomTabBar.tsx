@@ -35,12 +35,9 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
     { path: '/prajurit/attendance', label: 'Absensi',   icon: <CalendarDays size={20} aria-hidden="true" /> },
     { path: '/prajurit/profile',    label: 'Profil',    icon: <UserCheck size={20} aria-hidden="true" /> },
   ],
+  // Guard hanya memiliki satu rute aktif: /guard/gatepass-scan
   guard: [
-    { path: '/guard/dashboard', label: 'Beranda', icon: <LayoutDashboard size={20} aria-hidden="true" /> },
-    { path: '/guard/gate-scanner', label: 'Scan', icon: <CheckSquare size={20} aria-hidden="true" /> },
-    { path: '/guard/gatepass', label: 'Gate Pass', icon: <Package size={20} aria-hidden="true" /> },
-    { path: '/guard/attendance', label: 'Absensi', icon: <CalendarDays size={20} aria-hidden="true" /> },
-    { path: '/guard/settings', label: 'Setelan', icon: <Settings size={20} aria-hidden="true" /> },
+    { path: '/guard/gatepass-scan', label: 'Scan', icon: <CheckSquare size={20} aria-hidden="true" /> },
   ],
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import Button from './Button';
 
 interface ModalProps {
@@ -17,14 +17,61 @@ const sizes = {
   xl: 'max-w-2xl',
 };
 
+const FOCUSABLE_SELECTORS = [
+  'a[href]',
+  'button:not([disabled])',
+  'textarea:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
 export default function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+
+      // Focus trap: keep Tab / Shift+Tab within the modal
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = Array.from(
+          dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTORS),
+        ).filter((el) => !el.closest('[aria-hidden="true"]'));
+
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
     };
+
     if (isOpen) {
       document.addEventListener('keydown', handleKey);
       document.body.style.overflow = 'hidden';
+      // Move focus into the modal on open
+      requestAnimationFrame(() => {
+        const first = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTORS);
+        first?.focus();
+      });
     }
     return () => {
       document.removeEventListener('keydown', handleKey);
@@ -44,6 +91,7 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
       />
       {/* Modal */}
       <div
+        ref={dialogRef}
         className={`app-panel relative w-full ${sizes[size]} overflow-hidden rounded-2xl`}
         role="dialog"
         aria-modal="true"
@@ -55,7 +103,7 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
             {title}
           </h2>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label="Tutup">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </Button>

@@ -21,12 +21,20 @@ export default function Notification() {
     warning: ICONS.AlertTriangle || (() => <span>⚠</span>),
   };
 
+  // Use assertive for errors so screen readers announce immediately
+  const ariaLive = notification.type === 'error' ? 'assertive' : 'polite';
+
   return (
-    <div className="fixed top-4 right-4 z-[100] max-w-sm animate-slide-in">
+    <div
+      role="alert"
+      aria-live={ariaLive}
+      aria-atomic="true"
+      className="fixed top-4 right-4 z-[100] max-w-sm animate-slide-in"
+    >
       <div
         className={`flex items-start gap-3 rounded-2xl border px-4 py-3 shadow-lg shadow-slate-900/10 backdrop-blur-sm ${colors[notification.type]}`}
       >
-        <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg bg-white/70 text-sm font-bold dark:bg-white/10">
+        <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg bg-white/70 text-sm font-bold dark:bg-white/10" aria-hidden="true">
           {(() => {
             const Icon = iconMap[notification.type];
             return Icon ? <Icon className="w-5 h-5" aria-hidden="true" /> : null;
@@ -38,7 +46,7 @@ export default function Notification() {
           className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
           aria-label="Tutup notifikasi"
         >
-          {ICONS.X ? <ICONS.X className="w-4 h-4" aria-hidden="true" /> : <span>✕</span>}
+          {ICONS.X ? <ICONS.X className="w-4 h-4" aria-hidden="true" /> : <span aria-hidden="true">✕</span>}
         </button>
       </div>
     </div>
