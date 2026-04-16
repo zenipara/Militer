@@ -9,9 +9,11 @@ import { useUIStore } from '../../store/uiStore';
 import { fetchDocuments, insertDocument, deleteDocument } from '../../lib/api/documents';
 import { handleError } from '../../lib/handleError';
 import type { Document } from '../../types';
+import { useAuthStore } from '../../store/authStore';
 
 export default function Documents() {
   const { showNotification } = useUIStore();
+  const { user } = useAuthStore();
   const [docs, setDocs] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -27,16 +29,21 @@ export default function Documents() {
   }>({ nama: '', kategori: '', file_url: '', satuan: '', file_size: '' });
 
   const fetchDocs = useCallback(async () => {
+    if (!user) {
+      setDocs([]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
-      const data = await fetchDocuments();
+      const data = await fetchDocuments(user.id, user.role);
       setDocs(data);
     } catch (err) {
       showNotification(handleError(err, 'Gagal memuat dokumen'), 'error');
     } finally {
       setIsLoading(false);
     }
-  }, [showNotification]);
+  }, [showNotification, user]);
 
   useEffect(() => { void fetchDocs(); }, [fetchDocs]);
 
@@ -53,9 +60,13 @@ export default function Documents() {
       showNotification('Nama dan URL file wajib diisi', 'error');
       return;
     }
+    if (!user) {
+      showNotification('User tidak ditemukan', 'error');
+      return;
+    }
     setIsSaving(true);
     try {
-      await insertDocument({
+      await insertDocument(user.id, user.role, {
         nama: form.nama,
         kategori: form.kategori || null,
         file_url: form.file_url,
@@ -74,9 +85,13 @@ export default function Documents() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!user) {
+      showNotification('User tidak ditemukan', 'error');
+      return;
+    }
     if (!window.confirm('Hapus dokumen ini?')) return;
     try {
-      await deleteDocument(id);
+      await deleteDocument(user.id, user.role, id);
       showNotification('Dokumen dihapus', 'success');
       await fetchDocs();
     } catch {

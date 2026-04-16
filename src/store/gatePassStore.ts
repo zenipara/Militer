@@ -28,8 +28,8 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     // approval). Prajurit hanya perlu melihat gate pass milik sendiri.
     const data =
       user.role === 'prajurit'
-        ? await fetchGatePassesByUser(user.id)
-        : await fetchAllGatePasses();
+        ? await fetchGatePassesByUser(user.id, user.role, user.id)
+        : await fetchAllGatePasses(user.id, user.role);
 
     // Client-side overdue detection: mark passes with status 'out' whose
     // waktu_kembali has already passed as 'overdue'.
@@ -47,7 +47,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     const user = useAuthStore.getState().user;
     if (!user) throw new Error('User tidak ditemukan');
     const qr_token = generateQrToken();
-    await insertGatePass({ ...payload, user_id: user.id, qr_token });
+    await insertGatePass(user.id, user.role, { ...payload, user_id: user.id, qr_token });
     await get().fetchGatePasses();
   },
 
@@ -55,7 +55,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     const user = useAuthStore.getState().user;
     if (!user) throw new Error('User tidak ditemukan');
     const status: GatePassStatus = approved ? 'approved' : 'rejected';
-    await patchGatePassStatus(id, status, user.id);
+    await patchGatePassStatus(user.id, user.role, id, status, user.id);
     await get().fetchGatePasses();
   },
 
@@ -66,7 +66,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     }
     await rpcScanGatePass(qrToken);
     // Fetch the updated gate pass with user data so callers can render scan result
-    const updated = await fetchGatePassByQrToken(qrToken);
+    const updated = await fetchGatePassByQrToken(user.id, user.role, qrToken);
     if (!updated) throw new Error('Gate pass tidak ditemukan setelah scan');
     await get().fetchGatePasses();
     return updated;

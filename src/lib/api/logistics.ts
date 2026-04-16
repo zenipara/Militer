@@ -46,7 +46,7 @@ export async function patchLogisticsRequestStatus(
   callerRole: string,
   id: string,
   status: Extract<LogisticsRequestStatus, 'approved' | 'rejected'>,
-  reviewedBy: string,
+  _reviewedBy: string,
   adminNote?: string,
 ): Promise<void> {
   const { error } = await supabase.rpc('api_update_logistics_status', {

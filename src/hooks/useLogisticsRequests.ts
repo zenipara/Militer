@@ -18,17 +18,27 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
   const [error, setError] = useState<string | null>(null);
 
   const fetchRequests = useCallback(async () => {
+    if (!user) {
+      setRequests([]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiFetchLogistics({ satuan: options.satuan, requestedBy: options.requestedBy });
+      const data = await apiFetchLogistics({
+        callerId: user.id,
+        callerRole: user.role,
+        satuan: options.satuan,
+        requestedBy: options.requestedBy,
+      });
       setRequests(data);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat permintaan logistik'));
     } finally {
       setIsLoading(false);
     }
-  }, [options.requestedBy, options.satuan]);
+  }, [user, options.requestedBy, options.satuan]);
 
   useEffect(() => {
     void fetchRequests();
@@ -67,7 +77,7 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
     alasan: string;
   }) => {
     if (!user) throw new Error('Not authenticated');
-    await insertLogisticsRequest({ ...data, requested_by: user.id, satuan: user.satuan });
+    await insertLogisticsRequest(user.id, user.role, { ...data, requested_by: user.id, satuan: user.satuan });
     await fetchRequests();
   };
 
@@ -77,7 +87,7 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
     adminNote?: string,
   ) => {
     if (!user) throw new Error('Not authenticated');
-    await patchLogisticsRequestStatus(id, status, user.id, adminNote);
+    await patchLogisticsRequestStatus(user.id, user.role, id, status, user.id, adminNote);
     await fetchRequests();
   };
 

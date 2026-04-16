@@ -17,7 +17,7 @@ export async function fetchLeaveRequests(params: FetchLeaveRequestsParams): Prom
   return (data as LeaveRequest[]) ?? [];
 }
 
-export async function insertLeaveRequest(callerId: string, callerRole: string, data: {
+export async function insertLeaveRequest(_callerId: string, callerRole: string, data: {
   user_id: string;
   jenis_izin: 'cuti' | 'sakit' | 'dinas_luar';
   tanggal_mulai: string;

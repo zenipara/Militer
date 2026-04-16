@@ -16,7 +16,7 @@ export function useGatePass() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchGatePassesByUser(user.id);
+      const data = await fetchGatePassesByUser(user.id, user.role, user.id);
       setGatePasses(data);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat gate pass'));
@@ -33,7 +33,7 @@ export function useGatePass() {
   async function createGatePass(input: Partial<GatePass>) {
     if (!user) return;
     const qr_token = generateQrToken();
-    await insertGatePass({ ...input, user_id: user.id, qr_token });
+    await insertGatePass(user.id, user.role, { ...input, user_id: user.id, qr_token });
     await fetchGatePasses();
   }
 

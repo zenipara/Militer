@@ -35,6 +35,10 @@ export async function fetchAllGatePasses(callerId: string, callerRole: string): 
 }
 
 export async function fetchGatePassByQrToken(callerId: string, callerRole: string, qrToken: string): Promise<GatePass | null> {
+  await supabase.rpc('set_session_context', {
+    p_user_id: callerId,
+    p_role: callerRole,
+  });
   const { data, error } = await supabase
     .from('gate_pass')
     .select('*, user:user_id(id,nama,nrp,pangkat,satuan)')
@@ -44,7 +48,7 @@ export async function fetchGatePassByQrToken(callerId: string, callerRole: strin
   return (data as GatePass) ?? null;
 }
 
-export async function insertGatePass(callerId: string, callerRole: string, payload: Partial<GatePass> & { user_id: string; qr_token: string }): Promise<void> {
+export async function insertGatePass(_callerId: string, callerRole: string, payload: Partial<GatePass> & { user_id: string; qr_token: string }): Promise<void> {
   const { error } = await supabase.rpc('api_insert_gate_pass', {
     p_user_id: payload.user_id,
     p_caller_role: callerRole,

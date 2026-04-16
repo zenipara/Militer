@@ -20,8 +20,8 @@ export function useMessages() {
     setError(null);
     try {
       const [inboxData, sentData] = await Promise.all([
-        fetchInbox(user.id),
-        fetchSent(user.id),
+        fetchInbox(user.id, user.role),
+        fetchSent(user.id, user.role),
       ]);
       setInbox(inboxData);
       setSent(sentData);
@@ -70,12 +70,13 @@ export function useMessages() {
 
   const sendMessage = async (toUserId: string, isi: string) => {
     if (!user) throw new Error('Not authenticated');
-    await insertMessage(user.id, toUserId, isi);
+    await insertMessage(user.id, user.role, user.id, toUserId, isi);
     await fetchMessages();
   };
 
   const markAsRead = async (messageId: string) => {
-    await apiMarkRead(messageId);
+    if (!user) return;
+    await apiMarkRead(user.id, user.role, messageId);
     setInbox((prev) =>
       prev.map((m) => (m.id === messageId ? { ...m, is_read: true } : m)),
     );
@@ -84,7 +85,7 @@ export function useMessages() {
 
   const markAllAsRead = async () => {
     if (!user) return;
-    await apiMarkAllRead(user.id);
+    await apiMarkAllRead(user.id, user.role);
     setInbox((prev) => prev.map((m) => ({ ...m, is_read: true })));
     setUnreadCount(0);
   };

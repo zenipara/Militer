@@ -16,10 +16,19 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchRequests = useCallback(async () => {
+    if (!user) {
+      setRequests([]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
-      let result = await apiFetchLeaveRequests({ userId: options.userId });
+      let result = await apiFetchLeaveRequests({
+        callerId: user.id,
+        callerRole: user.role,
+        userId: options.userId,
+      });
 
       // Filter by satuan if specified (via joined user data)
       if (options.satuan) {
@@ -32,7 +41,7 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [options.userId, options.satuan]);
+  }, [user, options.userId, options.satuan]);
 
   useEffect(() => {
     void fetchRequests();
@@ -45,13 +54,13 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
     alasan: string;
   }) => {
     if (!user) throw new Error('Not authenticated');
-    await insertLeaveRequest({ ...data, user_id: user.id });
+    await insertLeaveRequest(user.id, user.role, { ...data, user_id: user.id });
     await fetchRequests();
   };
 
   const reviewLeaveRequest = async (id: string, status: LeaveStatus) => {
     if (!user) throw new Error('Not authenticated');
-    await patchLeaveRequestStatus(id, status, user.id);
+    await patchLeaveRequestStatus(user.id, user.role, id, status, user.id);
     await fetchRequests();
   };
 
