@@ -19,6 +19,7 @@ const Announcements = lazy(() => import('../pages/admin/Announcements'));
 const ShiftSchedule = lazy(() => import('../pages/admin/ShiftSchedule'));
 const AttendanceReport = lazy(() => import('../pages/admin/AttendanceReport'));
 const Settings = lazy(() => import('../pages/admin/Settings'));
+const SupabaseCrudExample = lazy(() => import('../pages/admin/SupabaseCrudExample'));
 const KomandanDashboard = lazy(() => import('../pages/komandan/KomandanDashboard'));
 const TaskManagement = lazy(() => import('../pages/komandan/TaskManagement'));
 const Personnel = lazy(() => import('../pages/komandan/Personnel'));
@@ -66,6 +67,7 @@ export const router = createHashRouter([
       { path: '/admin/schedule', element: wrap(<ShiftSchedule />) },
       { path: '/admin/attendance', element: wrap(<AttendanceReport />) },
       { path: '/admin/settings', element: wrap(<Settings />) },
+      { path: '/admin/supabase-crud', element: wrap(<SupabaseCrudExample />) },
       { path: '/admin/gatepass-monitor', element: wrap(<GatePassMonitorPage />) },
       { path: '/admin/pos-jaga',         element: wrap(<PosJagaPage />) },
     ],
