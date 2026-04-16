@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import '@testing-library/jest-dom';
 import ProtectedRoute from '../../router/ProtectedRoute';
 import { useAuthStore } from '../../store/authStore';
 
