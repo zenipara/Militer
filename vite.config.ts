@@ -3,16 +3,10 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
 
-// Vite config untuk Netlify (React + TailwindCSS)
-// Checklist:
-// - base: '/' (wajib untuk Netlify)
-// - outputDir: 'dist' (default, pastikan tidak diubah)
-// - hash file aktif (default)
-// - sourcemap: false (opsional, default false)
-// - manualChunks: opsional, untuk optimasi
+const basePath = process.env.VITE_BASE_PATH || '/';
 
 export default defineConfig({
-  base: '/', // PENTING untuk Netlify agar path asset benar
+  base: basePath,
   plugins: [
     react(),
     tailwindcss(),

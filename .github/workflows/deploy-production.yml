@@ -1,35 +1,18 @@
-name: Production Deploy
+name: GitHub Pages Deploy
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      supabase_access_token:
-        description: Supabase access token
-        required: true
-        type: string
-      supabase_project_ref:
-        description: Supabase project ref
-        required: true
-        type: string
-      vite_supabase_url:
-        description: Vite Supabase URL
-        required: true
-        type: string
-      vite_supabase_anon_key:
-        description: Vite Supabase anon key
-        required: true
-        type: string
-      netlify_auth_token:
-        description: Netlify auth token
-        required: true
-        type: string
-      netlify_site_id:
-        description: Netlify site id
-        required: true
-        type: string
 
 permissions:
-  contents: read
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   supabase-migrate:
@@ -52,23 +35,28 @@ jobs:
 
       - name: Link Supabase project
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ inputs.supabase_access_token }}
-        run: npx -y supabase@2.91.2 link --project-ref "${{ inputs.supabase_project_ref }}"
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: npx -y supabase@2.91.2 link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
 
       - name: Push Supabase migrations
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ inputs.supabase_access_token }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: npx -y supabase@2.91.2 db push
 
-  netlify-deploy:
-    name: Netlify Deploy
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+  deploy-pages:
+    name: Deploy GitHub Pages
     needs: supabase-migrate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -81,11 +69,19 @@ jobs:
 
       - name: Build production bundle
         env:
-          VITE_SUPABASE_URL: ${{ inputs.vite_supabase_url }}
-          VITE_SUPABASE_ANON_KEY: ${{ inputs.vite_supabase_anon_key }}
+          VITE_BASE_PATH: /v/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
-      - name: Deploy to Netlify
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ inputs.netlify_auth_token }}
-        run: npx -y netlify-cli@24.11.3 deploy --dir=dist --prod --site "${{ inputs.netlify_site_id }}" --auth "$NETLIFY_AUTH_TOKEN"
+      - name: Create SPA fallback
+        run: cp public/404.html dist/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

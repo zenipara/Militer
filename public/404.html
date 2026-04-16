@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="refresh" content="0; url=./" />
+    <script>
+      (function () {
+        var repoBase = '/v';
+        var path = window.location.pathname || '/';
+        var hash = window.location.hash || '';
+
+        if (path.indexOf(repoBase) === 0) {
+          path = path.slice(repoBase.length) || '/';
+        }
+
+        if (!hash && path !== '/' && path !== '') {
+          var target = repoBase + '/#' + path + window.location.search;
+          window.location.replace(target);
+          return;
+        }
+
+        window.location.replace(repoBase + '/#/' + window.location.search);
+      })();
+    </script>
+    <title>KARYO OS</title>
+  </head>
+  <body>
+    <p>Redirecting...</p>
+  </body>
+</html>
