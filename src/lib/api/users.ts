@@ -25,6 +25,29 @@ export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
   return (data as User[]) ?? [];
 }
 
+export async function fetchUsersDirect(params: FetchUsersParams): Promise<User[]> {
+  let query = supabase
+    .from('users')
+    .select('*')
+    .order(params.orderBy ?? 'nama', { ascending: params.ascending ?? true });
+
+  if (params.role) {
+    query = query.eq('role', params.role);
+  }
+
+  if (params.satuan) {
+    query = query.eq('satuan', params.satuan);
+  }
+
+  if (params.isActive !== undefined) {
+    query = query.eq('is_active', params.isActive);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data as User[]) ?? [];
+}
+
 export async function createUserWithPin(userData: {
   nrp: string;
   pin: string;

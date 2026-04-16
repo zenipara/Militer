@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchUsers as apiFetchUsers, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
+import { fetchUsers as apiFetchUsers, fetchUsersDirect as apiFetchUsersDirect, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
 import { handleError } from '../lib/handleError';
 import type { User, Role } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -18,6 +18,8 @@ export function useUsers(options: UseUsersOptions = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const canUseDirectFallback = user?.role === 'admin' && options.role === undefined && options.satuan === undefined && options.isActive === undefined;
+
   const fetchUsers = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
@@ -32,7 +34,21 @@ export function useUsers(options: UseUsersOptions = {}) {
         orderBy: options.orderBy,
         ascending: options.ascending,
       });
-      setUsers(data);
+      if (data.length > 0 || !canUseDirectFallback) {
+        setUsers(data);
+        return;
+      }
+
+      const fallbackData = await apiFetchUsersDirect({
+        callerId: user.id,
+        callerRole: user.role,
+        role: options.role,
+        satuan: options.satuan,
+        isActive: options.isActive,
+        orderBy: options.orderBy,
+        ascending: options.ascending,
+      });
+      setUsers(fallbackData);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat data user'));
     } finally {
