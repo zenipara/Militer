@@ -40,6 +40,30 @@ export function useUsers(options: UseUsersOptions = {}) {
     }
   }, [user, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
 
+  const fetchUsersOrThrow = useCallback(async () => {
+    if (!user) throw new Error('Not authenticated');
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetchUsers({
+        callerId: user.id,
+        callerRole: user.role,
+        role: options.role,
+        satuan: options.satuan,
+        isActive: options.isActive,
+        orderBy: options.orderBy,
+        ascending: options.ascending,
+      });
+      setUsers(data);
+    } catch (err) {
+      const message = handleError(err, 'Gagal memuat data user');
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
+
   useEffect(() => {
     void fetchUsers();
   }, [fetchUsers]);
@@ -55,14 +79,14 @@ export function useUsers(options: UseUsersOptions = {}) {
       pangkat: rest.pangkat,
       jabatan: rest.jabatan,
     });
-    await fetchUsers();
+    await fetchUsersOrThrow();
     return data;
   };
 
   const updateUser = async (id: string, updates: Partial<User>) => {
     if (!user) throw new Error('Not authenticated');
     await patchUser(user.id, user.role, id, updates);
-    await fetchUsers();
+    await fetchUsersOrThrow();
   };
 
   const toggleUserActive = async (id: string, isActive: boolean) => {

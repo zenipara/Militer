@@ -24,6 +24,22 @@ export function useAnnouncements() {
     }
   }, [user]);
 
+  const fetchAnnouncementsOrThrow = useCallback(async () => {
+    if (!user) throw new Error('Not authenticated');
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetchAnnouncements(user.id, user.role);
+      setAnnouncements(data);
+    } catch (err) {
+      const message = handleError(err, 'Gagal memuat pengumuman');
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     void fetchAnnouncements();
   }, [fetchAnnouncements]);
@@ -37,19 +53,19 @@ export function useAnnouncements() {
   }) => {
     if (!user) throw new Error('Not authenticated');
     await insertAnnouncement(user.id, user.role, { ...data, created_by: user.id });
-    await fetchAnnouncements();
+    await fetchAnnouncementsOrThrow();
   };
 
   const updateAnnouncement = async (id: string, updates: Partial<Announcement>) => {
     if (!user) throw new Error('Not authenticated');
     await patchAnnouncement(user.id, user.role, id, updates);
-    await fetchAnnouncements();
+    await fetchAnnouncementsOrThrow();
   };
 
   const deleteAnnouncement = async (id: string) => {
     if (!user) throw new Error('Not authenticated');
     await apiDeleteAnnouncement(user.id, user.role, id);
-    await fetchAnnouncements();
+    await fetchAnnouncementsOrThrow();
   };
 
   const togglePin = async (id: string, isPinned: boolean) => {

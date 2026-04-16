@@ -1,5 +1,5 @@
 -- ============================================================
--- KARYO OS — Migration 018: Set RLS context from request headers
+-- KARYO OS — Migration 019: Set RLS context from request headers
 -- This makes the current user context available on every request
 -- when the frontend sends x-karyo-user-id and x-karyo-user-role.
 -- ============================================================

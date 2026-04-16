@@ -275,7 +275,7 @@ Jika kosong, berarti `authStore` tidak memanggil `set_session_context` setelah l
 
 ### ❌ Login berhasil, tapi semua aksi dashboard ditolak / tidak jalan
 
-Pastikan migration `018_request_context_from_headers.sql` sudah dijalankan di Supabase production.
+Pastikan migration `019_request_context_from_headers.sql` sudah dijalankan di Supabase production.
 
 Migration ini membuat setiap request membawa `x-karyo-user-id` dan `x-karyo-user-role`, lalu database mengisi konteks RLS sebelum query dijalankan. Tanpa migration ini, login bisa berhasil tetapi query dashboard tetap gagal karena policy RLS tidak melihat konteks user secara konsisten.
 
