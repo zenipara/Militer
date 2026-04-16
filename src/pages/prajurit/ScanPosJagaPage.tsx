@@ -75,7 +75,6 @@ export default function ScanPosJagaPage() {
     setResult(null);
     setErrorMsg(null);
     setScanning(false);
-    isProcessingScanRef.current = false;
   };
 
   const statusLabel: Record<string, string> = {
