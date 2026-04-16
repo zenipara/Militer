@@ -108,6 +108,8 @@ export default function PrajuritDashboard() {
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <Link to="/prajurit/gatepass" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Gate Pass</Link>
+          <Link to="/prajurit/scan-pos" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Scan Pos Jaga</Link>
           <Link to="/prajurit/tasks" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Tugas Saya</Link>
           <Link to="/prajurit/messages" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Pesan</Link>
           <Link to="/prajurit/leave" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Ajukan Izin</Link>

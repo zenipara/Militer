@@ -36,6 +36,7 @@ const quickLinks = [
   { href: '/admin/users', icon: '👥', title: 'Personel', desc: 'CRUD user & reset PIN' },
   { href: '/admin/logistics', icon: '📦', title: 'Logistik', desc: 'Inventaris perlengkapan' },
   { href: '/admin/gatepass-monitor', icon: '🛂', title: 'Gate Pass', desc: 'Monitoring keluar/masuk batalion' },
+  { href: '/admin/pos-jaga', icon: '📍', title: 'Pos Jaga', desc: 'Kelola pos jaga & QR statis' },
   { href: '/admin/documents', icon: '📄', title: 'Dokumen', desc: 'Arsip & unduh dokumen' },
   { href: '/admin/announcements', icon: '📢', title: 'Pengumuman', desc: 'Broadcast & pin' },
   { href: '/admin/schedule', icon: '📅', title: 'Jadwal Shift', desc: 'Atur shift personel' },

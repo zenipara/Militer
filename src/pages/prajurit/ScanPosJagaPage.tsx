@@ -41,10 +41,12 @@ export default function ScanPosJagaPage() {
   const [result, setResult] = useState<ScanPosJagaResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const isProcessingScanRef = useRef<boolean>(false);
 
   const handleScan = useCallback(
     async (token: string) => {
-      if (state === 'success' || state === 'error') return;
+      if (state === 'success' || state === 'error' || isProcessingScanRef.current) return;
+      isProcessingScanRef.current = true;
       setState('scanning');
       try {
         const res = await scanPosJaga(token);
@@ -56,9 +58,16 @@ export default function ScanPosJagaPage() {
         const err = e instanceof Error ? e : new Error('QR tidak valid');
         setErrorMsg(err.message);
         setState('error');
+      } finally {
+        isProcessingScanRef.current = false;
       }
     },
-    [state, scanPosJaga, fetchGatePasses],
+    [
+      state,
+      scanPosJaga,
+      fetchGatePasses,
+      // isProcessingScanRef is intentionally excluded because useRef identity is stable.
+    ],
   );
 
   const handleReset = () => {
