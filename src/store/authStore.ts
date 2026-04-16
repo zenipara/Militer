@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { clearSessionContext, writeSessionContext } from '../lib/sessionContext';
 import type { User, KaryoSession } from '../types';
 
 const SESSION_KEY = 'karyo_session';
@@ -79,6 +80,7 @@ export const saveSession = async (session: KaryoSession): Promise<void> => {
     SESSION_KEY,
     JSON.stringify({ iv: encodeBase64(iv), data: encodeBase64(new Uint8Array(ciphertext)) }),
   );
+  writeSessionContext(session);
 };
 
 export const loadSession = async (): Promise<KaryoSession | null> => {
@@ -102,6 +104,7 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
       clearSession();
       return null;
     }
+    writeSessionContext(session);
     return session;
   } catch {
     clearSession();
@@ -112,6 +115,7 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
 const clearSession = (): void => {
   localStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(CRYPTO_KEY_SESSION);
+  clearSessionContext();
 };
 
 // ── RPC response types ───────────────────────────────────────────
@@ -200,6 +204,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true });
     const session = await loadSession();
     if (!session) {
+      clearSessionContext();
       set({ isLoading: false, isInitialized: true });
       return;
     }

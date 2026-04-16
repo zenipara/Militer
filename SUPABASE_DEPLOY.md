@@ -273,6 +273,12 @@ supabase db execute --sql "
 
 Jika kosong, berarti `authStore` tidak memanggil `set_session_context` setelah login.
 
+### ❌ Login berhasil, tapi semua aksi dashboard ditolak / tidak jalan
+
+Pastikan migration `018_request_context_from_headers.sql` sudah dijalankan di Supabase production.
+
+Migration ini membuat setiap request membawa `x-karyo-user-id` dan `x-karyo-user-role`, lalu database mengisi konteks RLS sebelum query dijalankan. Tanpa migration ini, login bisa berhasil tetapi query dashboard tetap gagal karena policy RLS tidak melihat konteks user secara konsisten.
+
 ### ⚡ Project Supabase "Paused" (Free Plan)
 
 ```bash
@@ -300,27 +306,20 @@ supabase studio                       # Buka Supabase Studio di browser
 supabase logout                       # Logout
 ```
 
-### Netlify CLI
+### GitHub Pages Deployment
 
 ```bash
-netlify login                         # Login ke Netlify
-netlify sites:list                    # Daftar semua site
-netlify sites:create --name <nama>    # Buat site baru
-netlify link --id <SITE_ID>           # Hubungkan ke site
-netlify env:list                      # Lihat env variables
-netlify env:set <KEY> <VALUE>         # Set env variable
-netlify deploy --dir=dist --prod      # Deploy ke production
-netlify deploy --dir=dist             # Deploy preview (bukan prod)
-netlify status                        # Status site
-netlify open                          # Buka site di browser
-netlify logout                        # Logout
+git push origin main                   # Trigger deploy otomatis via GitHub Actions
+gh workflow run "GitHub Pages Deploy"  # Deploy manual dari terminal jika perlu
 ```
+
+GitHub Pages tidak memakai CLI terpisah seperti Netlify. Deployment frontend dijalankan oleh workflow `.github/workflows/deploy-production.yml`, sementara migrasi Supabase tetap ditangani oleh Supabase CLI di workflow yang sama.
 
 ### Script proyek
 
 ```bash
 bash scripts/setup.sh    # Setup lengkap (sekali jalan)
-bash scripts/deploy.sh   # Deploy ke Supabase + Netlify
+bash scripts/deploy.sh   # Deploy migrasi Supabase + build frontend untuk GitHub Pages
 npm run dev              # Dev server lokal
 npm run build            # Build production
 npm run lint             # ESLint
@@ -333,10 +332,10 @@ npm test                 # Jalankan test
 ## 📚 Referensi
 
 - [Supabase CLI Docs](https://supabase.com/docs/reference/cli)
-- [Netlify CLI Docs](https://docs.netlify.com/cli/get-started/)
 - [Supabase Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
 - [Supabase Realtime](https://supabase.com/docs/guides/realtime)
-- [Vite + Netlify Deploy](https://vitejs.dev/guide/static-deploy.html#netlify)
+- [GitHub Pages](https://docs.github.com/pages)
+- [GitHub Actions](https://docs.github.com/actions)
 
 ---
 

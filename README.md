@@ -356,6 +356,8 @@ SUPABASE_DB_PASSWORD="<password database postgres>"
 
 Workflow deploy produksi akan menjalankan `supabase link` lalu `supabase db push` sebelum build frontend, selama ketiga nilai tersebut tersedia.
 
+> Penting: pastikan migration `018_request_context_from_headers.sql` ikut terpasang di Supabase production. Tanpa migration ini, login bisa sukses tetapi fungsi dashboard akan gagal karena konteks RLS tidak dikirim di setiap request.
+
 ---
 
 ## Database Schema

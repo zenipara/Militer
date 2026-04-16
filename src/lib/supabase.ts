@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { readSessionContext } from './sessionContext';
 
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? '';
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? '';
@@ -22,7 +23,31 @@ if (!isSupabaseConfigured) {
 // createClient requires non-empty strings; use placeholder values so the
 // module loads successfully. Any API call will produce a network error
 // (not a silent failure) that is surfaced through the ErrorBoundary.
+const baseFetch = globalThis.fetch.bind(globalThis);
+
+const sessionAwareFetch: typeof fetch = async (input, init) => {
+  const session = readSessionContext();
+  if (!session) {
+    return baseFetch(input, init);
+  }
+
+  const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+  headers.set('x-karyo-user-id', session.user_id);
+  headers.set('x-karyo-user-role', session.role);
+
+  if (input instanceof Request) {
+    return baseFetch(new Request(input, { ...init, headers }));
+  }
+
+  return baseFetch(input, { ...init, headers });
+};
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-anon-key',
+  {
+    global: {
+      fetch: sessionAwareFetch,
+    },
+  },
 );
