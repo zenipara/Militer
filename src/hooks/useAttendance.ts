@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { fetchAttendance as apiFetchAttendance, rpcCheckIn, rpcCheckOut } from '../lib/api/attendance';
 import { handleError } from '../lib/handleError';
+import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
+import { supabase } from '../lib/supabase';
 import { SimpleCache } from '../lib/cache';
 import type { Attendance } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -28,9 +31,15 @@ export function useAttendance(userId?: string) {
   });
   const [isLoading, setIsLoading] = useState(() => !attendanceCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchAttendance = useCallback(async (force = false) => {
-    if (!user || !targetUserId) return;
+    if (!user || !targetUserId) {
+      setAttendances([]);
+      setTodayAttendance(null);
+      setIsLoading(false);
+      return;
+    }
     if (!force) {
       const cached = attendanceCache.get(cacheKey);
       if (cached) {
@@ -58,11 +67,42 @@ export function useAttendance(userId?: string) {
     void fetchAttendance();
   }, [fetchAttendance]);
 
+  useEffect(() => {
+    return subscribeDataChanges('attendance', () => {
+      attendanceCache.invalidate(cacheKey);
+      void fetchAttendance(true);
+    });
+  }, [cacheKey, fetchAttendance]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    const channel = supabase.channel(`attendance-changes-${user.id}`);
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
+      attendanceCache.invalidate(cacheKey);
+      void fetchAttendance(true);
+    });
+    channel.subscribe();
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [user, cacheKey, fetchAttendance]);
+
   const checkIn = async () => {
     if (!targetUserId) throw new Error('User tidak ditemukan');
     if (todayAttendance?.check_in) throw new Error('Sudah check-in hari ini');
     await rpcCheckIn(targetUserId);
     attendanceCache.invalidate(cacheKey);
+    notifyDataChanged('attendance');
     await fetchAttendance(true);
   };
 
@@ -72,6 +112,7 @@ export function useAttendance(userId?: string) {
     if (todayAttendance.check_out) throw new Error('Sudah check-out hari ini');
     await rpcCheckOut(targetUserId);
     attendanceCache.invalidate(cacheKey);
+    notifyDataChanged('attendance');
     await fetchAttendance(true);
   };
 

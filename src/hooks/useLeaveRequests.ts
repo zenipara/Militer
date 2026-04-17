@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { fetchLeaveRequests as apiFetchLeaveRequests, insertLeaveRequest, patchLeaveRequestStatus } from '../lib/api/leaveRequests';
 import { handleError } from '../lib/handleError';
+import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
+import { supabase } from '../lib/supabase';
 import { SimpleCache } from '../lib/cache';
 import type { LeaveRequest, LeaveStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -33,6 +36,7 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
   const [requests, setRequests] = useState<LeaveRequest[]>(() => leaveRequestsCache.get(cacheKey) ?? []);
   const [isLoading, setIsLoading] = useState(() => !leaveRequestsCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchRequests = useCallback(async (force = false) => {
     if (!user) {
@@ -75,6 +79,36 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
     void fetchRequests();
   }, [fetchRequests]);
 
+  useEffect(() => {
+    return subscribeDataChanges('leave_requests', () => {
+      leaveRequestsCache.invalidate(cacheKey);
+      void fetchRequests(true);
+    });
+  }, [cacheKey, fetchRequests]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    const channel = supabase.channel(`leave-requests-changes-${user.id}`);
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => {
+      leaveRequestsCache.invalidate(cacheKey);
+      void fetchRequests(true);
+    });
+    channel.subscribe();
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [user, cacheKey, fetchRequests]);
+
   const submitLeaveRequest = async (data: {
     jenis_izin: 'cuti' | 'sakit' | 'dinas_luar';
     tanggal_mulai: string;
@@ -84,6 +118,7 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
     if (!user) throw new Error('Not authenticated');
     await insertLeaveRequest(user.id, user.role, { ...data, user_id: user.id });
     leaveRequestsCache.invalidate(cacheKey);
+    notifyDataChanged('leave_requests');
     await fetchRequests(true);
   };
 
@@ -91,6 +126,7 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
     if (!user) throw new Error('Not authenticated');
     await patchLeaveRequestStatus(user.id, user.role, id, status, user.id);
     leaveRequestsCache.invalidate(cacheKey);
+    notifyDataChanged('leave_requests');
     await fetchRequests(true);
   };
 

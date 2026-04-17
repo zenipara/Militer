@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { fetchTasks as apiFetchTasks, insertTask, patchTaskStatus, insertTaskReport, fetchLatestTaskReport } from '../lib/api/tasks';
 import { handleError } from '../lib/handleError';
+import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import { SimpleCache } from '../lib/cache';
 import type { Task, TaskStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -46,7 +47,11 @@ export function useTasks(options: UseTasksOptions = {}) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = useCallback(async (force = false) => {
-    if (!user) return;
+    if (!user) {
+      setTasks([]);
+      setIsLoading(false);
+      return;
+    }
     if (!force) {
       const cached = tasksCache.get(cacheKey);
       if (cached) {
@@ -79,6 +84,13 @@ export function useTasks(options: UseTasksOptions = {}) {
     void fetchTasks();
   }, [fetchTasks]);
 
+  useEffect(() => {
+    return subscribeDataChanges('tasks', () => {
+      tasksCache.invalidate(cacheKey);
+      void fetchTasks(true);
+    });
+  }, [cacheKey, fetchTasks]);
+
   // Realtime subscription
   useEffect(() => {
     if (!user) return;
@@ -103,6 +115,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     if (!user) throw new Error('Not authenticated');
     await insertTask(user.id, user.role, { ...taskData, assigned_by: user.id });
     tasksCache.invalidate(cacheKey);
+    notifyDataChanged('tasks');
     await fetchTasks(true);
   };
 
@@ -110,6 +123,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     if (!user) throw new Error('Not authenticated');
     await patchTaskStatus(user.id, user.role, taskId, status);
     tasksCache.invalidate(cacheKey);
+    notifyDataChanged('tasks');
     await fetchTasks(true);
   };
 
@@ -141,6 +155,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     if (!user) throw new Error('Not authenticated');
     await insertTaskReport(user.id, user.role, { task_id: taskId, user_id: user.id, isi_laporan: isiLaporan, file_url: fileUrl });
     await updateTaskStatus(taskId, 'done');
+    notifyDataChanged('tasks');
   };
 
   /**

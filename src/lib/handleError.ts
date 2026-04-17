@@ -11,8 +11,17 @@ export function handleError(err: unknown, fallback: string): string {
   if (import.meta.env.DEV) {
     console.error('[KARYO OS]', err);
   }
+
   if (err instanceof Error && err.message) {
     return err.message;
   }
+
+  if (typeof err === 'object' && err !== null) {
+    const maybeMessage = (err as { message?: unknown }).message;
+    if (typeof maybeMessage === 'string' && maybeMessage.trim()) {
+      return maybeMessage;
+    }
+  }
+
   return fallback;
 }

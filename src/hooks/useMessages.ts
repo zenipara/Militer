@@ -3,6 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { fetchInbox, fetchSent, insertMessage, markMessageRead as apiMarkRead, markAllMessagesRead as apiMarkAllRead } from '../lib/api/messages';
 import { handleError } from '../lib/handleError';
+import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import type { Message } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -15,7 +16,13 @@ export function useMessages() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchMessages = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setInbox([]);
+      setSent([]);
+      setUnreadCount(0);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -35,6 +42,12 @@ export function useMessages() {
 
   useEffect(() => {
     void fetchMessages();
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    return subscribeDataChanges('messages', () => {
+      void fetchMessages();
+    });
   }, [fetchMessages]);
 
   // Realtime subscription for new messages
@@ -71,6 +84,7 @@ export function useMessages() {
   const sendMessage = async (toUserId: string, isi: string) => {
     if (!user) throw new Error('Not authenticated');
     await insertMessage(user.id, user.role, user.id, toUserId, isi);
+    notifyDataChanged('messages');
     await fetchMessages();
   };
 

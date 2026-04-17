@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { fetchAnnouncements as apiFetchAnnouncements, insertAnnouncement, patchAnnouncement, deleteAnnouncement as apiDeleteAnnouncement } from '../lib/api/announcements';
 import { handleError } from '../lib/handleError';
+import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
+import { supabase } from '../lib/supabase';
 import { SimpleCache } from '../lib/cache';
 import type { Announcement, Role } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -21,9 +24,14 @@ export function useAnnouncements() {
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => announcementsCache.get(cacheKey) ?? []);
   const [isLoading, setIsLoading] = useState(() => !announcementsCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchAnnouncements = useCallback(async (force = false) => {
-    if (!user) return;
+    if (!user) {
+      setAnnouncements([]);
+      setIsLoading(false);
+      return;
+    }
     if (!force) {
       const cached = announcementsCache.get(cacheKey);
       if (cached) {
@@ -74,6 +82,36 @@ export function useAnnouncements() {
     void fetchAnnouncements();
   }, [fetchAnnouncements]);
 
+  useEffect(() => {
+    return subscribeDataChanges('announcements', () => {
+      announcementsCache.invalidate(cacheKey);
+      void fetchAnnouncements(true);
+    });
+  }, [cacheKey, fetchAnnouncements]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    const channel = supabase.channel(`announcements-changes-${user.id}`);
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+      announcementsCache.invalidate(cacheKey);
+      void fetchAnnouncements(true);
+    });
+    channel.subscribe();
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [user, cacheKey, fetchAnnouncements]);
+
   const createAnnouncement = async (data: {
     judul: string;
     isi: string;
@@ -84,6 +122,7 @@ export function useAnnouncements() {
     if (!user) throw new Error('Not authenticated');
     await insertAnnouncement(user.id, user.role, { ...data, created_by: user.id });
     announcementsCache.invalidate(cacheKey);
+    notifyDataChanged('announcements');
     void fetchAnnouncements(true);
   };
 
@@ -91,6 +130,7 @@ export function useAnnouncements() {
     if (!user) throw new Error('Not authenticated');
     await patchAnnouncement(user.id, user.role, id, updates);
     announcementsCache.invalidate(cacheKey);
+    notifyDataChanged('announcements');
     await fetchAnnouncementsOrThrow(true);
   };
 
@@ -98,6 +138,7 @@ export function useAnnouncements() {
     if (!user) throw new Error('Not authenticated');
     await apiDeleteAnnouncement(user.id, user.role, id);
     announcementsCache.invalidate(cacheKey);
+    notifyDataChanged('announcements');
     await fetchAnnouncementsOrThrow(true);
   };
 

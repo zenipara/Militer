@@ -3,6 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { fetchLogisticsRequests as apiFetchLogistics, insertLogisticsRequest, patchLogisticsRequestStatus } from '../lib/api/logistics';
 import { handleError } from '../lib/handleError';
+import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import { SimpleCache } from '../lib/cache';
 import type { LogisticsRequest, LogisticsRequestStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -72,6 +73,13 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
     void fetchRequests();
   }, [fetchRequests]);
 
+  useEffect(() => {
+    return subscribeDataChanges('logistics_requests', () => {
+      logisticsCache.invalidate(cacheKey);
+      void fetchRequests(true);
+    });
+  }, [cacheKey, fetchRequests]);
+
   // Realtime subscription
   // Gunakan ref agar tidak terjadi duplicate subscription
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -108,6 +116,7 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
     if (!user) throw new Error('Not authenticated');
     await insertLogisticsRequest(user.id, user.role, { ...data, requested_by: user.id, satuan: user.satuan });
     logisticsCache.invalidate(cacheKey);
+    notifyDataChanged('logistics_requests');
     await fetchRequests(true);
   };
 
@@ -119,6 +128,7 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
     if (!user) throw new Error('Not authenticated');
     await patchLogisticsRequestStatus(user.id, user.role, id, status, user.id, adminNote);
     logisticsCache.invalidate(cacheKey);
+    notifyDataChanged('logistics_requests');
     await fetchRequests(true);
   };
 

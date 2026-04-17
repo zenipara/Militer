@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { fetchAuditLogs as apiFetchAuditLogs } from '../lib/api/auditLogs';
 import { handleError } from '../lib/handleError';
+import { subscribeDataChanges } from '../lib/dataSync';
+import { supabase } from '../lib/supabase';
 import { SimpleCache } from '../lib/cache';
 import type { AuditLog } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -34,6 +37,7 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
   const [logs, setLogs] = useState<AuditLog[]>(() => auditLogsCache.get(cacheKey) ?? []);
   const [isLoading, setIsLoading] = useState(() => !auditLogsCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchLogs = useCallback(async (force = false) => {
     if (!user) {
@@ -71,6 +75,36 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
   useEffect(() => {
     void fetchLogs();
   }, [fetchLogs]);
+
+  useEffect(() => {
+    return subscribeDataChanges(['audit_logs', 'users', 'tasks', 'gate_pass'], () => {
+      auditLogsCache.invalidate(cacheKey);
+      void fetchLogs(true);
+    });
+  }, [cacheKey, fetchLogs]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    const channel = supabase.channel(`audit-logs-changes-${user.id}`);
+    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, () => {
+      auditLogsCache.invalidate(cacheKey);
+      void fetchLogs(true);
+    });
+    channel.subscribe();
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [user, cacheKey, fetchLogs]);
 
   return { logs, isLoading, error, refetch: () => fetchLogs(true) };
 }
