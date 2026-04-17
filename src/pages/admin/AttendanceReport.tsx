@@ -8,20 +8,10 @@ import Pagination from '../../components/ui/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import { TableSkeleton } from '../../components/common/Skeleton';
 import { supabase } from '../../lib/supabase';
+import { downloadCSV } from '../../utils/csv';
 import type { Attendance } from '../../types';
 
 const PAGE_SIZE = 50;
-
-function downloadCSV(rows: string[][], filename: string) {
-  const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 export default function AttendanceReport() {
   const [attendances, setAttendances] = useState<Attendance[]>([]);

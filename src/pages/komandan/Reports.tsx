@@ -9,18 +9,8 @@ import { useLeaveRequests } from '../../hooks/useLeaveRequests';
 import { AttendanceBadge, TaskStatusBadge, LeaveStatusBadge } from '../../components/common/Badge';
 import { CardListSkeleton, StatCardsSkeleton } from '../../components/common/Skeleton';
 import PageHeader from '../../components/ui/PageHeader';
+import { downloadCSV } from '../../utils/csv';
 import type { Attendance, Task } from '../../types';
-
-function downloadCSV(rows: string[][], filename: string) {
-  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 export default function Reports() {
   const { user } = useAuthStore();

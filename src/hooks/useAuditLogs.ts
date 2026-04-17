@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchAuditLogs as apiFetchAuditLogs } from '../lib/api/auditLogs';
 import { handleError } from '../lib/handleError';
-import { SimpleCache } from '../lib/cache';
+import { SimpleCache, buildCacheKey } from '../lib/cache';
 import type { AuditLog } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -14,10 +14,6 @@ interface UseAuditLogsOptions {
 /** Module-level cache: audit log di-cache 5 menit per kombinasi filter */
 const auditLogsCache = new SimpleCache<AuditLog[]>();
 
-function buildAuditKey(userId?: string, action?: string, limit?: number): string {
-  return JSON.stringify({ u: userId ?? '', a: action ?? '', l: limit ?? 0 });
-}
-
 /** Hapus semua cache audit log — berguna untuk pengujian unit. */
 export function clearAuditLogsCache(): void {
   auditLogsCache.clear();
@@ -27,7 +23,7 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
   const { user } = useAuthStore();
 
   const cacheKey = useMemo(
-    () => buildAuditKey(options.userId, options.action, options.limit),
+    () => buildCacheKey({ u: options.userId, a: options.action, l: options.limit }),
     [options.userId, options.action, options.limit],
   );
 

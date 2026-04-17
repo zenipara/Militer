@@ -3,7 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { fetchLogisticsRequests as apiFetchLogistics, insertLogisticsRequest, patchLogisticsRequestStatus } from '../lib/api/logistics';
 import { handleError } from '../lib/handleError';
-import { SimpleCache } from '../lib/cache';
+import { SimpleCache, buildCacheKey } from '../lib/cache';
 import type { LogisticsRequest, LogisticsRequestStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -15,10 +15,6 @@ interface UseLogisticsRequestsOptions {
 /** Module-level cache: data permintaan logistik di-cache 5 menit per kombinasi filter */
 const logisticsCache = new SimpleCache<LogisticsRequest[]>();
 
-function buildLogisticsKey(satuan?: string, requestedBy?: string): string {
-  return JSON.stringify({ s: satuan ?? '', r: requestedBy ?? '' });
-}
-
 /** Hapus semua cache permintaan logistik — berguna untuk pengujian unit. */
 export function clearLogisticsRequestsCache(): void {
   logisticsCache.clear();
@@ -28,7 +24,7 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
   const { user } = useAuthStore();
 
   const cacheKey = useMemo(
-    () => buildLogisticsKey(options.satuan, options.requestedBy),
+    () => buildCacheKey({ s: options.satuan, r: options.requestedBy }),
     [options.satuan, options.requestedBy],
   );
 

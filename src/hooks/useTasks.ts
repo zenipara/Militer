@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { fetchTasks as apiFetchTasks, insertTask, patchTaskStatus, insertTaskReport, fetchLatestTaskReport } from '../lib/api/tasks';
 import { handleError } from '../lib/handleError';
-import { SimpleCache } from '../lib/cache';
+import { SimpleCache, buildCacheKey } from '../lib/cache';
 import type { Task, TaskStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -16,15 +16,6 @@ interface UseTasksOptions {
 /** Module-level cache: data tasks di-cache 5 menit per kombinasi filter */
 const tasksCache = new SimpleCache<Task[]>();
 
-function buildCacheKey(opts: UseTasksOptions): string {
-  return JSON.stringify({
-    a: opts.assignedTo ?? '',
-    b: opts.assignedBy ?? '',
-    s: opts.status ?? '',
-    t: opts.satuan ?? '',
-  });
-}
-
 /** Hapus semua cache tugas — berguna untuk pengujian unit. */
 export function clearTasksCache(): void {
   tasksCache.clear();
@@ -35,8 +26,7 @@ export function useTasks(options: UseTasksOptions = {}) {
 
   // Stabilize cacheKey so it only changes when the option values change (not object references)
   const cacheKey = useMemo(
-    () => buildCacheKey(options),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => buildCacheKey({ a: options.assignedTo, b: options.assignedBy, s: options.status, t: options.satuan }),
     [options.assignedTo, options.assignedBy, options.status, options.satuan],
   );
 
@@ -90,7 +80,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     });
     channel.subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [user, options.assignedTo, fetchTasks]);
+  }, [user, cacheKey, options.assignedTo, fetchTasks]);
 
   const createTask = async (taskData: {
     judul: string;

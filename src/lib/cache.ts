@@ -63,3 +63,22 @@ export class SimpleCache<T> {
     return this.get(key) !== null;
   }
 }
+
+/**
+ * buildCacheKey — Buat string cache key dari sekumpulan parameter filter.
+ *
+ * Nilai `undefined` dinormalisasi menjadi string kosong agar key konsisten.
+ *
+ * Penggunaan:
+ *   const cacheKey = useMemo(
+ *     () => buildCacheKey({ userId, satuan }),
+ *     [userId, satuan],
+ *   );
+ */
+export function buildCacheKey(parts: Record<string, string | number | undefined>): string {
+  const normalized: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(parts)) {
+    normalized[k] = v ?? '';
+  }
+  return JSON.stringify(normalized);
+}

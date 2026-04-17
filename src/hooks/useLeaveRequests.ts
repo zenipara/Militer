@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchLeaveRequests as apiFetchLeaveRequests, insertLeaveRequest, patchLeaveRequestStatus } from '../lib/api/leaveRequests';
 import { handleError } from '../lib/handleError';
-import { SimpleCache } from '../lib/cache';
+import { SimpleCache, buildCacheKey } from '../lib/cache';
 import type { LeaveRequest, LeaveStatus } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -13,10 +13,6 @@ interface UseLeaveRequestsOptions {
 /** Module-level cache: data permintaan izin di-cache 5 menit per kombinasi filter */
 const leaveRequestsCache = new SimpleCache<LeaveRequest[]>();
 
-function buildLeaveKey(userId?: string, satuan?: string): string {
-  return JSON.stringify({ u: userId ?? '', s: satuan ?? '' });
-}
-
 /** Hapus semua cache permintaan izin — berguna untuk pengujian unit. */
 export function clearLeaveRequestsCache(): void {
   leaveRequestsCache.clear();
@@ -26,7 +22,7 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
   const { user } = useAuthStore();
 
   const cacheKey = useMemo(
-    () => buildLeaveKey(options.userId, options.satuan),
+    () => buildCacheKey({ u: options.userId, s: options.satuan }),
     [options.userId, options.satuan],
   );
 
