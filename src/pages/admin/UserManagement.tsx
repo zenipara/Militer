@@ -85,7 +85,10 @@ export default function UserManagement() {
       setShowCreate(false);
       setForm({ nrp: '', nama: '', pin: '', role: 'prajurit', satuan: '', pangkat: '' });
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal menambah personel', 'error');
+      const message = err instanceof Error
+        ? err.message.replace(/menabah/gi, 'menambah')
+        : 'Gagal menambah personel';
+      showNotification(message, 'error');
     } finally {
       setIsSaving(false);
     }
