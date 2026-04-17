@@ -11,6 +11,8 @@ import { useUIStore } from '../../store/uiStore';
 import { useAttendance } from '../../hooks/useAttendance';
 import { useUsers } from '../../hooks/useUsers';
 import { supabase } from '../../lib/supabase';
+import { notifyDataChanged } from '../../lib/dataSync';
+import { handleError } from '../../lib/handleError';
 
 interface PersonalStats {
   totalTasks: number;
@@ -101,10 +103,11 @@ export default function Profile() {
       });
       if (error) throw new Error('PIN lama tidak sesuai');
       showNotification('PIN berhasil diubah', 'success');
+      notifyDataChanged('users');
       setChangingPin(false);
       setPinForm({ oldPin: '', newPin: '', confirmPin: '' });
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal mengubah PIN', 'error');
+      showNotification(handleError(err, 'Gagal mengubah PIN'), 'error');
     } finally {
       setIsSaving(false);
     }
@@ -117,9 +120,10 @@ export default function Profile() {
     try {
       await updateOwnProfile(user.id, profileForm);
       showNotification('Profil berhasil diperbarui', 'success');
+      notifyDataChanged('users');
       setEditingProfile(false);
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal memperbarui profil', 'error');
+      showNotification(handleError(err, 'Gagal memperbarui profil'), 'error');
     } finally {
       setIsSaving(false);
     }

@@ -3,8 +3,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { readSessionContext } from '../../lib/sessionContext';
 import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
+import { handleError } from '../../lib/handleError';
 
 interface SearchResult {
   id: string;
@@ -17,6 +19,7 @@ interface SearchResult {
 
 export default function GlobalSearch() {
   const { user } = useAuthStore();
+  const sessionContext = readSessionContext();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [rawQuery, setRawQuery] = useState('');
@@ -27,7 +30,8 @@ export default function GlobalSearch() {
   const query = useDebounce(rawQuery, 300);
 
   const search = useCallback(async (q: string) => {
-    if (!q.trim() || !user) {
+    const activeUser = user ?? (sessionContext ? { role: sessionContext.role } : null);
+    if (!q.trim() || !activeUser) {
       setResults([]);
       return;
     }
@@ -41,7 +45,7 @@ export default function GlobalSearch() {
           .select('id, judul, status, satuan')
           .or(`judul.ilike.${likeQ},deskripsi.ilike.${likeQ}`)
           .limit(5),
-        user.role === 'admin' || user.role === 'komandan'
+        activeUser.role === 'admin' || activeUser.role === 'komandan'
           ? supabase
               .from('users')
               .select('id, nama, nrp, pangkat, role')
@@ -62,7 +66,7 @@ export default function GlobalSearch() {
           type: 'task' as const,
           title: t.judul,
           subtitle: `Status: ${t.status}${t.satuan ? ` · ${t.satuan}` : ''}`,
-          href: user.role === 'prajurit' ? '/prajurit/tasks' : '/komandan/tasks',
+          href: activeUser.role === 'prajurit' ? '/prajurit/tasks' : '/komandan/tasks',
           icon: 'ClipboardCheck' as keyof typeof ICONS,
         })),
         ...((usersRes.data ?? []) as { id: string; nama: string; nrp: string; pangkat: string | null; role: string }[]).map((u) => ({
@@ -70,7 +74,7 @@ export default function GlobalSearch() {
           type: 'user' as const,
           title: u.nama,
           subtitle: `${u.nrp}${u.pangkat ? ` · ${u.pangkat}` : ''} · ${u.role}`,
-          href: user.role === 'admin' ? '/admin/users' : '/komandan/personnel',
+          href: activeUser?.role === 'admin' ? '/admin/users' : '/komandan/personnel',
           icon: 'Users' as keyof typeof ICONS,
         })),
         ...((announcementsRes.data ?? []) as { id: string; judul: string; isi: string }[]).map((a) => ({
@@ -78,17 +82,18 @@ export default function GlobalSearch() {
           type: 'announcement' as const,
           title: a.judul,
           subtitle: a.isi.slice(0, 80),
-          href: user.role === 'admin' ? '/admin/announcements' : `/${user.role}/dashboard`,
+          href: activeUser?.role === 'admin' ? '/admin/announcements' : `/${activeUser?.role}/dashboard`,
           icon: 'Megaphone' as keyof typeof ICONS,
         })),
       ];
       setResults(combined);
-    } catch {
+    } catch (err) {
+      if (import.meta.env.DEV) console.error(handleError(err, 'Gagal mencari data'));
       setResults([]);
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, sessionContext]);
 
   useEffect(() => {
     void search(query);

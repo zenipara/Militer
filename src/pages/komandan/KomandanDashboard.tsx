@@ -11,6 +11,7 @@ import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import { ICONS } from '../../icons';
+import { handleError } from '../../lib/handleError';
 
 export default function KomandanDashboard() {
   const navigate = useNavigate();
@@ -20,15 +21,21 @@ export default function KomandanDashboard() {
   const [onlineCount, setOnlineCount] = useState(0);
   const [totalPersonel, setTotalPersonel] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
     if (!user?.satuan) return;
-    const [onlineRes, totalRes] = await Promise.all([
-      supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_online', true).eq('satuan', user.satuan),
-      supabase.from('users').select('id', { count: 'exact', head: true }).eq('satuan', user.satuan).eq('is_active', true),
-    ]);
-    setOnlineCount(onlineRes.count ?? 0);
-    setTotalPersonel(totalRes.count ?? 0);
+    setError(null);
+    try {
+      const [onlineRes, totalRes] = await Promise.all([
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_online', true).eq('satuan', user.satuan),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('satuan', user.satuan).eq('is_active', true),
+      ]);
+      setOnlineCount(onlineRes.count ?? 0);
+      setTotalPersonel(totalRes.count ?? 0);
+    } catch (err) {
+      setError(handleError(err, 'Gagal memuat statistik personel'));
+    }
   }, [user?.satuan]);
 
   const refresh = async () => {
@@ -80,6 +87,12 @@ export default function KomandanDashboard() {
             </>
           }
         />
+
+        {error && (
+          <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">
+            {error}
+          </div>
+        )}
 
         <StatsGrid>
           <StatCard icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel" value={totalPersonel} />

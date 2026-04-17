@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
+import { readSessionContext } from '../../lib/sessionContext';
+import { notifyDataChanged } from '../../lib/dataSync';
 
 interface AvatarUploadProps {
   onSuccess?: (url: string) => void;
@@ -16,6 +18,7 @@ interface AvatarUploadProps {
  */
 export default function AvatarUpload({ onSuccess }: AvatarUploadProps) {
   const { user, restoreSession } = useAuthStore();
+  const sessionContext = readSessionContext();
   const { showNotification } = useUIStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -56,12 +59,13 @@ export default function AvatarUpload({ onSuccess }: AvatarUploadProps) {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !user) return;
+    const activeUser = user ?? (sessionContext ? { id: sessionContext.user_id } : null);
+    if (!selectedFile || !activeUser) return;
     setIsUploading(true);
     try {
       // Derive a stable file path per user
       const ext = selectedFile.name.split('.').pop() ?? 'jpg';
-      const path = `${user.id}/avatar.${ext}`;
+      const path = `${activeUser.id}/avatar.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -75,12 +79,13 @@ export default function AvatarUpload({ onSuccess }: AvatarUploadProps) {
       const { error: updateError } = await supabase
         .from('users')
         .update({ foto_url: publicUrl })
-        .eq('id', user.id);
+        .eq('id', activeUser.id);
 
       if (updateError) throw updateError;
 
       // Re-sync session so authStore.user.foto_url is updated
       await restoreSession();
+      notifyDataChanged('users');
 
       showNotification('Foto profil berhasil diperbarui', 'success');
       setPreview(null);
