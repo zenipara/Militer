@@ -34,11 +34,11 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run production smoke tests
+      - name: Run production core tests (smoke + gatepass monitor)
         env:
           E2E_BASE_URL: ${{ inputs.base_url }}
           E2E_USE_WEBSERVER: 'false'
-        run: npx playwright test smoke-prod.spec.ts --project=chromium --reporter=line --retries=1
+        run: npm run test:prod:core -- --retries=1
 
       - name: Upload Playwright report
         if: always()
