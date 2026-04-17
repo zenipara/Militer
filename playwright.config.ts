@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173';
+const rawBaseURL = process.env.E2E_BASE_URL || 'http://localhost:5173';
+const baseURL = rawBaseURL.endsWith('/') ? rawBaseURL : `${rawBaseURL}/`;
 const useWebServer = process.env.E2E_USE_WEBSERVER === 'true' || (!process.env.E2E_USE_WEBSERVER && baseURL.includes('localhost'));
 
 export default defineConfig({
