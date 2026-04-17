@@ -12,6 +12,7 @@ import { useUIStore } from '../../store/uiStore';
 import type { AuditLog, Attendance } from '../../types';
 import type { LogisticsItem } from '../../types';
 import AttendanceHeatmap from '../../components/ui/AttendanceHeatmap';
+import type { IconName } from '../../icons';
 import { ICONS } from '../../icons';
 
 interface DashboardStats {
@@ -33,7 +34,14 @@ const actionLabels: Record<string, string> = {
   DELETE: 'Hapus',
 };
 
-const quickLinks = [
+interface QuickLink {
+  href: string;
+  icon: IconName;
+  title: string;
+  desc: string;
+}
+
+const quickLinks: QuickLink[] = [
   { href: '/admin/users', icon: 'UsersRound', title: 'Personel', desc: 'CRUD user & reset PIN' },
   { href: '/admin/logistics', icon: 'Package', title: 'Logistik', desc: 'Inventaris perlengkapan' },
   { href: '/admin/gatepass-monitor', icon: 'ClipboardCheck', title: 'Gate Pass', desc: 'Monitoring keluar/masuk batalion' },
@@ -44,7 +52,7 @@ const quickLinks = [
   { href: '/admin/attendance', icon: 'BadgeCheck', title: 'Rekap Absensi', desc: 'Laporan & export CSV' },
   { href: '/admin/audit', icon: 'ScrollText', title: 'Audit Log', desc: 'Riwayat aktivitas' },
   { href: '/admin/settings', icon: 'Settings', title: 'Pengaturan', desc: 'Konfigurasi sistem' },
-] as const;
+];
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
@@ -243,7 +251,7 @@ export default function AdminDashboard() {
             <StatCard icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel Aktif" value={stats?.totalPersonel ?? 0} />
             <StatCard icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={stats?.totalOnline ?? 0} trend="saat ini" trendUp />
             <StatCard icon={<ICONS.ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Tugas" value={stats?.totalTugas ?? 0} />
-            <StatCard icon={<ICONS.CheckSquare className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={stats?.tugasAktif ?? 0} />
+            <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={stats?.tugasAktif ?? 0} />
           </StatsGrid>
         )}
 
@@ -257,10 +265,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                {quickLinks.map((item) => (
-                  (() => {
-                    const Icon = ICONS[item.icon];
-                    return (
+                {quickLinks.map((item) => {
+                  const Icon = ICONS[item.icon];
+                  return (
                   <Link
                     key={item.href}
                     to={item.href}
@@ -276,9 +283,8 @@ export default function AdminDashboard() {
                     </div>
                     <p className="text-xs text-text-muted">{item.desc}</p>
                   </Link>
-                    );
-                  })()
-                ))}
+                  );
+                })}
               </div>
             </div>
 

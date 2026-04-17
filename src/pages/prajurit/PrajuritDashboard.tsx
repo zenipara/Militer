@@ -136,7 +136,7 @@ export default function PrajuritDashboard() {
 
         {/* Stats */}
         <StatsGrid>
-          <StatCard icon={<ICONS.CheckSquare className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={activeTasks.length} />
+          <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={activeTasks.length} />
           <StatCard icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Selesai" value={doneTasks.length} />
           <StatCard icon={<ICONS.ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Tugas" value={tasks.length} />
           <StatCard
