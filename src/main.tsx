@@ -44,3 +44,14 @@ createRoot(root).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// Register service worker for cache management on GitHub Pages SPA
+if ('serviceWorker' in navigator) {
+  const basePath = import.meta.env.BASE_URL || '/';
+  const swPath = new URL('sw.js', new URL(basePath, window.location.origin)).toString().replace(window.location.origin, '');
+  navigator.serviceWorker.register(swPath).then((registration) => {
+    if (import.meta.env.DEV) console.log('[SW] Registered:', registration);
+  }).catch((error) => {
+    if (import.meta.env.DEV) console.warn('[SW] Registration failed:', error);
+  });
+}
