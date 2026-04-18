@@ -98,6 +98,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteMember = async (targetId: string, targetName: string) => {
+    if (!isUserManagementEnabled) {
+      showNotification('Fitur manajemen personel sedang dinonaktifkan admin', 'warning');
+      return;
+    }
+
     if (!user) return;
     if (user.id === targetId) {
       showNotification('Tidak dapat menghapus akun sendiri', 'error');
@@ -135,6 +140,7 @@ export default function AdminDashboard() {
     : [];
 
   const enabledQuickLinks = quickLinks.filter((item) => isPathEnabled(item.href, flags));
+  const isUserManagementEnabled = flags.user_management !== false;
 
   return (
     <DashboardLayout title="Pusat Kendali">
@@ -249,41 +255,43 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="app-card p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-bold text-text-primary">Hapus Anggota Cepat</h3>
-                  <p className="text-sm text-text-muted">Kelola anggota terbaru langsung dari dashboard admin.</p>
+            {isUserManagementEnabled && (
+              <div className="app-card p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-text-primary">Hapus Anggota Cepat</h3>
+                    <p className="text-sm text-text-muted">Kelola anggota terbaru langsung dari dashboard admin.</p>
+                  </div>
+                  <Link to="/admin/users" className="text-xs text-primary hover:underline">Kelola lengkap →</Link>
                 </div>
-                <Link to="/admin/users" className="text-xs text-primary hover:underline">Kelola lengkap →</Link>
-              </div>
 
-              <div className="mt-4 space-y-2">
-                {isMembersLoading ? (
-                  <p className="text-sm text-text-muted">Memuat data anggota...</p>
-                ) : latestUsers.length === 0 ? (
-                  <p className="text-sm text-text-muted">Belum ada data anggota.</p>
-                ) : (
-                  latestUsers.slice(0, 6).map((member) => (
-                    <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl border border-surface/70 bg-surface/20 px-3 py-2.5">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-text-primary">{member.nama}</p>
-                        <p className="text-xs text-text-muted">NRP {member.nrp} · {member.role}</p>
+                <div className="mt-4 space-y-2">
+                  {isMembersLoading ? (
+                    <p className="text-sm text-text-muted">Memuat data anggota...</p>
+                  ) : latestUsers.length === 0 ? (
+                    <p className="text-sm text-text-muted">Belum ada data anggota.</p>
+                  ) : (
+                    latestUsers.slice(0, 6).map((member) => (
+                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl border border-surface/70 bg-surface/20 px-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-text-primary">{member.nama}</p>
+                          <p className="text-xs text-text-muted">NRP {member.nrp} · {member.role}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={member.id === user?.id || deletingUserId === member.id}
+                          onClick={() => void handleDeleteMember(member.id, member.nama)}
+                          isLoading={deletingUserId === member.id}
+                        >
+                          Hapus
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        disabled={member.id === user?.id || deletingUserId === member.id}
-                        onClick={() => void handleDeleteMember(member.id, member.nama)}
-                        isLoading={deletingUserId === member.id}
-                      >
-                        Hapus
-                      </Button>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="app-card overflow-hidden p-0">
