@@ -115,6 +115,16 @@ export default function GlobalSearch() {
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    if (typeof window.matchMedia === 'function' && !window.matchMedia('(max-width: 639px)').matches) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   const openSearch = () => {
     setIsOpen(true);
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -183,100 +193,107 @@ export default function GlobalSearch() {
 
       {/* Search modal/dropdown */}
       {isOpen && (
-        <div
-          className="app-panel absolute right-0 top-full z-50 mt-2 w-[min(92vw,460px)] overflow-hidden rounded-2xl animate-slide-in"
-          role="dialog"
-          aria-label="Pencarian global"
-          aria-modal="true"
-        >
-          {/* Input */}
-          <div className="flex items-center gap-2 border-b border-surface/80 px-4 py-3">
-            <svg className="h-4 w-4 text-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <input
-              ref={inputRef}
-              id="global-search-input"
-              type="text"
-              role="combobox"
-              aria-autocomplete="list"
-              aria-expanded={results.length > 0}
-              aria-controls={LISTBOX_ID}
-              aria-activedescendant={activeOptionId}
-              placeholder="Cari tugas, personel, pengumuman..."
-              value={rawQuery}
-              onChange={(e) => setRawQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
-              autoFocus
-              autoComplete="off"
-            />
-            {isLoading && (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface border-t-primary flex-shrink-0" aria-hidden="true" />
-            )}
-            <button
-              onClick={closeSearch}
-              className="text-xs text-text-muted hover:text-text-primary"
-              aria-label="Tutup pencarian"
-            >
-              Esc
-            </button>
-          </div>
-
-          {/* Results */}
+        <>
+          <button
+            type="button"
+            aria-label="Tutup pencarian"
+            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[1px] sm:hidden"
+            onClick={closeSearch}
+          />
           <div
-            id={LISTBOX_ID}
-            role="listbox"
-            aria-label="Hasil pencarian"
-            className="max-h-72 overflow-y-auto"
+            className="app-panel fixed inset-x-3 z-50 overflow-hidden rounded-2xl animate-slide-up top-[calc(env(safe-area-inset-top,0px)+0.75rem)] bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:absolute sm:right-0 sm:top-full sm:bottom-auto sm:inset-x-auto sm:mt-2 sm:w-[min(92vw,460px)] sm:animate-slide-in"
+            role="dialog"
+            aria-label="Pencarian global"
+            aria-modal="true"
           >
-            {rawQuery && results.length === 0 && !isLoading && (
-              <p className="px-4 py-6 text-center text-sm text-text-muted" role="status">
-                Tidak ada hasil untuk &ldquo;{rawQuery}&rdquo;
-              </p>
-            )}
-            {!rawQuery && (
-              <p className="px-4 py-6 text-center text-sm text-text-muted">
-                Ketik untuk mencari tugas, personel, atau pengumuman
-              </p>
-            )}
-            {results.map((r, idx) => {
-              const Icon = ICONS[r.icon];
-              const isActive = idx === activeIndex;
-              return (
-                <button
-                  key={r.id}
-                  id={`search-option-${idx}`}
-                  role="option"
-                  aria-selected={isActive}
-                  onClick={() => handleSelect(r)}
-                  onMouseEnter={() => setActiveIndex(idx)}
-                  className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'hover:bg-slate-50 dark:hover:bg-surface/55'
-                  }`}
-                >
-                  <span className="flex-shrink-0 mt-0.5">
-                    {Icon ? <Icon className="w-4 h-4" aria-hidden="true" /> : null}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-text-primary truncate">{r.title}</p>
-                    <p className="text-xs text-text-muted truncate mt-0.5">{r.subtitle}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {results.length > 0 && (
-            <div className="border-t border-surface/80 px-4 py-2 text-center text-xs text-text-muted">
-              {results.length} hasil — gunakan ↑↓ untuk navigasi, Enter untuk pilih
+            {/* Input */}
+            <div className="flex items-center gap-2 border-b border-surface/80 px-4 py-3">
+              <svg className="h-4 w-4 text-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
+              <input
+                ref={inputRef}
+                id="global-search-input"
+                type="text"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={results.length > 0}
+                aria-controls={LISTBOX_ID}
+                aria-activedescendant={activeOptionId}
+                placeholder="Cari tugas, personel, pengumuman..."
+                value={rawQuery}
+                onChange={(e) => setRawQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
+                autoFocus
+                autoComplete="off"
+              />
+              {isLoading && (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface border-t-primary flex-shrink-0" aria-hidden="true" />
+              )}
+              <button
+                onClick={closeSearch}
+                className="rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-slate-100 hover:text-text-primary dark:hover:bg-surface/50"
+                aria-label="Tutup pencarian"
+              >
+                Tutup
+              </button>
             </div>
-          )}
-        </div>
+
+            {/* Results */}
+            <div
+              id={LISTBOX_ID}
+              role="listbox"
+              aria-label="Hasil pencarian"
+              className="max-h-full overflow-y-auto"
+            >
+              {rawQuery && results.length === 0 && !isLoading && (
+                <p className="px-4 py-6 text-center text-sm text-text-muted" role="status">
+                  Tidak ada hasil untuk &ldquo;{rawQuery}&rdquo;
+                </p>
+              )}
+              {!rawQuery && (
+                <p className="px-4 py-6 text-center text-sm text-text-muted">
+                  Ketik untuk mencari tugas, personel, atau pengumuman
+                </p>
+              )}
+              {results.map((r, idx) => {
+                const Icon = ICONS[r.icon];
+                const isActive = idx === activeIndex;
+                return (
+                  <button
+                    key={r.id}
+                    id={`search-option-${idx}`}
+                    role="option"
+                    aria-selected={isActive}
+                    onClick={() => handleSelect(r)}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${
+                      isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'hover:bg-slate-50 dark:hover:bg-surface/55'
+                    }`}
+                  >
+                    <span className="flex-shrink-0 mt-0.5">
+                      {Icon ? <Icon className="w-4 h-4" aria-hidden="true" /> : null}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-text-primary truncate">{r.title}</p>
+                      <p className="text-xs text-text-muted truncate mt-0.5">{r.subtitle}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {results.length > 0 && (
+              <div className="border-t border-surface/80 px-4 py-2 text-center text-xs text-text-muted">
+                {results.length} hasil — gunakan ↑↓ untuk navigasi, Enter untuk pilih
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
 }
-

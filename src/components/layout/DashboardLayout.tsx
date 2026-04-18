@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import BottomTabBar from './BottomTabBar';
@@ -14,7 +14,15 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
   // Activate browser push notifications for all logged-in users
   useNotifications();
-  const { displayDensity } = useUIStore();
+  const { displayDensity, setSidebarOpen } = useUIStore();
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
+    if (mediaQuery.matches) {
+      setSidebarOpen(false);
+    }
+  }, [setSidebarOpen]);
 
   const mainPadding = displayDensity === 'compact'
     ? 'px-4 py-4 pb-28 sm:px-5 lg:px-6 lg:py-6 lg:pb-8'
