@@ -6,6 +6,17 @@ import type { User, KaryoSession } from '../types';
 const SESSION_KEY = 'karyo_session';
 const CRYPTO_KEY_SESSION = 'karyo_session_key';
 const SESSION_DURATION_HOURS = 8;
+const AUTH_SYNC_CHANNEL = 'karyo_auth_sync';
+
+type AuthSyncMessage =
+  | { type: 'LOGIN'; session: KaryoSession }
+  | { type: 'LOGOUT' };
+
+const authBroadcastChannel =
+  typeof window !== 'undefined' && 'BroadcastChannel' in window
+    ? new BroadcastChannel(AUTH_SYNC_CHANNEL)
+    : null;
+let authSyncListenersBound = false;
 
 interface AuthStore {
   user: User | null;
@@ -118,12 +129,69 @@ const clearSession = (): void => {
   clearSessionContext();
 };
 
+const cleanupLocalAuthState = (): void => {
+  clearSession();
+  useAuthStore.setState({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    isInitialized: true,
+    error: null,
+  });
+};
+
+function broadcastAuthSync(message: AuthSyncMessage): void {
+  if (!authBroadcastChannel) return;
+  authBroadcastChannel.postMessage(message);
+}
+
 // ── RPC response types ───────────────────────────────────────────
 
 /** Row returned by the `verify_user_pin` Supabase RPC. */
 interface VerifyUserPinRow {
   user_id: string;
   user_role: string;
+}
+
+async function restoreSessionWithRetry(
+  session: KaryoSession,
+  set: (partial: Partial<AuthStore>) => void,
+): Promise<boolean> {
+  const maxRetries = 3;
+  const delays = [500, 1000, 2000];
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      await supabase.rpc('set_session_context', {
+        p_user_id: session.user_id,
+        p_role: session.role,
+      });
+
+      const { data: userData, error } = await supabase
+        .rpc('get_user_by_id', { p_user_id: session.user_id })
+        .single();
+
+      if (error || !userData) {
+        clearSession();
+        set({ isLoading: false, isInitialized: true });
+        return false;
+      }
+
+      const user = userData as User;
+      set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
+      return true;
+    } catch (err) {
+      if (attempt < maxRetries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+      } else {
+        clearSession();
+        const errorMsg = err instanceof Error ? err.message : 'Session restore failed';
+        set({ isLoading: false, isInitialized: true, error: errorMsg });
+      }
+    }
+  }
+
+  return false;
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -173,8 +241,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         p_detail: JSON.stringify({ nrp, role: user_role })
       });
 
-      await saveSession({ user_id, role: user_role as User['role'], expires_at: makeSessionExpiry() });
+      const sessionPayload: KaryoSession = {
+        user_id,
+        role: user_role as User['role'],
+        expires_at: makeSessionExpiry(),
+      };
+      await saveSession(sessionPayload);
       set({ user, isAuthenticated: true, isLoading: false, error: null });
+      broadcastAuthSync({
+        type: 'LOGIN',
+        session: sessionPayload,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan sistem. Coba lagi nanti.';
       set({ isLoading: false, error: message, isAuthenticated: false, user: null });
@@ -211,6 +288,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Always cleanup session state, regardless of RPC success/failure
       clearSession();
       set({ user: null, isAuthenticated: false, isLoading: false, error: null });
+      broadcastAuthSync({ type: 'LOGOUT' });
     }
   },
 
@@ -222,39 +300,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ isLoading: false, isInitialized: true });
       return;
     }
-
-    // Retry logic dengan exponential backoff untuk resilience pada network hiccups
-    const maxRetries = 3;
-    const delays = [500, 1000, 2000]; // ms
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        await supabase.rpc('set_session_context', {
-          p_user_id: session.user_id,
-          p_role: session.role,
-        });
-
-        const { data: userData, error } = await supabase.rpc('get_user_by_id', { p_user_id: session.user_id }).single();
-        if (error || !userData) {
-          clearSession();
-          set({ isLoading: false, isInitialized: true });
-          return;
-        }
-        const user = userData as User;
-        set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
-        return; // Success - exit retry loop
-      } catch (err) {
-        if (attempt < maxRetries - 1) {
-          // Wait before next attempt
-          await new Promise(resolve => setTimeout(resolve, delays[attempt]));
-        } else {
-          // All retries exhausted
-          clearSession();
-          const errorMsg = err instanceof Error ? err.message : 'Session restore failed';
-          set({ isLoading: false, isInitialized: true, error: errorMsg });
-        }
-      }
-    }
+    await restoreSessionWithRetry(session, set);
   },
 
   updateOnlineStatus: async (status: boolean) => {
@@ -267,3 +313,35 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ user: { ...user, is_online: status } });
   },
 }));
+
+if (typeof window !== 'undefined' && !authSyncListenersBound) {
+  authSyncListenersBound = true;
+  window.addEventListener('storage', (event) => {
+    if (event.key === SESSION_KEY && event.newValue === null) {
+      cleanupLocalAuthState();
+    }
+  });
+
+  if (authBroadcastChannel) {
+    authBroadcastChannel.onmessage = (event: MessageEvent<AuthSyncMessage>) => {
+      const message = event.data;
+      if (!message) return;
+
+      if (message.type === 'LOGOUT') {
+        cleanupLocalAuthState();
+        return;
+      }
+
+      if (message.type === 'LOGIN') {
+        void (async () => {
+          try {
+            await saveSession(message.session);
+            await useAuthStore.getState().restoreSession();
+          } catch {
+            cleanupLocalAuthState();
+          }
+        })();
+      }
+    };
+  }
+}

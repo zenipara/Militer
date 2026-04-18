@@ -10,6 +10,7 @@ import './index.css';
 import { router } from './router';
 import { useAuthStore } from './store/authStore';
 import { usePlatformStore } from './store/platformStore';
+import { useGlobalRealtimeSync } from './hooks/useGlobalRealtimeSync';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { measurePageLoad } from './lib/metrics';
@@ -20,6 +21,7 @@ measurePageLoad();
 export function App() {
   const { restoreSession, isLoading } = useAuthStore();
   const { loadPlatformBranding } = usePlatformStore();
+  useGlobalRealtimeSync();
 
   useEffect(() => {
     void restoreSession();

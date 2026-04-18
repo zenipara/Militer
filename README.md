@@ -357,6 +357,21 @@ SUPABASE_DB_PASSWORD="<password database postgres>"
 Workflow deploy produksi sekarang hanya membangun frontend dan mengirim artefak ke GitHub Pages. Migrasi Supabase dijalankan terpisah lewat CLI sebelum deploy jika memang diperlukan.
 > Penting: pastikan migration `019_request_context_from_headers.sql` ikut terpasang di Supabase production. Tanpa migration ini, login bisa sukses tetapi fungsi dashboard akan gagal karena konteks RLS tidak dikirim di setiap request.
 
+### Rekomendasi Migrasi Hosting (disarankan)
+
+Karena aplikasi memakai Supabase + sinkronisasi realtime lintas dashboard, GitHub Pages sering menjadi bottleneck saat membutuhkan endpoint server-side tambahan (webhook, cron, signed operation, fallback auth flow). Disarankan migrasi ke:
+
+- **Cloudflare Pages + Functions** (latensi global rendah, edge runtime, mudah untuk webhook ringan), atau
+- **Railway** (runtime Node penuh, mudah untuk worker/background jobs dan API internal).
+
+Arsitektur target yang direkomendasikan:
+
+1. Frontend tetap build Vite, deploy ke Cloudflare Pages / Railway static output.
+2. Tambahkan layer function server-side untuk operasi yang tidak ideal dijalankan di client.
+3. Simpan semua secret hanya di environment platform deploy (bukan di browser).
+4. Pertahankan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` untuk frontend, dan gunakan key server-side terpisah hanya di functions.
+5. Aktifkan health check + log terpusat agar issue sinkronisasi realtime lebih cepat didiagnosis.
+
 ---
 
 ## Database Schema

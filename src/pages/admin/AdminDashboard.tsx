@@ -1,30 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/common/Button';
 import { StatCardsSkeleton } from '../../components/common/Skeleton';
-import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
-import type { AuditLog, Attendance } from '../../types';
-import type { LogisticsItem } from '../../types';
 import AttendanceHeatmap from '../../components/ui/AttendanceHeatmap';
 import type { IconName } from '../../icons';
 import { ICONS } from '../../icons';
-
-interface DashboardStats {
-  totalPersonel: number;
-  totalOnline: number;
-  totalTugas: number;
-  tugasAktif: number;
-  pendingIzin: number;
-  absensiHariIni: number;
-  absensiMasuk: number;
-  pinnedPengumuman: number;
-}
+import { useAdminDashboardStore } from '../../store/adminDashboardStore';
+import { subscribeDataChanges } from '../../lib/dataSync';
 
 const actionLabels: Record<string, string> = {
   LOGIN: 'Login',
@@ -57,127 +44,46 @@ const quickLinks: QuickLink[] = [
 export default function AdminDashboard() {
   const { user } = useAuthStore();
   const { dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, showNotification } = useUIStore();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentLogs, setRecentLogs] = useState<AuditLog[]>([]);
-  const [lowStockItems, setLowStockItems] = useState<LogisticsItem[]>([]);
-  const [heatmapAttendances, setHeatmapAttendances] = useState<Attendance[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const {
+    snapshot,
+    isLoading,
+    isRefreshing,
+    error,
+    fetchDashboard,
+    refreshDashboard,
+  } = useAdminDashboardStore();
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
-      const [
-        usersResult,
-        tasksResult,
-        onlineResult,
-        activeTasksResult,
-        pendingLeaveResult,
-        attendanceTotalResult,
-        attendancePresentResult,
-        pinnedAnnouncementsResult,
-        logisticsResult,
-        logsResult,
-        heatmapResult,
-      ] = await Promise.all([
-        supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('tasks').select('id', { count: 'exact', head: true }),
-        supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_online', true),
-        supabase.from('tasks').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_progress']),
-        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('tanggal', today),
-        supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('tanggal', today).eq('status', 'hadir'),
-        supabase.from('announcements').select('id', { count: 'exact', head: true }).eq('is_pinned', true),
-        supabase.from('logistics_items').select('id, nama_item, jumlah, kondisi, kategori, lokasi, satuan_item').order('jumlah', { ascending: true }),
-        supabase
-          .from('audit_logs')
-          .select('*, user:user_id(id,nama,nrp,role)')
-          .order('created_at', { ascending: false })
-          .limit(8),
-        supabase
-          .from('attendance')
-          .select('*, user:user_id(id,nama,nrp,pangkat)')
-          .gte('tanggal', thirtyDaysAgoStr)
-          .lte('tanggal', today)
-          .order('tanggal', { ascending: false }),
-      ]);
-
-      const logisticsItems = (logisticsResult.data as LogisticsItem[]) ?? [];
-      const lowStock = logisticsItems.filter((item) => item.jumlah <= 5 || item.kondisi !== 'baik');
-
-      setStats({
-        totalPersonel: usersResult.count ?? 0,
-        totalOnline: onlineResult.count ?? 0,
-        totalTugas: tasksResult.count ?? 0,
-        tugasAktif: activeTasksResult.count ?? 0,
-        pendingIzin: pendingLeaveResult.count ?? 0,
-        absensiHariIni: attendanceTotalResult.count ?? 0,
-        absensiMasuk: attendancePresentResult.count ?? 0,
-        pinnedPengumuman: pinnedAnnouncementsResult.count ?? 0,
-      });
-      setRecentLogs((logsResult.data as AuditLog[]) ?? []);
-      setHeatmapAttendances((heatmapResult.data as Attendance[]) ?? []);
-      setLowStockItems(lowStock);
-      setLastUpdated(new Date());
-      return true;
-    } catch (fetchError) {
-      setError(fetchError instanceof Error ? fetchError.message : 'Gagal memuat dashboard');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const stats = snapshot?.stats ?? null;
+  const recentLogs = snapshot?.recentLogs ?? [];
+  const lowStockItems = snapshot?.lowStockItems ?? [];
+  const heatmapAttendances = snapshot?.heatmapAttendances ?? [];
+  const gatePassStats = snapshot?.gatePassStats ?? { out: 0, overdue: 0 };
+  const lastUpdated = snapshot?.fetchedAt ? new Date(snapshot.fetchedAt) : null;
 
   useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+    void fetchDashboard();
+  }, [fetchDashboard]);
 
   useEffect(() => {
     if (!dashboardAutoRefreshEnabled) return undefined;
     const intervalId = window.setInterval(() => {
-      void fetchData();
+      void refreshDashboard();
     }, dashboardAutoRefreshMinutes * 60 * 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, fetchData]);
-
-  // Gunakan ref agar tidak terjadi duplicate subscription
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  }, [dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, refreshDashboard]);
 
   useEffect(() => {
-    // Cleanup channel sebelumnya jika ada
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    const channel = supabase.channel('admin-dashboard');
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => { void fetchData(); });
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { void fetchData(); });
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => { void fetchData(); });
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => { void fetchData(); });
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => { void fetchData(); });
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'logistics_items' }, () => { void fetchData(); });
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'audit_logs' }, () => { void fetchData(); });
-    channel.subscribe();
-    channelRef.current = channel;
-
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [fetchData]);
+    return subscribeDataChanges(
+      ['users', 'tasks', 'leave_requests', 'attendance', 'announcements', 'logistics_requests', 'audit_logs', 'gate_pass'],
+      () => {
+        void refreshDashboard();
+      },
+    );
+  }, [refreshDashboard]);
 
   const handleRefresh = async () => {
-    const ok = await fetchData();
+    const ok = await refreshDashboard();
     if (ok) {
       showNotification('Ringkasan dashboard diperbarui', 'success');
     } else {
@@ -188,28 +94,6 @@ export default function AdminDashboard() {
   const attendanceRate = stats && stats.absensiHariIni > 0
     ? Math.round((stats.absensiMasuk / stats.absensiHariIni) * 100)
     : 0;
-
-  const [gatePassStats, setGatePassStats] = useState<{ out: number; overdue: number }>({ out: 0, overdue: 0 });
-
-  useEffect(() => {
-    // Fetch gate pass stats and compute overdue client-side.
-    // 'overdue' is never persisted to the DB — it's computed by comparing
-    // waktu_kembali with the current time for passes with status 'out'.
-    (async () => {
-      const now = new Date();
-      const { data, error } = await supabase
-        .from('gate_pass')
-        .select('status, waktu_kembali', { head: false });
-      if (!error && Array.isArray(data)) {
-        const rows = data as Array<{ status?: string; waktu_kembali?: string | null }>;
-        const outRows = rows.filter((g) => g.status === 'out');
-        setGatePassStats({
-          out: outRows.filter((g) => !g.waktu_kembali || new Date(g.waktu_kembali) >= now).length,
-          overdue: outRows.filter((g) => g.waktu_kembali && new Date(g.waktu_kembali) < now).length,
-        });
-      }
-    })();
-  }, []);
 
   const operationalHighlights = stats
     ? [
@@ -234,7 +118,7 @@ export default function AdminDashboard() {
               {lastUpdated && <span>Terakhir diperbarui {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>}
             </>
           }
-          actions={<Button variant="outline" onClick={() => void handleRefresh()} isLoading={isLoading}>Muat Ulang</Button>}
+          actions={<Button variant="outline" onClick={() => void handleRefresh()} isLoading={isLoading || isRefreshing}>Muat Ulang</Button>}
         />
 
         {error && (

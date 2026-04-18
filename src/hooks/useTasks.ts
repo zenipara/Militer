@@ -102,7 +102,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     });
     channel.subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [user, options.assignedTo, fetchTasks]);
+  }, [user, options.assignedTo, cacheKey, fetchTasks]);
 
   const createTask = async (taskData: {
     judul: string;

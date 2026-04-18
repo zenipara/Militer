@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -9,57 +9,41 @@ import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useTasks } from '../../hooks/useTasks';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useAuthStore } from '../../store/authStore';
-import { supabase } from '../../lib/supabase';
 import { ICONS } from '../../icons';
-import { handleError } from '../../lib/handleError';
+import { useKomandanDashboardStore } from '../../store/komandanDashboardStore';
+import { subscribeDataChanges } from '../../lib/dataSync';
 
 export default function KomandanDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { tasks, isLoading: tasksLoading, refetch: refetchTasks } = useTasks({ assignedBy: user?.id });
   const { announcements } = useAnnouncements();
-  const [onlineCount, setOnlineCount] = useState(0);
-  const [totalPersonel, setTotalPersonel] = useState(0);
+  const { onlineCount, totalPersonel, error, fetchStats } = useKomandanDashboardStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchStats = useCallback(async () => {
-    if (!user?.satuan) return;
-    setError(null);
-    try {
-      const [onlineRes, totalRes] = await Promise.all([
-        supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_online', true).eq('satuan', user.satuan),
-        supabase.from('users').select('id', { count: 'exact', head: true }).eq('satuan', user.satuan).eq('is_active', true),
-      ]);
-      setOnlineCount(onlineRes.count ?? 0);
-      setTotalPersonel(totalRes.count ?? 0);
-    } catch (err) {
-      setError(handleError(err, 'Gagal memuat statistik personel'));
-    }
-  }, [user?.satuan]);
 
   const refresh = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([fetchStats(), refetchTasks()]);
+      await Promise.all([fetchStats(user?.satuan), refetchTasks()]);
     } finally {
       setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    void fetchStats();
-  }, [fetchStats]);
+    void fetchStats(user?.satuan);
+  }, [fetchStats, user?.satuan]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel('komandan-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => { void fetchStats(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => { void refetchTasks(); })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => { void fetchStats(); })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchStats, refetchTasks]);
+    return subscribeDataChanges(['users', 'tasks', 'announcements'], (changed) => {
+      if (changed.includes('users') || changed.includes('announcements')) {
+        void fetchStats(user?.satuan);
+      }
+      if (changed.includes('tasks')) {
+        void refetchTasks();
+      }
+    });
+  }, [fetchStats, refetchTasks, user?.satuan]);
 
   const pendingTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress');
   const doneTasks = tasks.filter((t) => t.status === 'done');
