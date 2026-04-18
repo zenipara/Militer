@@ -169,7 +169,7 @@ BEGIN
   END IF;
 
   UPDATE public.users
-  SET pin_hash   = extensions.crypt(p_new_pin, extensions.gen_salt('bf', 12)),
+  SET pin_hash   = extensions.crypt(p_new_pin, extensions.gen_salt('bf', 10)),
       updated_at = NOW()
   WHERE id = ANY(p_user_ids)
     AND is_active = TRUE;

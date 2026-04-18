@@ -550,7 +550,10 @@ BEGIN
   END IF;
 
   -- Prevent sender impersonation: from_user must match caller
-  IF p_from_user IS DISTINCT FROM p_caller_id THEN
+  IF p_caller_id IS NULL THEN
+    RAISE EXCEPTION 'Unauthenticated';
+  END IF;
+  IF p_from_user <> p_caller_id THEN
     RAISE EXCEPTION 'Unauthorized: cannot send message on behalf of another user';
   END IF;
 
