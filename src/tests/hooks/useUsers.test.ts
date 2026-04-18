@@ -233,12 +233,32 @@ describe('useUsers', () => {
       await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await act(async () => {
-        await result.current.updateOwnProfile('u1', { no_telepon: '081234567890', alamat: 'Jl. Merdeka No. 1', kontak_darurat_nama: 'Ibu Sari', kontak_darurat_telp: '089876543210' });
+        await result.current.updateOwnProfile('u1', {
+          tempat_lahir: 'Bandung',
+          tanggal_lahir: '1990-01-02',
+          no_telepon: '081234567890',
+          alamat: 'Jl. Merdeka No. 1',
+          pendidikan_terakhir: 'S1',
+          agama: 'Islam',
+          status_pernikahan: 'menikah',
+          golongan_darah: 'O',
+          kontak_darurat_nama: 'Ibu Sari',
+          kontak_darurat_telp: '089876543210',
+        });
       });
 
       expect(mockSupabase.rpc).toHaveBeenCalledWith('update_own_profile', {
-        p_user_id: 'u1', p_no_telepon: '081234567890', p_alamat: 'Jl. Merdeka No. 1',
-        p_kontak_darurat_nama: 'Ibu Sari', p_kontak_darurat_telp: '089876543210',
+        p_user_id: 'u1',
+        p_tempat_lahir: 'Bandung',
+        p_tanggal_lahir: '1990-01-02',
+        p_no_telepon: '081234567890',
+        p_alamat: 'Jl. Merdeka No. 1',
+        p_pendidikan_terakhir: 'S1',
+        p_agama: 'Islam',
+        p_status_pernikahan: 'menikah',
+        p_golongan_darah: 'O',
+        p_kontak_darurat_nama: 'Ibu Sari',
+        p_kontak_darurat_telp: '089876543210',
       });
     });
 

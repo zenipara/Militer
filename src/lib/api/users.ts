@@ -122,8 +122,14 @@ export async function fetchUserById(userId: string): Promise<User> {
 }
 
 export interface UpdateOwnProfileParams {
+  tempat_lahir?: string;
+  tanggal_lahir?: string;
   no_telepon?: string;
   alamat?: string;
+  pendidikan_terakhir?: string;
+  agama?: string;
+  status_pernikahan?: User['status_pernikahan'];
+  golongan_darah?: User['golongan_darah'];
   kontak_darurat_nama?: string;
   kontak_darurat_telp?: string;
 }
@@ -133,8 +139,14 @@ export async function updateOwnProfile(userId: string, params: UpdateOwnProfileP
 
   const { error } = await supabase.rpc('update_own_profile', {
     p_user_id: userId,
+    p_tempat_lahir: params.tempat_lahir ?? null,
+    p_tanggal_lahir: params.tanggal_lahir ?? null,
     p_no_telepon: params.no_telepon ?? null,
     p_alamat: params.alamat ?? null,
+    p_pendidikan_terakhir: params.pendidikan_terakhir ?? null,
+    p_agama: params.agama ?? null,
+    p_status_pernikahan: params.status_pernikahan ?? null,
+    p_golongan_darah: params.golongan_darah ?? null,
     p_kontak_darurat_nama: params.kontak_darurat_nama ?? null,
     p_kontak_darurat_telp: params.kontak_darurat_telp ?? null,
   });

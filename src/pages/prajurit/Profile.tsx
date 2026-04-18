@@ -13,6 +13,7 @@ import { useUsers } from '../../hooks/useUsers';
 import { supabase } from '../../lib/supabase';
 import { notifyDataChanged } from '../../lib/dataSync';
 import { handleError } from '../../lib/handleError';
+import type { User } from '../../types';
 
 interface PersonalStats {
   totalTasks: number;
@@ -21,8 +22,28 @@ interface PersonalStats {
   hadirCount: number;
 }
 
+const AGAMA_OPTIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
+const PENDIDIKAN_OPTIONS = ['SD', 'SMP', 'SMA/SMK', 'D1', 'D2', 'D3', 'D4', 'S1', 'S2', 'S3'];
+const STATUS_PERNIKAHAN_OPTIONS: NonNullable<User['status_pernikahan']>[] = ['lajang', 'menikah', 'cerai', 'duda', 'janda'];
+const GOLONGAN_DARAH_OPTIONS: NonNullable<User['golongan_darah']>[] = ['A', 'B', 'AB', 'O'];
+
+function createProfileForm(user: User) {
+  return {
+    tempat_lahir: user.tempat_lahir ?? '',
+    tanggal_lahir: user.tanggal_lahir ?? '',
+    no_telepon: user.no_telepon ?? '',
+    alamat: user.alamat ?? '',
+    pendidikan_terakhir: user.pendidikan_terakhir ?? '',
+    agama: user.agama ?? '',
+    status_pernikahan: user.status_pernikahan ?? '',
+    golongan_darah: user.golongan_darah ?? '',
+    kontak_darurat_nama: user.kontak_darurat_nama ?? '',
+    kontak_darurat_telp: user.kontak_darurat_telp ?? '',
+  };
+}
+
 export default function Profile() {
-  const { user } = useAuthStore();
+  const { user, restoreSession } = useAuthStore();
   const { showNotification } = useUIStore();
   const { attendances } = useAttendance(user?.id);
   const { updateOwnProfile } = useUsers();
@@ -35,20 +56,21 @@ export default function Profile() {
   // Edit profile state
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
+    tempat_lahir: '',
+    tanggal_lahir: '',
     no_telepon: '',
     alamat: '',
+    pendidikan_terakhir: '',
+    agama: '',
+    status_pernikahan: '',
+    golongan_darah: '',
     kontak_darurat_nama: '',
     kontak_darurat_telp: '',
   });
 
   useEffect(() => {
     if (user) {
-      setProfileForm({
-        no_telepon: user.no_telepon ?? '',
-        alamat: user.alamat ?? '',
-        kontak_darurat_nama: user.kontak_darurat_nama ?? '',
-        kontak_darurat_telp: user.kontak_darurat_telp ?? '',
-      });
+      setProfileForm(createProfileForm(user));
     }
   }, [user]);
 
@@ -118,7 +140,16 @@ export default function Profile() {
     if (!user?.id) return;
     setIsSaving(true);
     try {
-      await updateOwnProfile(user.id, profileForm);
+      await updateOwnProfile(user.id, {
+        ...profileForm,
+        status_pernikahan: profileForm.status_pernikahan
+          ? profileForm.status_pernikahan as User['status_pernikahan']
+          : undefined,
+        golongan_darah: profileForm.golongan_darah
+          ? profileForm.golongan_darah as User['golongan_darah']
+          : undefined,
+      });
+      await restoreSession();
       showNotification('Profil berhasil diperbarui', 'success');
       notifyDataChanged('users');
       setEditingProfile(false);
@@ -217,7 +248,7 @@ export default function Profile() {
         {/* Edit Profil Kontak — field yang bisa diedit prajurit */}
         <div className="app-card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-text-primary">Informasi Kontak</h3>
+            <h3 className="font-semibold text-text-primary">Informasi Pribadi</h3>
             {!editingProfile && (
               <Button size="sm" variant="outline" onClick={() => setEditingProfile(true)}>
                 ✏ Edit
@@ -227,41 +258,113 @@ export default function Profile() {
 
           {editingProfile ? (
             <form onSubmit={handleSaveProfile} className="space-y-4">
-              <Input
-                label="No. Telepon"
-                type="tel"
-                inputMode="tel"
-                value={profileForm.no_telepon}
-                onChange={(e) => setProfileForm({ ...profileForm, no_telepon: e.target.value })}
-                placeholder="Contoh: 08123456789"
-              />
-              <div>
-                <label className="text-sm font-semibold text-text-primary">Alamat</label>
-                <textarea
-                  className="form-control mt-1 min-h-[80px] resize-y"
-                  value={profileForm.alamat}
-                  onChange={(e) => setProfileForm({ ...profileForm, alamat: e.target.value })}
-                  placeholder="Alamat lengkap..."
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Input
+                  label="Tempat Lahir"
+                  type="text"
+                  value={profileForm.tempat_lahir}
+                  onChange={(e) => setProfileForm({ ...profileForm, tempat_lahir: e.target.value })}
+                  placeholder="Contoh: Bandung"
+                />
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">Tanggal Lahir</label>
+                  <input
+                    type="date"
+                    className="form-control mt-1"
+                    value={profileForm.tanggal_lahir}
+                    onChange={(e) => setProfileForm({ ...profileForm, tanggal_lahir: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">Agama</label>
+                  <select
+                    className="form-control mt-1"
+                    value={profileForm.agama}
+                    onChange={(e) => setProfileForm({ ...profileForm, agama: e.target.value })}
+                  >
+                    <option value="">— Pilih —</option>
+                    {AGAMA_OPTIONS.map((agama) => (
+                      <option key={agama} value={agama}>{agama}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">Pendidikan Terakhir</label>
+                  <select
+                    className="form-control mt-1"
+                    value={profileForm.pendidikan_terakhir}
+                    onChange={(e) => setProfileForm({ ...profileForm, pendidikan_terakhir: e.target.value })}
+                  >
+                    <option value="">— Pilih —</option>
+                    {PENDIDIKAN_OPTIONS.map((pendidikan) => (
+                      <option key={pendidikan} value={pendidikan}>{pendidikan}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">Status Pernikahan</label>
+                  <select
+                    className="form-control mt-1"
+                    value={profileForm.status_pernikahan}
+                    onChange={(e) => setProfileForm({ ...profileForm, status_pernikahan: e.target.value })}
+                  >
+                    <option value="">— Pilih —</option>
+                    {STATUS_PERNIKAHAN_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-text-primary">Golongan Darah</label>
+                  <select
+                    className="form-control mt-1"
+                    value={profileForm.golongan_darah}
+                    onChange={(e) => setProfileForm({ ...profileForm, golongan_darah: e.target.value })}
+                  >
+                    <option value="">— Pilih —</option>
+                    {GOLONGAN_DARAH_OPTIONS.map((golongan) => (
+                      <option key={golongan} value={golongan}>{golongan}</option>
+                    ))}
+                  </select>
+                </div>
+                <Input
+                  label="No. Telepon"
+                  type="tel"
+                  inputMode="tel"
+                  value={profileForm.no_telepon}
+                  onChange={(e) => setProfileForm({ ...profileForm, no_telepon: e.target.value })}
+                  placeholder="Contoh: 08123456789"
+                />
+                <div className="sm:col-span-2">
+                  <label className="text-sm font-semibold text-text-primary">Alamat</label>
+                  <textarea
+                    className="form-control mt-1 min-h-[96px] resize-y"
+                    value={profileForm.alamat}
+                    onChange={(e) => setProfileForm({ ...profileForm, alamat: e.target.value })}
+                    placeholder="Alamat lengkap..."
+                  />
+                </div>
+                <Input
+                  label="Kontak Darurat — Nama"
+                  type="text"
+                  value={profileForm.kontak_darurat_nama}
+                  onChange={(e) => setProfileForm({ ...profileForm, kontak_darurat_nama: e.target.value })}
+                  placeholder="Nama anggota keluarga / kerabat"
+                />
+                <Input
+                  label="Kontak Darurat — Telepon"
+                  type="tel"
+                  inputMode="tel"
+                  value={profileForm.kontak_darurat_telp}
+                  onChange={(e) => setProfileForm({ ...profileForm, kontak_darurat_telp: e.target.value })}
+                  placeholder="Contoh: 08123456789"
                 />
               </div>
-              <Input
-                label="Kontak Darurat — Nama"
-                type="text"
-                value={profileForm.kontak_darurat_nama}
-                onChange={(e) => setProfileForm({ ...profileForm, kontak_darurat_nama: e.target.value })}
-                placeholder="Nama anggota keluarga / kerabat"
-              />
-              <Input
-                label="Kontak Darurat — Telepon"
-                type="tel"
-                inputMode="tel"
-                value={profileForm.kontak_darurat_telp}
-                onChange={(e) => setProfileForm({ ...profileForm, kontak_darurat_telp: e.target.value })}
-                placeholder="Contoh: 08123456789"
-              />
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
                 <p className="text-xs text-primary">
-                  ℹ Data lainnya (nama, NRP, pangkat, jabatan, satuan) hanya dapat diubah oleh Admin.
+                  ℹ Anda hanya bisa mengubah data pribadi dan kontak. Data dinas seperti nama, NRP, pangkat, jabatan, dan satuan tetap dikelola Admin.
                 </p>
               </div>
               <div className="flex gap-3">
@@ -270,12 +373,7 @@ export default function Profile() {
                   variant="ghost"
                   onClick={() => {
                     setEditingProfile(false);
-                    setProfileForm({
-                      no_telepon: user.no_telepon ?? '',
-                      alamat: user.alamat ?? '',
-                      kontak_darurat_nama: user.kontak_darurat_nama ?? '',
-                      kontak_darurat_telp: user.kontak_darurat_telp ?? '',
-                    });
+                    setProfileForm(createProfileForm(user));
                   }}
                 >
                   Batal
@@ -288,6 +386,22 @@ export default function Profile() {
           ) : (
             <div className="space-y-0">
               {[
+                { label: 'Tempat Lahir', value: user.tempat_lahir ?? '—' },
+                {
+                  label: 'Tanggal Lahir',
+                  value: user.tanggal_lahir
+                    ? new Date(user.tanggal_lahir + 'T12:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                    : '—',
+                },
+                { label: 'Agama', value: user.agama ?? '—' },
+                { label: 'Pendidikan Terakhir', value: user.pendidikan_terakhir ?? '—' },
+                {
+                  label: 'Status Pernikahan',
+                  value: user.status_pernikahan
+                    ? user.status_pernikahan.charAt(0).toUpperCase() + user.status_pernikahan.slice(1)
+                    : '—',
+                },
+                { label: 'Golongan Darah', value: user.golongan_darah ?? '—' },
                 { label: 'No. Telepon', value: user.no_telepon ?? '—' },
                 { label: 'Alamat', value: user.alamat ?? '—' },
                 { label: 'Kontak Darurat', value: user.kontak_darurat_nama ?? '—' },
