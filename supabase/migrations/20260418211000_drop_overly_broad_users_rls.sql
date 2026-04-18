@@ -1,0 +1,24 @@
+-- ============================================================
+-- KARYO OS — Security: Drop overly-broad users_login_rpc RLS policy
+--
+-- Problem:
+-- The "users_login_rpc" policy allowed ANY session with a non-null
+-- karyo.current_user_id to SELECT every row in public.users.
+-- This let a prajurit (or guard) bypass their own restrictive policy
+-- and read the entire users table.
+--
+-- Why it was added:
+-- It was a bandaid so that SECURITY DEFINER login RPCs could read
+-- the users table.  However, SECURITY DEFINER functions bypass RLS
+-- entirely (they run as the function owner), so this policy was
+-- never actually needed for that purpose.
+--
+-- Safe to drop because:
+-- - admin   → "users_admin_all"          covers full access
+-- - komandan → "users_komandan_read_satuan" covers their unit
+-- - prajurit → "users_prajurit_own"      covers own row
+-- - guard   → no direct table access needed; all data arrives via
+--             SECURITY DEFINER RPCs (api_get_gate_passes, scan_pos_jaga …)
+-- ============================================================
+
+DROP POLICY IF EXISTS "users_login_rpc" ON public.users;
