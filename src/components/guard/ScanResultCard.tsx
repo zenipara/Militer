@@ -8,14 +8,14 @@ export default function ScanResultCard({ data }: { data: GatePass }) {
       <div className="text-2xl font-bold text-text-primary">{data.user?.nama ?? '—'}</div>
       <div className="text-sm text-text-muted">{data.user?.nrp ?? '—'}</div>
       <div className="mt-3 text-xl font-semibold text-text-primary">
-        {data.status === 'out'
+        {data.status === 'checked_in' || data.status === 'out'
           ? 'Sedang di luar'
-          : data.status === 'returned'
+          : data.status === 'completed' || data.status === 'returned'
           ? 'Sudah kembali'
           : 'Belum keluar'}
       </div>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {data.status === 'out' && !data.actual_kembali && (
+        {(data.status === 'checked_in' || data.status === 'out') && !data.actual_kembali && (
           <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1.5 text-primary text-sm font-semibold">
             Izinkan Masuk
           </span>

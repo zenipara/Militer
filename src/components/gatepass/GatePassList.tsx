@@ -1,7 +1,6 @@
 import React from 'react';
 import { GatePass } from '../../types';
 import GatePassStatusBadge from './GatePassStatusBadge';
-import GatePassQRCode from './GatePassQRCode';
 
 interface Props {
   gatePasses: GatePass[];
@@ -18,7 +17,6 @@ const GatePassList: React.FC<Props> = ({ gatePasses, guard }) => (
           <div className="text-xs">{gp.waktu_keluar} - {gp.waktu_kembali}</div>
         </div>
         <GatePassStatusBadge gatePass={gp} guard={guard} />
-        {gp.status === 'approved' || gp.status === 'out' ? <GatePassQRCode qrToken={gp.qr_token} /> : null}
       </div>
     ))}
   </div>

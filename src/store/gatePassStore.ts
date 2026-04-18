@@ -34,11 +34,11 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
         ? await fetchGatePassesByUser(user.id, user.role, user.id)
         : await fetchAllGatePasses(user.id, user.role);
 
-    // Client-side overdue detection: mark passes with status 'out' whose
+    // Client-side overdue detection: mark passes with status 'checked_in' whose
     // waktu_kembali has already passed as 'overdue'.
     const now = new Date();
     const processed = data.map((gp) => {
-      if (gp.status === 'out' && gp.waktu_kembali && new Date(gp.waktu_kembali) < now) {
+      if ((gp.status === 'checked_in' || gp.status === 'out') && gp.waktu_kembali && new Date(gp.waktu_kembali) < now) {
         return { ...gp, status: 'overdue' as GatePassStatus };
       }
       return gp;

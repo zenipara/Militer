@@ -41,6 +41,9 @@ export default function GatePassForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-text-primary">
+        Setelah submit, pengajuan otomatis disetujui. Verifikasi keluar dan kembali dilakukan dengan scan QR statis di Pos Jaga.
+      </div>
       {error && (
         <div className="rounded-2xl border border-accent-red/20 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">
           {error}
@@ -75,7 +78,7 @@ export default function GatePassForm() {
         required
       />
       <Button type="submit" variant="primary" size="lg" isLoading={loading} className="w-full">
-        {loading ? 'Mengajukan...' : 'Ajukan Izin'}
+        {loading ? 'Mengirim...' : 'Submit'}
       </Button>
     </form>
   );

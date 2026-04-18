@@ -10,6 +10,8 @@ export type GatePassStatus =
   | 'pending'
   | 'approved'
   | 'rejected'
+  | 'checked_in'
+  | 'completed'
   | 'out'
   | 'returned'
   | 'overdue';

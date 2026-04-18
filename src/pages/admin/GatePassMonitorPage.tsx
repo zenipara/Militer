@@ -13,7 +13,7 @@ interface MonitorGatePass extends GatePass {
 }
 
 function getEffectiveStatus(gatePass: GatePass, now: Date): GatePassStatus {
-  if (gatePass.status === 'out' && gatePass.waktu_kembali) {
+  if ((gatePass.status === 'checked_in' || gatePass.status === 'out') && gatePass.waktu_kembali) {
     const backAt = new Date(gatePass.waktu_kembali);
     if (!Number.isNaN(backAt.getTime()) && backAt < now) return 'overdue';
   }
@@ -47,6 +47,8 @@ function getStatusLabel(status: GatePassStatus | 'all') {
     pending: 'Pending',
     approved: 'Approved',
     rejected: 'Rejected',
+    checked_in: 'Checked-In',
+    completed: 'Completed',
     out: 'Sedang keluar',
     returned: 'Sudah kembali',
     overdue: 'Overdue',
@@ -63,9 +65,11 @@ function parseTimeMs(value?: string) {
 function compareMonitorPriority(a: MonitorGatePass, b: MonitorGatePass, now: Date) {
   const rank: Record<GatePassStatus, number> = {
     overdue: 0,
-    out: 1,
+    checked_in: 1,
     approved: 2,
     pending: 3,
+    completed: 4,
+    out: 4,
     returned: 4,
     rejected: 5,
   };
@@ -79,7 +83,7 @@ function compareMonitorPriority(a: MonitorGatePass, b: MonitorGatePass, now: Dat
     return bLateMs - aLateMs;
   }
 
-  if (a.effectiveStatus === 'out' && b.effectiveStatus === 'out') {
+  if ((a.effectiveStatus === 'checked_in' || a.effectiveStatus === 'out') && (b.effectiveStatus === 'checked_in' || b.effectiveStatus === 'out')) {
     return parseTimeMs(a.waktu_kembali) - parseTimeMs(b.waktu_kembali);
   }
 
@@ -163,9 +167,9 @@ export default function GatePassMonitorPage() {
       .sort((a, b) => compareMonitorPriority(a, b, now));
   }, [monitorRows, query, statusFilter, startDate, endDate, now]);
 
-  const totalActive = monitorRows.filter(gp => ['approved', 'out', 'overdue'].includes(gp.effectiveStatus)).length;
+  const totalActive = monitorRows.filter(gp => ['approved', 'checked_in', 'overdue', 'out'].includes(gp.effectiveStatus)).length;
   const approved = monitorRows.filter(gp => gp.effectiveStatus === 'approved').length;
-  const keluar = monitorRows.filter(gp => gp.effectiveStatus === 'out').length;
+  const keluar = monitorRows.filter(gp => gp.effectiveStatus === 'checked_in' || gp.effectiveStatus === 'out').length;
   const overdue = monitorRows.filter(gp => gp.effectiveStatus === 'overdue').length;
 
   const handleRefresh = async () => {
@@ -324,7 +328,7 @@ export default function GatePassMonitorPage() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl font-bold">Monitoring Gate Pass</h1>
-            <p className="text-sm text-text-muted">Pantau personel yang disetujui keluar, sedang keluar, dan terlambat kembali.</p>
+            <p className="text-sm text-text-muted">Pantau personel dengan status approved, checked-in, completed, dan overdue.</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={resetFilters}>Reset Filter</Button>
@@ -373,9 +377,9 @@ export default function GatePassMonitorPage() {
             >
               <option value="all">{getStatusLabel('all')}</option>
               <option value="approved">{getStatusLabel('approved')}</option>
-              <option value="out">{getStatusLabel('out')}</option>
+              <option value="checked_in">{getStatusLabel('checked_in')}</option>
               <option value="overdue">{getStatusLabel('overdue')}</option>
-              <option value="returned">{getStatusLabel('returned')}</option>
+              <option value="completed">{getStatusLabel('completed')}</option>
               <option value="pending">{getStatusLabel('pending')}</option>
               <option value="rejected">{getStatusLabel('rejected')}</option>
             </select>
@@ -400,7 +404,7 @@ export default function GatePassMonitorPage() {
             <Button variant="ghost" size="sm" onClick={() => applyDatePreset(30)}>30 hari</Button>
           </div>
           <p className="mt-2 text-xs text-text-muted">
-            Urutan prioritas: overdue terlama, lalu out terdekat batas kembali, lalu status lainnya.
+            Urutan prioritas: overdue terlama, lalu checked-in terdekat batas kembali, lalu status lainnya.
           </p>
         </div>
 
@@ -416,7 +420,7 @@ export default function GatePassMonitorPage() {
             const isValidKembali = kembaliAt && !Number.isNaN(kembaliAt.getTime());
             const deltaMs = isValidKembali ? Math.abs(kembaliAt.getTime() - now.getTime()) : 0;
             const showLate = gp.effectiveStatus === 'overdue' && isValidKembali;
-            const showRemaining = gp.effectiveStatus === 'out' && isValidKembali;
+            const showRemaining = (gp.effectiveStatus === 'checked_in' || gp.effectiveStatus === 'out') && isValidKembali;
 
             return (
               <div

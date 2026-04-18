@@ -108,6 +108,8 @@ export default function ScanPosJagaPage() {
   };
 
   const statusLabel: Record<string, string> = {
+    checked_in: 'Checked-In',
+    completed: 'Completed',
     out: 'Keluar',
     returned: 'Kembali',
   };
