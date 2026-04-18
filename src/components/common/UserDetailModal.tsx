@@ -13,18 +13,11 @@ import Button from './Button';
 import Input from './Input';
 import { RoleBadge } from './Badge';
 import { useUIStore } from '../../store/uiStore';
-import { supabase } from '../../lib/supabase';
+import { fetchUserPersonalStats, fetchUserDisciplineNotes, type UserPersonalStats } from '../../lib/api/users';
 import type { User, Role, DisciplineNote } from '../../types';
 
 type Tab = 'info' | 'personal' | 'stats' | 'disiplin';
 type ModalMode = 'view' | 'edit';
-
-interface PersonalStats {
-  totalTasks: number;
-  approvedTasks: number;
-  totalAttendance: number;
-  hadirCount: number;
-}
 
 interface UserDetailModalProps {
   isOpen: boolean;
@@ -63,7 +56,7 @@ export default function UserDetailModal({
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [stats, setStats] = useState<PersonalStats | null>(null);
+  const [stats, setStats] = useState<UserPersonalStats | null>(null);
   const [disciplineNotes, setDisciplineNotes] = useState<DisciplineNote[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isLoadingDisiplin, setIsLoadingDisiplin] = useState(false);
@@ -103,23 +96,10 @@ export default function UserDetailModal({
   useEffect(() => {
     if (activeTab === 'stats' && user && !stats) {
       setIsLoadingStats(true);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
-      void Promise.all([
-        supabase.from('tasks').select('status').eq('assigned_to', user.id),
-        supabase.from('attendance').select('status').eq('user_id', user.id).gte('tanggal', dateFrom),
-      ]).then(([tasksRes, attnRes]) => {
-        const tasks = (tasksRes.data ?? []) as { status: string }[];
-        const attn = (attnRes.data ?? []) as { status: string }[];
-        setStats({
-          totalTasks: tasks.length,
-          approvedTasks: tasks.filter((t) => t.status === 'approved').length,
-          totalAttendance: attn.length,
-          hadirCount: attn.filter((a) => a.status === 'hadir').length,
-        });
-        setIsLoadingStats(false);
-      }).catch(() => setIsLoadingStats(false));
+      void fetchUserPersonalStats(user.id)
+        .then((result) => setStats(result))
+        .catch(() => {})
+        .finally(() => setIsLoadingStats(false));
     }
   }, [activeTab, user, stats]);
 
@@ -127,19 +107,10 @@ export default function UserDetailModal({
   useEffect(() => {
     if (activeTab === 'disiplin' && user && disciplineNotes.length === 0) {
       setIsLoadingDisiplin(true);
-      const fetchNotes = async () => {
-        try {
-          const { data } = await supabase
-            .from('discipline_notes')
-            .select('id, jenis, isi, created_at, created_by')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false });
-          setDisciplineNotes((data ?? []) as DisciplineNote[]);
-        } finally {
-          setIsLoadingDisiplin(false);
-        }
-      };
-      void fetchNotes();
+      void fetchUserDisciplineNotes(user.id)
+        .then((notes) => setDisciplineNotes(notes))
+        .catch(() => {})
+        .finally(() => setIsLoadingDisiplin(false));
     }
   }, [activeTab, user, disciplineNotes.length]);
 

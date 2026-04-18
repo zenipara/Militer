@@ -1,5 +1,5 @@
 import { supabase } from '../supabase';
-import type { User, Role } from '../../types';
+import type { User, Role, DisciplineNote } from '../../types';
 
 // Helper: validate ID format (strict for real UUID, lenient for test IDs)
 function validateId(value: string): boolean {
@@ -127,4 +127,87 @@ export async function updateOwnProfile(userId: string, params: UpdateOwnProfileP
     p_kontak_darurat_telp: params.kontak_darurat_telp ?? null,
   });
   if (error) throw error;
+}
+
+// ── User personal stats ──────────────────────────────────────────────────────
+
+export interface UserPersonalStats {
+  totalTasks: number;
+  approvedTasks: number;
+  totalAttendance: number;
+  hadirCount: number;
+}
+
+export async function fetchUserPersonalStats(userId: string): Promise<UserPersonalStats> {
+  if (!validateId(userId)) throw new Error('Invalid user ID format');
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+
+  const [tasksRes, attnRes] = await Promise.all([
+    supabase.from('tasks').select('status').eq('assigned_to', userId),
+    supabase.from('attendance').select('status').eq('user_id', userId).gte('tanggal', dateFrom),
+  ]);
+
+  if (tasksRes.error) throw tasksRes.error;
+  if (attnRes.error) throw attnRes.error;
+
+  const tasks = (tasksRes.data ?? []) as { status: string }[];
+  const attn = (attnRes.data ?? []) as { status: string }[];
+
+  return {
+    totalTasks: tasks.length,
+    approvedTasks: tasks.filter((t) => t.status === 'approved').length,
+    totalAttendance: attn.length,
+    hadirCount: attn.filter((a) => a.status === 'hadir').length,
+  };
+}
+
+// ── Discipline notes ─────────────────────────────────────────────────────────
+
+export async function fetchUserDisciplineNotes(userId: string): Promise<DisciplineNote[]> {
+  if (!validateId(userId)) throw new Error('Invalid user ID format');
+
+  const { data, error } = await supabase
+    .from('discipline_notes')
+    .select('id, jenis, isi, created_at, created_by')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []) as DisciplineNote[];
+}
+
+// ── Avatar upload ─────────────────────────────────────────────────────────────
+
+export interface UploadAvatarResult {
+  publicUrl: string;
+}
+
+export async function uploadAvatar(userId: string, file: File): Promise<UploadAvatarResult> {
+  if (!validateId(userId)) throw new Error('Invalid user ID format');
+  if (!file.type.startsWith('image/')) throw new Error('File harus berupa gambar (JPG, PNG, WebP)');
+  if (file.size > 2 * 1024 * 1024) throw new Error('Ukuran file maksimal 2 MB');
+
+  const ext = file.name.split('.').pop() ?? 'jpg';
+  const path = `${userId}/avatar.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) throw uploadError;
+
+  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+  const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({ foto_url: publicUrl })
+    .eq('id', userId);
+
+  if (updateError) throw updateError;
+
+  return { publicUrl };
 }

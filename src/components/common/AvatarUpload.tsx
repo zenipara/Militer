@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { uploadAvatar } from '../../lib/api/users';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { readSessionContext } from '../../lib/sessionContext';
@@ -59,29 +59,11 @@ export default function AvatarUpload({ onSuccess }: AvatarUploadProps) {
   };
 
   const handleUpload = async () => {
-    const activeUser = user ?? (sessionContext ? { id: sessionContext.user_id } : null);
-    if (!selectedFile || !activeUser) return;
+    const activeUserId = user?.id ?? sessionContext?.user_id;
+    if (!selectedFile || !activeUserId) return;
     setIsUploading(true);
     try {
-      // Derive a stable file path per user
-      const ext = selectedFile.name.split('.').pop() ?? 'jpg';
-      const path = `${activeUser.id}/avatar.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(path, selectedFile, { upsert: true, contentType: selectedFile.type });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
-      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ foto_url: publicUrl })
-        .eq('id', activeUser.id);
-
-      if (updateError) throw updateError;
+      const { publicUrl } = await uploadAvatar(activeUserId, selectedFile);
 
       // Re-sync session so authStore.user.foto_url is updated
       await restoreSession();

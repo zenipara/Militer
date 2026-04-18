@@ -2,20 +2,34 @@ import { ICONS } from '../../icons';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { searchAll, type SearchResult as ApiSearchResult } from '../../lib/api/search';
 import { readSessionContext } from '../../lib/sessionContext';
 import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { handleError } from '../../lib/handleError';
 
-interface SearchResult {
-  id: string;
-  type: 'task' | 'user' | 'announcement';
-  title: string;
-  subtitle: string;
+interface SearchResult extends ApiSearchResult {
   href: string;
   icon: keyof typeof ICONS;
 }
+
+function buildHref(result: ApiSearchResult): string {
+  const role = result.role;
+  if (result.type === 'task') {
+    return role === 'prajurit' ? '/prajurit/tasks' : '/komandan/tasks';
+  }
+  if (result.type === 'user') {
+    return role === 'admin' ? '/admin/users' : '/komandan/personnel';
+  }
+  // announcement
+  return role === 'admin' ? '/admin/announcements' : `/${role}/dashboard`;
+}
+
+const TYPE_ICON: Record<ApiSearchResult['type'], keyof typeof ICONS> = {
+  task: 'ClipboardCheck',
+  user: 'Users',
+  announcement: 'Megaphone',
+};
 
 export default function GlobalSearch() {
   const { user } = useAuthStore();
@@ -29,71 +43,30 @@ export default function GlobalSearch() {
   const containerRef = useRef<HTMLDivElement>(null);
   const query = useDebounce(rawQuery, 300);
 
+  const activeRole = user?.role ?? sessionContext?.role;
+
   const search = useCallback(async (q: string) => {
-    const activeUser = user ?? (sessionContext ? { role: sessionContext.role } : null);
-    if (!q.trim() || !activeUser) {
+    if (!q.trim() || !activeRole) {
       setResults([]);
       return;
     }
     setIsLoading(true);
     try {
-      const likeQ = `%${q}%`;
-
-      const [tasksRes, usersRes, announcementsRes] = await Promise.all([
-        supabase
-          .from('tasks')
-          .select('id, judul, status, satuan')
-          .or(`judul.ilike.${likeQ},deskripsi.ilike.${likeQ}`)
-          .limit(5),
-        activeUser.role === 'admin' || activeUser.role === 'komandan'
-          ? supabase
-              .from('users')
-              .select('id, nama, nrp, pangkat, role')
-              .or(`nama.ilike.${likeQ},nrp.ilike.${likeQ}`)
-              .eq('is_active', true)
-              .limit(5)
-          : Promise.resolve({ data: [] }),
-        supabase
-          .from('announcements')
-          .select('id, judul, isi')
-          .or(`judul.ilike.${likeQ},isi.ilike.${likeQ}`)
-          .limit(4),
-      ]);
-
-      const combined: SearchResult[] = [
-        ...((tasksRes.data ?? []) as { id: string; judul: string; status: string; satuan: string | null }[]).map((t) => ({
-          id: t.id,
-          type: 'task' as const,
-          title: t.judul,
-          subtitle: `Status: ${t.status}${t.satuan ? ` · ${t.satuan}` : ''}`,
-          href: activeUser.role === 'prajurit' ? '/prajurit/tasks' : '/komandan/tasks',
-          icon: 'ClipboardCheck' as keyof typeof ICONS,
+      const apiResults = await searchAll({ query: q, callerRole: activeRole });
+      setResults(
+        apiResults.map((r) => ({
+          ...r,
+          href: buildHref(r),
+          icon: TYPE_ICON[r.type],
         })),
-        ...((usersRes.data ?? []) as { id: string; nama: string; nrp: string; pangkat: string | null; role: string }[]).map((u) => ({
-          id: u.id,
-          type: 'user' as const,
-          title: u.nama,
-          subtitle: `${u.nrp}${u.pangkat ? ` · ${u.pangkat}` : ''} · ${u.role}`,
-          href: activeUser?.role === 'admin' ? '/admin/users' : '/komandan/personnel',
-          icon: 'Users' as keyof typeof ICONS,
-        })),
-        ...((announcementsRes.data ?? []) as { id: string; judul: string; isi: string }[]).map((a) => ({
-          id: a.id,
-          type: 'announcement' as const,
-          title: a.judul,
-          subtitle: a.isi.slice(0, 80),
-          href: activeUser?.role === 'admin' ? '/admin/announcements' : `/${activeUser?.role}/dashboard`,
-          icon: 'Megaphone' as keyof typeof ICONS,
-        })),
-      ];
-      setResults(combined);
+      );
     } catch (err) {
       if (import.meta.env.DEV) console.error(handleError(err, 'Gagal mencari data'));
       setResults([]);
     } finally {
       setIsLoading(false);
     }
-  }, [user, sessionContext]);
+  }, [activeRole]);
 
   useEffect(() => {
     void search(query);
@@ -213,3 +186,4 @@ export default function GlobalSearch() {
     </div>
   );
 }
+
