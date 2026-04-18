@@ -255,7 +255,7 @@ CREATE OR REPLACE FUNCTION public.api_update_task_status(
   p_caller_id  UUID,
   p_caller_role TEXT,
   p_task_id    UUID,
-  p_new_status TEXT
+  p_status TEXT
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -267,15 +267,15 @@ BEGIN
     RAISE EXCEPTION 'tasks feature is disabled';
   END IF;
 
-  IF p_new_status NOT IN ('pending', 'in_progress', 'completed', 'rejected') THEN
+  IF p_status NOT IN ('pending', 'in_progress', 'completed', 'rejected') THEN
     RAISE EXCEPTION 'Invalid task status';
   END IF;
 
   IF p_caller_role = 'admin' THEN
-    UPDATE public.tasks SET status = p_new_status, updated_at = NOW() WHERE id = p_task_id;
+    UPDATE public.tasks SET status = p_status, updated_at = NOW() WHERE id = p_task_id;
   ELSIF p_caller_role IN ('komandan', 'prajurit') THEN
     UPDATE public.tasks
-    SET status = p_new_status, updated_at = NOW()
+    SET status = p_status, updated_at = NOW()
     WHERE id = p_task_id AND (assigned_to = p_caller_id OR assigned_by = p_caller_id);
   ELSE
     RAISE EXCEPTION 'Unauthorized';
@@ -288,21 +288,22 @@ $$;
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.api_get_leave_requests(
   p_user_id UUID,
-  p_role    TEXT
+  p_role    TEXT,
+  p_target_user_id UUID DEFAULT NULL
 )
 RETURNS TABLE (
-  id             UUID,
-  user_id        UUID,
-  tipe_izin      TEXT,
-  alasan         TEXT,
-  tanggal_mulai  DATE,
+  id              UUID,
+  user_id         UUID,
+  jenis_izin      TEXT,
+  tanggal_mulai   DATE,
   tanggal_selesai DATE,
-  status         TEXT,
-  created_at     TIMESTAMPTZ,
-  approved_by    UUID,
-  approved_at    TIMESTAMPTZ,
-  user           JSON,
-  approver       JSON
+  alasan          TEXT,
+  status          TEXT,
+  reviewed_by     UUID,
+  reviewed_at     TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ,
+  "user"          JSON,
+  reviewer        JSON
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -315,21 +316,17 @@ BEGIN
 
   RETURN QUERY
   SELECT
-    lr.id, lr.user_id, lr.tipe_izin, lr.alasan, lr.tanggal_mulai, lr.tanggal_selesai,
-    lr.status, lr.created_at, lr.approved_by, lr.approved_at,
-    json_build_object('id', u.id, 'nama', u.nama, 'nrp', u.nrp, 'satuan', u.satuan),
-    CASE WHEN ap.id IS NOT NULL
-      THEN json_build_object('id', ap.id, 'nama', ap.nama, 'nrp', ap.nrp)
-      ELSE NULL
-    END AS approver
+    lr.id, lr.user_id, lr.jenis_izin, lr.tanggal_mulai, lr.tanggal_selesai,
+    lr.alasan, lr.status, lr.reviewed_by, lr.reviewed_at, lr.created_at,
+    CASE WHEN u.id IS NOT NULL THEN json_build_object('id', u.id, 'nama', u.nama, 'nrp', u.nrp, 'pangkat', u.pangkat, 'satuan', u.satuan) ELSE NULL END,
+    CASE WHEN rv.id IS NOT NULL THEN json_build_object('id', rv.id, 'nama', rv.nama) ELSE NULL END
   FROM public.leave_requests lr
   LEFT JOIN public.users u ON lr.user_id = u.id
-  LEFT JOIN public.users ap ON lr.approved_by = ap.id
+  LEFT JOIN public.users rv ON lr.reviewed_by = rv.id
   WHERE
-    (p_role = 'admin')
-    OR (p_role = 'komandan' AND u.satuan = (SELECT satuan FROM public.users WHERE id = p_user_id))
-    OR (p_role = 'prajurit' AND lr.user_id = p_user_id)
-  ORDER BY lr.tanggal_mulai DESC;
+    (p_role IN ('admin', 'komandan') AND (p_target_user_id IS NULL OR lr.user_id = p_target_user_id))
+    OR (p_role NOT IN ('admin', 'komandan') AND lr.user_id = p_user_id)
+  ORDER BY lr.created_at DESC;
 END;
 $$;
 
@@ -337,12 +334,12 @@ $$;
 -- LEAVE REQUESTS: Patch api_insert_leave_request
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.api_insert_leave_request(
-  p_caller_id    UUID,
-  p_caller_role  TEXT,
-  p_tipe_izin    TEXT,
-  p_alasan       TEXT,
+  p_user_id       UUID,
+  p_caller_role   TEXT,
+  p_jenis_izin    TEXT,
   p_tanggal_mulai DATE,
-  p_tanggal_selesai DATE
+  p_tanggal_selesai DATE,
+  p_alasan        TEXT
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -358,8 +355,8 @@ BEGIN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
 
-  INSERT INTO public.leave_requests (user_id, tipe_izin, alasan, tanggal_mulai, tanggal_selesai, status)
-  VALUES (p_caller_id, p_tipe_izin, p_alasan, p_tanggal_mulai, p_tanggal_selesai, 'pending');
+  INSERT INTO public.leave_requests (user_id, jenis_izin, tanggal_mulai, tanggal_selesai, alasan, status)
+  VALUES (p_user_id, p_jenis_izin, p_tanggal_mulai, p_tanggal_selesai, p_alasan, 'pending');
 END;
 $$;
 
@@ -369,8 +366,9 @@ $$;
 CREATE OR REPLACE FUNCTION public.api_update_leave_request_status(
   p_caller_id   UUID,
   p_caller_role TEXT,
-  p_request_id  UUID,
-  p_new_status  TEXT
+  p_id          UUID,
+  p_status      TEXT,
+  p_reviewed_by UUID
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -382,20 +380,17 @@ BEGIN
     RAISE EXCEPTION 'leave_requests feature is disabled';
   END IF;
 
-  IF p_new_status NOT IN ('pending', 'approved', 'rejected') THEN
+  IF p_status NOT IN ('pending', 'approved', 'rejected') THEN
     RAISE EXCEPTION 'Invalid leave request status';
   END IF;
 
-  IF p_caller_role = 'admin' THEN
-    UPDATE public.leave_requests SET status = p_new_status, approved_by = p_caller_id, approved_at = NOW()
-    WHERE id = p_request_id;
-  ELSIF p_caller_role = 'komandan' THEN
-    UPDATE public.leave_requests SET status = p_new_status, approved_by = p_caller_id, approved_at = NOW()
-    WHERE id = p_request_id
-      AND user_id IN (SELECT id FROM public.users WHERE satuan = (SELECT satuan FROM public.users WHERE id = p_caller_id));
-  ELSE
+  IF p_caller_role NOT IN ('admin', 'komandan') THEN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
+
+  UPDATE public.leave_requests
+  SET status = p_status, reviewed_by = COALESCE(p_reviewed_by, p_caller_id), reviewed_at = NOW()
+  WHERE id = p_id;
 END;
 $$;
 
