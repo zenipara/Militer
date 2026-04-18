@@ -91,8 +91,12 @@ export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnaps
   const logisticsItems = (logisticsResult.data as LogisticsItem[]) ?? [];
   const lowStockItems = logisticsItems.filter((item) => item.jumlah <= 5 || item.kondisi !== 'baik');
 
-  const gatePassRows =
-    (gatePassResult.data as Array<{ status?: string; waktu_kembali?: string | null }>) ?? [];
+  interface GatePassRow {
+    status?: string;
+    waktu_kembali?: string | null;
+  }
+
+  const gatePassRows = (gatePassResult.data as GatePassRow[]) ?? [];
   const now = new Date();
   const outRows = gatePassRows.filter((g) => g.status === 'out');
   const gatePassStats: GatePassStats = {
