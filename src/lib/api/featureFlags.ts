@@ -6,6 +6,42 @@ interface DbFeatureFlagRow {
   is_enabled: boolean;
 }
 
+interface RpcErrorShape {
+  message?: unknown;
+  code?: unknown;
+  details?: unknown;
+  hint?: unknown;
+}
+
+function toError(err: unknown, fallbackMessage: string): Error {
+  if (err instanceof Error) return err;
+
+  if (typeof err === 'object' && err !== null) {
+    const maybeMessage = (err as RpcErrorShape).message;
+    if (typeof maybeMessage === 'string' && maybeMessage.trim()) {
+      return new Error(maybeMessage);
+    }
+  }
+
+  return new Error(fallbackMessage);
+}
+
+function isFunctionMissingError(err: unknown, functionName: string): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+
+  const shape = err as RpcErrorShape;
+  const code = String(shape.code ?? '');
+  const joined = [shape.message, shape.details, shape.hint]
+    .filter((part) => typeof part === 'string')
+    .join(' ')
+    .toLowerCase();
+
+  if (code === 'PGRST202') return true;
+
+  return joined.includes(functionName.toLowerCase())
+    && (joined.includes('could not find the function') || joined.includes('does not exist'));
+}
+
 export async function getFeatureFlags(callerId: string, callerRole: string): Promise<FeatureFlagsState> {
   const { data, error } = await supabase.rpc('get_feature_flags', {
     p_user_id: callerId,
@@ -38,7 +74,21 @@ export async function updateFeatureFlag(
     p_is_enabled: isEnabled,
   });
 
-  if (error) throw error;
+  if (!error) return;
+
+  // Compatibility fallback for environments that only have the batch RPC.
+  if (isFunctionMissingError(error, 'update_feature_flag')) {
+    const { error: batchError } = await supabase.rpc('update_feature_flags', {
+      p_user_id: callerId,
+      p_role: callerRole,
+      p_feature_flags: { [featureKey]: isEnabled },
+    });
+
+    if (!batchError) return;
+    throw toError(batchError, 'Gagal memperbarui pengaturan fitur');
+  }
+
+  throw toError(error, 'Gagal memperbarui pengaturan fitur');
 }
 
 export async function updateFeatureFlags(
@@ -52,5 +102,24 @@ export async function updateFeatureFlags(
     p_feature_flags: featureFlags,
   });
 
-  if (error) throw error;
+  if (!error) return;
+
+  // Compatibility fallback for environments that only have the single-item RPC.
+  if (isFunctionMissingError(error, 'update_feature_flags')) {
+    for (const [featureKey, isEnabled] of Object.entries(featureFlags) as Array<[FeatureKey, boolean]>) {
+      const { error: singleError } = await supabase.rpc('update_feature_flag', {
+        p_user_id: callerId,
+        p_role: callerRole,
+        p_feature_key: featureKey,
+        p_is_enabled: isEnabled,
+      });
+
+      if (singleError) {
+        throw toError(singleError, 'Gagal memperbarui pengaturan fitur global');
+      }
+    }
+    return;
+  }
+
+  throw toError(error, 'Gagal memperbarui pengaturan fitur global');
 }

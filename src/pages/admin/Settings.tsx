@@ -5,6 +5,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import { supabase } from '../../lib/supabase';
+import { handleError } from '../../lib/handleError';
 import { useAuthStore } from '../../store/authStore';
 import { DEFAULT_FEATURE_FLAGS, FEATURE_DEFINITIONS, type FeatureKey } from '../../lib/featureFlags';
 import { useFeatureStore } from '../../store/featureStore';
@@ -240,7 +241,7 @@ export default function Settings() {
         'success',
       );
     } catch (error) {
-      showNotification(error instanceof Error ? error.message : 'Gagal memperbarui pengaturan fitur', 'error');
+      showNotification(handleError(error, 'Gagal memperbarui pengaturan fitur'), 'error');
     }
   };
 
@@ -263,7 +264,7 @@ export default function Settings() {
 
       showNotification(message, 'success');
     } catch (error) {
-      showNotification(error instanceof Error ? error.message : 'Gagal memperbarui kontrol fitur global', 'error');
+      showNotification(handleError(error, 'Gagal memperbarui kontrol fitur global'), 'error');
     }
   };
 
