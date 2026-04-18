@@ -132,6 +132,40 @@ describe('useUsers', () => {
     });
   });
 
+  describe('deleteUser', () => {
+    it('calls api_delete_user RPC with correct args', async () => {
+      mockSupabase.rpc.mockImplementation((rpcName: string) => {
+        if (rpcName === 'api_get_users') return Promise.resolve({ data: mockUsers, error: null });
+        if (rpcName === 'api_delete_user') return Promise.resolve({ data: null, error: null });
+        return Promise.resolve({ data: null, error: null });
+      });
+
+      const { result } = renderHook(() => useUsers());
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => { await result.current.deleteUser('u1'); });
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_delete_user', {
+        p_caller_id: 'admin-1',
+        p_caller_role: 'admin',
+        p_target_id: 'u1',
+      });
+    });
+
+    it('throws when api_delete_user RPC returns error', async () => {
+      mockSupabase.rpc.mockImplementation((rpcName: string) => {
+        if (rpcName === 'api_get_users') return Promise.resolve({ data: mockUsers, error: null });
+        if (rpcName === 'api_delete_user') return Promise.resolve({ data: null, error: new Error('delete failed') });
+        return Promise.resolve({ data: null, error: null });
+      });
+
+      const { result } = renderHook(() => useUsers());
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await expect(act(async () => { await result.current.deleteUser('u1'); })).rejects.toThrow('delete failed');
+    });
+  });
+
   describe('resetUserPin', () => {
     it('calls reset_user_pin RPC', async () => {
       mockSupabase.rpc.mockResolvedValue({ data: null, error: null });

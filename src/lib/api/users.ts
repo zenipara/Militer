@@ -91,6 +91,18 @@ export async function patchUser(callerId: string, callerRole: string, id: string
   if (error) throw error;
 }
 
+export async function deleteUser(callerId: string, callerRole: string, id: string): Promise<void> {
+  if (!validateId(callerId)) throw new Error('Invalid caller ID format');
+  if (!validateId(id)) throw new Error('Invalid user ID format');
+
+  const { error } = await supabase.rpc('api_delete_user', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_target_id: id,
+  });
+  if (error) throw error;
+}
+
 export async function resetUserPin(userId: string, newPin: string): Promise<void> {
   if (!validateId(userId)) throw new Error('Invalid user ID format');
 

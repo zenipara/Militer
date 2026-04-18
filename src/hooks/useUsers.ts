@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { fetchUsers as apiFetchUsers, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
+import { fetchUsers as apiFetchUsers, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, deleteUser as apiDeleteUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import { supabase } from '../lib/supabase';
@@ -123,6 +123,14 @@ export function useUsers(options: UseUsersOptions = {}) {
     await updateUser(id, { is_active: isActive });
   };
 
+  const deleteUser = async (id: string) => {
+    if (!callerId || !callerRole) throw new Error('Not authenticated');
+    await apiDeleteUser(callerId, callerRole, id);
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    void fetchUsers();
+    notifyDataChanged('users');
+  };
+
   const resetUserPin = async (userId: string, newPin: string) => {
     await apiResetUserPin(userId, newPin);
     notifyDataChanged('users');
@@ -137,5 +145,5 @@ export function useUsers(options: UseUsersOptions = {}) {
     notifyDataChanged('users');
   };
 
-  return { users, isLoading, error, refetch: fetchUsers, createUser, updateUser, toggleUserActive, resetUserPin, getUserById, updateOwnProfile };
+  return { users, isLoading, error, refetch: fetchUsers, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById, updateOwnProfile };
 }

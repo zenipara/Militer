@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -12,6 +12,7 @@ import type { IconName } from '../../icons';
 import { ICONS } from '../../icons';
 import { useAdminDashboardStore } from '../../store/adminDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
+import { useUsers } from '../../hooks/useUsers';
 
 const actionLabels: Record<string, string> = {
   LOGIN: 'Login',
@@ -44,6 +45,8 @@ const quickLinks: QuickLink[] = [
 export default function AdminDashboard() {
   const { user } = useAuthStore();
   const { dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, showNotification } = useUIStore();
+  const { users: latestUsers, isLoading: isMembersLoading, deleteUser } = useUsers({ orderBy: 'created_at', ascending: false });
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const {
     snapshot,
     isLoading,
@@ -88,6 +91,28 @@ export default function AdminDashboard() {
       showNotification('Ringkasan dashboard diperbarui', 'success');
     } else {
       showNotification('Gagal memuat dashboard', 'error');
+    }
+  };
+
+  const handleDeleteMember = async (targetId: string, targetName: string) => {
+    if (!user) return;
+    if (user.id === targetId) {
+      showNotification('Tidak dapat menghapus akun sendiri', 'error');
+      return;
+    }
+
+    const confirmed = window.confirm(`Hapus data anggota ${targetName}? Tindakan ini tidak dapat dibatalkan.`);
+    if (!confirmed) return;
+
+    setDeletingUserId(targetId);
+    try {
+      await deleteUser(targetId);
+      showNotification(`Data anggota ${targetName} berhasil dihapus`, 'success');
+      void refreshDashboard();
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal menghapus anggota', 'error');
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -210,6 +235,42 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+            </div>
+
+            <div className="app-card p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-bold text-text-primary">Hapus Anggota Cepat</h3>
+                  <p className="text-sm text-text-muted">Kelola anggota terbaru langsung dari dashboard admin.</p>
+                </div>
+                <Link to="/admin/users" className="text-xs text-primary hover:underline">Kelola lengkap →</Link>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {isMembersLoading ? (
+                  <p className="text-sm text-text-muted">Memuat data anggota...</p>
+                ) : latestUsers.length === 0 ? (
+                  <p className="text-sm text-text-muted">Belum ada data anggota.</p>
+                ) : (
+                  latestUsers.slice(0, 6).map((member) => (
+                    <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl border border-surface/70 bg-surface/20 px-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-text-primary">{member.nama}</p>
+                        <p className="text-xs text-text-muted">NRP {member.nrp} · {member.role}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        disabled={member.id === user?.id || deletingUserId === member.id}
+                        onClick={() => void handleDeleteMember(member.id, member.nama)}
+                        isLoading={deletingUserId === member.id}
+                      >
+                        Hapus
+                      </Button>
+                    </div>
+                  ))
                 )}
               </div>
             </div>

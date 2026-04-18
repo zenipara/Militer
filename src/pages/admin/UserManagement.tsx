@@ -12,6 +12,7 @@ import UserDetailModal from '../../components/common/UserDetailModal';
 import { usePagination } from '../../hooks/usePagination';
 import { useUsers } from '../../hooks/useUsers';
 import { useUIStore } from '../../store/uiStore';
+import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { supabase } from '../../lib/supabase';
 import type { User, Role } from '../../types';
@@ -30,8 +31,9 @@ function parseCSV(text: string): Record<string, string>[] {
 }
 
 export default function UserManagement() {
-  const { users, isLoading, error, createUser, updateUser, toggleUserActive, resetUserPin, getUserById } = useUsers({ orderBy: 'created_at', ascending: false });
+  const { users, isLoading, error, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({ orderBy: 'created_at', ascending: false });
   const { showNotification } = useUIStore();
+  const authUser = useAuthStore((s) => s.user);
 
   const [searchRaw, setSearchRaw] = useState('');
   const search = useDebounce(searchRaw, 300);
@@ -41,6 +43,7 @@ export default function UserManagement() {
   const [showBulkReset, setShowBulkReset] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [detailUser, setDetailUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -147,6 +150,31 @@ export default function UserManagement() {
       showNotification(`Akun ${u.nama} ${!u.is_active ? 'diaktifkan' : 'dinonaktifkan'}`, 'success');
     } catch {
       showNotification('Gagal mengubah status akun', 'error');
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    if (authUser?.id === selectedUser.id) {
+      showNotification('Tidak dapat menghapus akun sendiri', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await deleteUser(selectedUser.id);
+      showNotification(`Data anggota ${selectedUser.nama} berhasil dihapus`, 'success');
+      setShowDelete(false);
+      setSelectedUser(null);
+      setSelectedUserIds((prev) => {
+        const next = new Set(prev);
+        next.delete(selectedUser.id);
+        return next;
+      });
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal menghapus anggota', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -368,6 +396,14 @@ export default function UserManagement() {
                     >
                       {u.is_active ? 'Nonaktif' : 'Aktifkan'}
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      disabled={authUser?.id === u.id}
+                      onClick={() => { setSelectedUser(u); setShowDelete(true); }}
+                    >
+                      Hapus
+                    </Button>
                   </div>
                 ),
               },
@@ -585,6 +621,24 @@ export default function UserManagement() {
         mode="edit"
         onSave={handleSaveDetail}
       />
+
+      <Modal
+        isOpen={showDelete}
+        onClose={() => { setShowDelete(false); setSelectedUser(null); }}
+        title="Hapus Data Anggota"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setShowDelete(false); setSelectedUser(null); }}>Batal</Button>
+            <Button variant="danger" onClick={() => void handleDeleteUser()} isLoading={isSaving}>Ya, Hapus</Button>
+          </>
+        }
+      >
+        <p className="text-sm text-text-muted">
+          Data anggota <span className="font-semibold text-text-primary">{selectedUser?.nama ?? '-'}</span> akan dihapus permanen.
+          Tindakan ini tidak dapat dibatalkan.
+        </p>
+      </Modal>
     </DashboardLayout>
   );
 }
