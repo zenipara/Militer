@@ -184,61 +184,25 @@ Error   Baca role dari DB
 
 ```
 karyo-os/
-├── public/
-│   └── favicon.ico
+├── .github/workflows/       # CI, deploy, smoke test production
+├── e2e/                     # Playwright end-to-end tests
+├── public/                  # Aset statis (404 fallback, service worker, favicon)
+├── scripts/                 # setup.sh dan deploy.sh
 ├── src/
-│   ├── assets/
-│   ├── components/
-│   │   ├── common/          # Button, Input, Modal, Badge, dll
-│   │   ├── layout/          # Sidebar, Navbar, BottomTabBar
-│   │   └── ui/              # Card, Table, Chart, dll
-│   ├── hooks/
-│   │   ├── useAuth.ts
-│   │   ├── useUsers.ts
-│   │   └── useTasks.ts
-│   ├── lib/
-│   │   └── supabase.ts      # Supabase client
-│   ├── pages/
-│   │   ├── Login.tsx
-│   │   ├── admin/
-│   │   │   ├── AdminDashboard.tsx
-│   │   │   ├── UserManagement.tsx
-│   │   │   ├── AuditLog.tsx
-│   │   │   ├── Logistics.tsx
-│   │   │   └── Settings.tsx
-│   │   ├── komandan/
-│   │   │   ├── KomandanDashboard.tsx
-│   │   │   ├── TaskManagement.tsx
-│   │   │   ├── Personnel.tsx
-│   │   │   └── Reports.tsx
-│   │   └── prajurit/
-│   │       ├── PrajuritDashboard.tsx
-│   │       ├── MyTasks.tsx
-│   │       ├── Attendance.tsx
-│   │       └── Profile.tsx
-│   ├── router/
-│   │   ├── index.tsx        # Route definitions
-│   │   ├── ProtectedRoute.tsx
-│   │   └── RoleGuard.tsx
-│   ├── store/
-│   │   ├── authStore.ts     # Zustand auth state
-│   │   └── uiStore.ts       # UI state (dark mode, dll)
-│   ├── types/
-│   │   └── index.ts         # TypeScript interfaces
-│   ├── utils/
-│   │   └── helpers.ts
-│   ├── App.tsx
-│   └── main.tsx
-├── supabase/
-│   └── migrations/
-│       └── 001_init.sql     # Initial schema
+│   ├── components/          # Komponen UI, layout, guard, gatepass
+│   ├── hooks/               # Custom hooks domain aplikasi
+│   ├── lib/                 # API client, cache, metrics, Supabase helper
+│   ├── pages/               # Halaman per role: admin, komandan, prajurit, guard
+│   ├── router/              # Definisi route + proteksi role
+│   ├── store/               # Zustand store global
+│   ├── tests/               # Unit/integration tests (Vitest)
+│   ├── types/               # TypeScript types + declaration file
+│   ├── utils/               # Utility umum
+│   └── main.tsx             # Entry point aplikasi
+├── supabase/migrations/     # SQL migration schema + RLS + function
 ├── .env.example
-├── .gitignore
-├── index.html
 ├── package.json
-├── tailwind.config.ts
-├── tsconfig.json
-└── vite.config.ts
+└── vite.config.js
 ```
 
 ---
