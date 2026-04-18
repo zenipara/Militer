@@ -138,27 +138,22 @@ describe('posJagaStore', () => {
 
   // ── scanPosJaga ───────────────────────────────────────────
   describe('scanPosJaga', () => {
-    it('verifies NRP/PIN then calls scan_pos_jaga RPC with resolved user_id', async () => {
+    it('calls authenticated_scan_pos_jaga RPC and returns result', async () => {
       const scanResult: ScanPosJagaResult = {
         gate_pass_id: 'gp1',
         pos_nama: 'Pos Jaga Utara',
         status: 'checked_in',
         message: 'Scan keluar berhasil (Checked-In)',
       };
-      mockSupabase.rpc
-        .mockResolvedValueOnce({ data: { user_id: 'u1', user_role: 'prajurit' }, error: null })
-        .mockResolvedValueOnce({ data: scanResult, error: null });
+      mockSupabase.rpc.mockResolvedValueOnce({ data: scanResult, error: null });
 
       const result = await usePosJagaStore.getState().scanPosJaga('token-utara', '1000001', '123456');
 
-      expect(mockSupabase.rpc).toHaveBeenNthCalledWith(1, 'verify_user_pin', {
+      expect(mockSupabase.rpc).toHaveBeenCalledTimes(1);
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('authenticated_scan_pos_jaga', {
         p_nrp: '1000001',
         p_pin: '123456',
-      });
-
-      expect(mockSupabase.rpc).toHaveBeenNthCalledWith(2, 'scan_pos_jaga', {
         p_pos_token: 'token-utara',
-        p_user_id: 'u1',
       });
       expect(result.status).toBe('checked_in');
       expect(result.message).toBe('Scan keluar berhasil (Checked-In)');
@@ -171,39 +166,27 @@ describe('posJagaStore', () => {
         status: 'completed',
         message: 'Scan kembali berhasil (Completed)',
       };
-      mockSupabase.rpc
-        .mockResolvedValueOnce({ data: { user_id: 'u1', user_role: 'prajurit' }, error: null })
-        .mockResolvedValueOnce({ data: scanResult, error: null });
+      mockSupabase.rpc.mockResolvedValueOnce({ data: scanResult, error: null });
 
       const result = await usePosJagaStore.getState().scanPosJaga('token-selatan', '1000001', '123456');
 
       expect(result.status).toBe('completed');
     });
 
-    it('throws when NRP/PIN invalid', async () => {
-      mockSupabase.rpc.mockResolvedValueOnce({ data: null, error: null });
-
-      await expect(
-        usePosJagaStore.getState().scanPosJaga('some-token', '1000001', '999999')
-      ).rejects.toThrow('NRP atau PIN salah');
-    });
-
-    it('throws when role is not prajurit', async () => {
-      mockSupabase.rpc.mockResolvedValueOnce({ data: { user_id: 'a1', user_role: 'admin' }, error: null });
-
-      await expect(
-        usePosJagaStore.getState().scanPosJaga('some-token', '1000001', '123456')
-      ).rejects.toThrow('Hanya prajurit yang dapat melakukan scan pos jaga');
-    });
-
     it('throws when RPC returns an error', async () => {
-      mockSupabase.rpc
-        .mockResolvedValueOnce({ data: { user_id: 'u1', user_role: 'prajurit' }, error: null })
-        .mockResolvedValueOnce({ data: null, error: new Error('QR tidak valid') });
+      mockSupabase.rpc.mockResolvedValueOnce({ data: null, error: new Error('QR tidak valid') });
 
       await expect(
         usePosJagaStore.getState().scanPosJaga('bad-token', '1000001', '123456')
       ).rejects.toThrow('QR tidak valid');
+    });
+
+    it('throws when RPC returns null data', async () => {
+      mockSupabase.rpc.mockResolvedValueOnce({ data: null, error: null });
+
+      await expect(
+        usePosJagaStore.getState().scanPosJaga('some-token', '1000001', '999999')
+      ).rejects.toThrow('Scan pos jaga gagal');
     });
   });
 });

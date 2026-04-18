@@ -1,11 +1,6 @@
 import { supabase } from '../supabase';
 import type { PosJaga, ScanPosJagaResult } from '../../types';
 
-interface VerifyUserPinRow {
-  user_id: string;
-  user_role: string;
-}
-
 async function ensureSessionContext(callerId: string, callerRole: string): Promise<void> {
   const res = await supabase.rpc('set_session_context', {
     p_user_id: callerId,
@@ -54,6 +49,15 @@ export async function rpcScanPosJaga(posToken: string, userId: string): Promise<
   return data as ScanPosJagaResult;
 }
 
+/**
+ * Credential-based pos jaga scan for the kiosk flow (no pre-existing session).
+ *
+ * Uses the `authenticated_scan_pos_jaga` combined RPC which verifies the
+ * PIN and processes the scan atomically on the server.  This removes the
+ * previous two-step flow where verify_user_pin and scan_pos_jaga were
+ * separate round-trips — a gap that could allow the caller to scan for a
+ * different user than the one they authenticated as.
+ */
 export async function rpcScanPosJagaWithCredentials(
   posToken: string,
   nrp: string,
@@ -65,21 +69,12 @@ export async function rpcScanPosJagaWithCredentials(
     throw new Error('NRP dan PIN wajib diisi');
   }
 
-  const { data: authData, error: authError } = await supabase
-    .rpc('verify_user_pin', {
-      p_nrp: normalizedNrp,
-      p_pin: normalizedPin,
-    });
+  const { data, error } = await supabase.rpc('authenticated_scan_pos_jaga', {
+    p_nrp: normalizedNrp,
+    p_pin: normalizedPin,
+    p_pos_token: posToken,
+  });
 
-  if (authError) throw authError;
-  const row = Array.isArray(authData)
-    ? (authData[0] as VerifyUserPinRow | undefined) ?? null
-    : (authData as VerifyUserPinRow | null);
-  if (!row) throw new Error('NRP atau PIN salah');
-
-  if (row.user_role !== 'prajurit') {
-    throw new Error('Hanya prajurit yang dapat melakukan scan pos jaga');
-  }
-
-  return rpcScanPosJaga(posToken, row.user_id);
+  if (error || !data) throw new Error(error?.message ?? 'Scan pos jaga gagal');
+  return data as ScanPosJagaResult;
 }
