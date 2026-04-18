@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
+import { useUIStore } from '../../store/uiStore';
 import Input from '../common/Input';
 import Button from '../common/Button';
 
@@ -11,6 +12,7 @@ export default function GatePassForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createGatePass = useGatePassStore(s => s.createGatePass);
+  const { showNotification } = useUIStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +34,7 @@ export default function GatePassForm() {
         waktu_kembali: waktuKembali,
       });
       setKeperluan(''); setTujuan(''); setWaktuKeluar(''); setWaktuKembali('');
+      showNotification('Gate Pass berhasil diajukan', 'success');
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error('Gagal mengajukan izin');
       setError(err.message);
@@ -42,23 +45,23 @@ export default function GatePassForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-text-primary">
-        Setelah submit, pengajuan otomatis disetujui. Verifikasi keluar dan kembali dilakukan dengan scan QR statis di Pos Jaga.
+        Setelah diajukan, pengajuan otomatis disetujui. Verifikasi keluar dan kembali dilakukan dengan scan QR statis di Pos Jaga.
       </div>
       {error && (
-        <div className="rounded-2xl border border-accent-red/20 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">
+        <div role="alert" className="rounded-2xl border border-accent-red/20 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">
           {error}
         </div>
       )}
       <Input
         label="Keperluan"
-        placeholder="Keperluan"
+        placeholder="Masukkan keperluan izin keluar"
         value={keperluan}
         onChange={(e) => setKeperluan(e.target.value)}
         required
       />
       <Input
         label="Tujuan"
-        placeholder="Tujuan"
+        placeholder="Masukkan tujuan pergi"
         value={tujuan}
         onChange={(e) => setTujuan(e.target.value)}
         required
@@ -78,7 +81,7 @@ export default function GatePassForm() {
         required
       />
       <Button type="submit" variant="primary" size="lg" isLoading={loading} className="w-full">
-        {loading ? 'Mengirim...' : 'Submit'}
+        {loading ? 'Mengajukan...' : 'Ajukan Gate Pass'}
       </Button>
     </form>
   );

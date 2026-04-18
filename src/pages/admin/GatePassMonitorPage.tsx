@@ -53,14 +53,14 @@ function formatDuration(ms: number) {
 function getStatusLabel(status: GatePassStatus | 'all') {
   const labels: Record<GatePassStatus | 'all', string> = {
     all: 'Semua status',
-    pending: 'Pending',
+    pending: 'Menunggu',
     approved: 'Siap Scan Keluar',
-    rejected: 'Rejected',
-    checked_in: 'Checked-In (Sedang Keluar)',
-    completed: 'Completed (Sudah Kembali)',
-    out: 'Checked-In (Sedang Keluar)',
-    returned: 'Completed (Sudah Kembali)',
-    overdue: 'Overdue',
+    rejected: 'Ditolak',
+    checked_in: 'Sedang Keluar',
+    completed: 'Sudah Kembali',
+    out: 'Sedang Keluar',
+    returned: 'Sudah Kembali',
+    overdue: 'Terlambat',
   };
   return labels[status];
 }

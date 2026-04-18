@@ -6,29 +6,36 @@ interface Props {
   guard?: string;
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Menunggu',
+  approved: 'Disetujui',
+  rejected: 'Ditolak',
+  checked_in: 'Sudah Keluar',
+  completed: 'Sudah Kembali',
+  out: 'Sudah Keluar',
+  returned: 'Sudah Kembali',
+  overdue: 'Terlambat',
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  pending: 'bg-accent-gold/15 text-accent-gold border-accent-gold/30',
+  approved: 'bg-primary/15 text-primary border-primary/30',
+  rejected: 'bg-accent-red/15 text-accent-red border-accent-red/30',
+  checked_in: 'bg-orange-500/15 text-orange-600 border-orange-400/30 dark:text-orange-400',
+  completed: 'bg-success/15 text-success border-success/30',
+  out: 'bg-orange-500/15 text-orange-600 border-orange-400/30 dark:text-orange-400',
+  returned: 'bg-success/15 text-success border-success/30',
+  overdue: 'bg-accent-red/20 text-accent-red border-accent-red/50 font-semibold',
+};
+
 const GatePassStatusBadge: React.FC<Props> = ({ gatePass }) => {
-  const label = {
-    pending: 'Pending',
-    approved: 'Approved',
-    rejected: 'Rejected',
-    checked_in: 'Checked-In',
-    completed: 'Completed',
-    out: 'Checked-In',
-    returned: 'Completed',
-    overdue: 'Overdue',
-  }[gatePass.status];
-  const color = {
-    pending: 'bg-yellow-400',
-    approved: 'bg-blue-500',
-    rejected: 'bg-red-500',
-    checked_in: 'bg-orange-500',
-    completed: 'bg-green-500',
-    out: 'bg-orange-500',
-    returned: 'bg-green-500',
-    overdue: 'bg-pink-600',
-  }[gatePass.status];
+  const label = STATUS_LABEL[gatePass.status] ?? gatePass.status;
+  const cls = STATUS_CLASS[gatePass.status] ?? 'bg-surface text-text-muted border-surface';
   return (
-    <span className={`px-2 py-1 rounded text-white text-xs ${color}`}>{label}</span>
+    <span className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium ${cls}`}>
+      {label}
+    </span>
   );
 };
+
 export default GatePassStatusBadge;

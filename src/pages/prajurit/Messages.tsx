@@ -94,10 +94,12 @@ export default function Messages() {
 
         {/* Tab bar + actions */}
         <div className="app-card flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-          <div className="flex gap-1 rounded-lg bg-surface/40 p-1">
+          <div role="tablist" aria-label="Pesan" className="flex gap-1 rounded-lg bg-surface/40 p-1">
             {(['inbox', 'sent'] as Tab[]).map((t) => (
               <button
                 key={t}
+                role="tab"
+                aria-selected={tab === t}
                 onClick={() => setTab(t)}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   tab === t ? 'bg-primary text-white' : 'text-text-muted hover:text-text-primary'
@@ -105,7 +107,7 @@ export default function Messages() {
               >
                 {t === 'inbox' ? 'Masuk' : 'Terkirim'}
                 {t === 'inbox' && unreadCount > 0 && (
-                  <span className="ml-1.5 bg-accent-red text-white text-xs rounded-full px-1.5 py-0.5">
+                  <span className="ml-1.5 bg-accent-red text-white text-xs rounded-full px-1.5 py-0.5" aria-label={`${unreadCount} belum dibaca`}>
                     {unreadCount}
                   </span>
                 )}

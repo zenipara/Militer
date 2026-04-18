@@ -146,6 +146,7 @@ beforeEach(() => {
     dashboardAutoRefreshEnabled: false,
     dashboardAutoRefreshMinutes: 5,
     notification: null,
+    notifications: [],
     toggleDarkMode: () => {},
     toggleSidebar: () => {},
     setSidebarOpen: () => {},
@@ -156,6 +157,7 @@ beforeEach(() => {
     setDashboardAutoRefreshMinutes: () => {},
     showNotification: vi.fn(),
     clearNotification: () => {},
+    dismissNotification: () => {},
   });
   useFeatureStore.setState({
     flags: { ...DEFAULT_FEATURE_FLAGS },

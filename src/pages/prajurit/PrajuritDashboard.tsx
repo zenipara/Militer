@@ -49,9 +49,9 @@ export default function PrajuritDashboard() {
     setCheckingIn(true);
     try {
       await checkIn();
-      showNotification('Check-in berhasil!', 'success');
+      showNotification('Absen masuk berhasil!', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal check-in', 'error');
+      showNotification(err instanceof Error ? err.message : 'Gagal absen masuk', 'error');
     } finally {
       setCheckingIn(false);
     }
@@ -61,9 +61,9 @@ export default function PrajuritDashboard() {
     setCheckingOut(true);
     try {
       await checkOut();
-      showNotification('Check-out berhasil!', 'success');
+      showNotification('Absen pulang berhasil!', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal check-out', 'error');
+      showNotification(err instanceof Error ? err.message : 'Gagal absen pulang', 'error');
     } finally {
       setCheckingOut(false);
     }
@@ -90,13 +90,13 @@ export default function PrajuritDashboard() {
                   <AttendanceBadge status={todayAttendance.status} />
                   {todayAttendance.check_in && !todayAttendance.check_out && (
                     <Button size="sm" variant="secondary" onClick={handleCheckOut} isLoading={checkingOut}>
-                      Check-Out
+                      Absen Pulang
                     </Button>
                   )}
                 </div>
               ) : (
                 <Button size="sm" onClick={handleCheckIn} isLoading={checkingIn}>
-                  Check-In
+                  Absen Masuk
                 </Button>
               )}
             </>

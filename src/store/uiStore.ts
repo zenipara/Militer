@@ -27,6 +27,13 @@ interface Notification {
   type: NotificationType;
 }
 
+/** Notification item with unique ID for queue-based display */
+export interface NotificationItem {
+  id: string;
+  message: string;
+  type: NotificationType;
+}
+
 interface UIStore {
   isDarkMode: boolean;
   sidebarOpen: boolean;
@@ -34,7 +41,10 @@ interface UIStore {
   displayDensity: DisplayDensity;
   dashboardAutoRefreshEnabled: boolean;
   dashboardAutoRefreshMinutes: number;
+  /** Legacy single-slot notification (kept for backward compatibility) */
   notification: Notification | null;
+  /** Queue of active notifications for stacked display */
+  notifications: NotificationItem[];
   toggleDarkMode: () => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
@@ -45,6 +55,9 @@ interface UIStore {
   setDashboardAutoRefreshMinutes: (minutes: number) => void;
   loadUserPreferences: () => Promise<void>;
   showNotification: (message: string, type: NotificationType) => void;
+  /** Remove a specific notification from the queue by ID */
+  dismissNotification: (id: string) => void;
+  /** Clear all notifications (legacy API kept for backward compat) */
   clearNotification: () => void;
 }
 
@@ -148,6 +161,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   dashboardAutoRefreshEnabled: loadDashboardAutoRefreshEnabled(),
   dashboardAutoRefreshMinutes: loadDashboardAutoRefreshMinutes(),
   notification: null,
+  notifications: [],
 
   toggleDarkMode: () =>
     set((state) => {
@@ -270,11 +284,36 @@ export const useUIStore = create<UIStore>((set, get) => ({
   },
 
   showNotification: (message: string, type: NotificationType) => {
-    set({ notification: { message: normalizeNotificationMessage(message), type } });
-    setTimeout(() => set({ notification: null }), NOTIFICATION_DURATION_MS);
+    const normalized = normalizeNotificationMessage(message);
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const item: NotificationItem = { id, message: normalized, type };
+    // Update both legacy slot (compat) and the queue (max 4 visible)
+    set((state) => ({
+      notification: { message: normalized, type },
+      notifications: [...state.notifications, item].slice(-4),
+    }));
+    setTimeout(() => {
+      set((state) => {
+        const next = state.notifications.filter((n) => n.id !== id);
+        return {
+          notifications: next,
+          notification: next.length > 0 ? { message: next[next.length - 1].message, type: next[next.length - 1].type } : null,
+        };
+      });
+    }, NOTIFICATION_DURATION_MS);
   },
 
-  clearNotification: () => set({ notification: null }),
+  dismissNotification: (id: string) => {
+    set((state) => {
+      const next = state.notifications.filter((n) => n.id !== id);
+      return {
+        notifications: next,
+        notification: next.length > 0 ? { message: next[next.length - 1].message, type: next[next.length - 1].type } : null,
+      };
+    });
+  },
+
+  clearNotification: () => set({ notification: null, notifications: [] }),
 }));
 
 // Apply theme on module load (before first render)

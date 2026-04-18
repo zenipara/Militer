@@ -6,6 +6,7 @@ import { useOverdueNotification } from '../../hooks/useOverdueNotification';
 import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import { useUIStore } from '../../store/uiStore';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import PageHeader from '../../components/ui/PageHeader';
 
 export default function GatePassPage() {
   const gatePasses = useGatePassStore(s => s.gatePasses);
@@ -23,13 +24,32 @@ export default function GatePassPage() {
     }
   }, [overdue, showNotification]);
 
+  const pending = gatePasses.filter((gp) => gp.status === 'pending' || gp.status === 'approved').length;
+  const overdueCnt = overdue.length;
+
   return (
-    <DashboardLayout title="Pengajuan Gate Pass">
-      <div className="max-w-xl mx-auto py-8 space-y-8">
-        <h1 className="text-2xl font-bold">Pengajuan Gate Pass</h1>
-        <GatePassForm />
-        <h2 className="text-lg font-semibold">Riwayat Pengajuan</h2>
-        <GatePassList gatePasses={gatePasses} />
+    <DashboardLayout title="Gate Pass">
+      <div className="mx-auto max-w-xl space-y-6">
+        <PageHeader
+          title="Gate Pass"
+          subtitle="Ajukan izin keluar batalion dan pantau status persetujuan serta riwayat perjalanan Anda."
+          meta={
+            <>
+              {pending > 0 && <span>{pending} pengajuan aktif</span>}
+              {overdueCnt > 0 && <span className="text-accent-red">{overdueCnt} terlambat kembali</span>}
+            </>
+          }
+        />
+
+        <div className="app-card p-5">
+          <h2 className="mb-4 text-base font-semibold text-text-primary">Ajukan Izin Keluar</h2>
+          <GatePassForm />
+        </div>
+
+        <div>
+          <h2 className="mb-3 text-base font-semibold text-text-primary">Riwayat Pengajuan</h2>
+          <GatePassList gatePasses={gatePasses} />
+        </div>
       </div>
     </DashboardLayout>
   );

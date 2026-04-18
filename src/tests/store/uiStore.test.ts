@@ -12,6 +12,7 @@ function resetUIStore() {
     dashboardAutoRefreshEnabled: true,
     dashboardAutoRefreshMinutes: 3,
     notification: null,
+    notifications: [],
   });
 }
 
@@ -168,10 +169,22 @@ describe('uiStore', () => {
       expect(useUIStore.getState().notification).toEqual({ message: 'Hello', type: 'success' });
     });
 
+    it('adds to notifications queue', () => {
+      act(() => useUIStore.getState().showNotification('Hello', 'success'));
+      expect(useUIStore.getState().notifications).toHaveLength(1);
+      expect(useUIStore.getState().notifications[0]).toMatchObject({ message: 'Hello', type: 'success' });
+    });
+
     it('clearNotification removes notification', () => {
       useUIStore.setState({ notification: { message: 'test', type: 'info' } });
       act(() => useUIStore.getState().clearNotification());
       expect(useUIStore.getState().notification).toBeNull();
+    });
+
+    it('clearNotification empties the notifications queue', () => {
+      act(() => useUIStore.getState().showNotification('Hello', 'success'));
+      act(() => useUIStore.getState().clearNotification());
+      expect(useUIStore.getState().notifications).toHaveLength(0);
     });
 
     it('auto-clears notification after 4 seconds', () => {
@@ -189,6 +202,16 @@ describe('uiStore', () => {
         act(() => useUIStore.getState().showNotification('msg', type));
         expect(useUIStore.getState().notification?.type).toBe(type);
       }
+    });
+
+    it('dismissNotification removes specific item from queue', () => {
+      act(() => useUIStore.getState().showNotification('First', 'info'));
+      act(() => useUIStore.getState().showNotification('Second', 'success'));
+      expect(useUIStore.getState().notifications).toHaveLength(2);
+      const firstId = useUIStore.getState().notifications[0].id;
+      act(() => useUIStore.getState().dismissNotification(firstId));
+      expect(useUIStore.getState().notifications).toHaveLength(1);
+      expect(useUIStore.getState().notifications[0].message).toBe('Second');
     });
   });
 });

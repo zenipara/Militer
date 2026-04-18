@@ -95,6 +95,7 @@ describe('Prajurit Profile page', () => {
       dashboardAutoRefreshEnabled: false,
       dashboardAutoRefreshMinutes: 5,
       notification: null,
+      notifications: [],
       toggleDarkMode: () => {},
       toggleSidebar: () => {},
       setSidebarOpen: () => {},
@@ -105,6 +106,7 @@ describe('Prajurit Profile page', () => {
       setDashboardAutoRefreshMinutes: () => {},
       showNotification: vi.fn(),
       clearNotification: () => {},
+      dismissNotification: () => {},
     });
 
     mockSupabase.from = vi.fn((table: string) => {
