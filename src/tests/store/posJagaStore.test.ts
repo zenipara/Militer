@@ -70,21 +70,32 @@ describe('posJagaStore', () => {
 
   // ── createPosJaga ─────────────────────────────────────────
   describe('createPosJaga', () => {
-    it('inserts a new pos jaga then refreshes list', async () => {
-      const insertQuery = buildQuery({ data: null, error: null });
-      const listQuery = buildQuery({ data: samplePos, error: null });
+    it('inserts a new pos jaga and prepends created row', async () => {
+      usePosJagaStore.setState({ posJagaList: samplePos });
 
-      let callCount = 0;
-      mockSupabase.from.mockImplementation(() => {
-        callCount++;
-        // First call is insert (returns minimal result), subsequent calls are fetch
-        return callCount === 1 ? insertQuery : listQuery;
-      });
+      const created: PosJaga = {
+        id: 'p3',
+        nama: 'Pos Baru',
+        qr_token: 'token-baru',
+        is_active: true,
+        created_at: now,
+      };
 
-      await usePosJagaStore.getState().createPosJaga('Pos Baru');
+      const singleMock = vi.fn().mockResolvedValue({ data: created, error: null });
+      const selectMock = vi.fn().mockReturnValue({ single: singleMock });
+      const insertMock = vi.fn().mockReturnValue({ select: selectMock });
+      const insertQuery = buildQuery({ data: null, error: null }) as Record<string, unknown>;
+      insertQuery.insert = insertMock;
 
-      expect(insertQuery.insert).toHaveBeenCalledWith([{ nama: 'Pos Baru' }]);
-      expect(usePosJagaStore.getState().posJagaList).toHaveLength(2);
+      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+      mockSupabase.from.mockReturnValue(insertQuery);
+
+      const result = await usePosJagaStore.getState().createPosJaga('Pos Baru');
+
+      expect(insertMock).toHaveBeenCalledWith([{ nama: 'Pos Baru' }]);
+      expect(result.qr_token).toBe('token-baru');
+      expect(usePosJagaStore.getState().posJagaList).toHaveLength(3);
+      expect(usePosJagaStore.getState().posJagaList[0].id).toBe('p3');
     });
   });
 

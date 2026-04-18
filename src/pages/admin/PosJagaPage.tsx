@@ -31,8 +31,9 @@ export default function PosJagaPage() {
     setLoading(true);
     setError(null);
     try {
-      await createPosJaga(nama.trim());
+      const created = await createPosJaga(nama.trim());
       setNama('');
+      setSelected(created);
     } catch (err: unknown) {
       const e = err instanceof Error ? err : new Error('Gagal membuat pos jaga');
       setError(e.message);

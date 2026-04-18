@@ -2,10 +2,11 @@ import { supabase } from '../supabase';
 import type { PosJaga, ScanPosJagaResult } from '../../types';
 
 async function ensureSessionContext(callerId: string, callerRole: string): Promise<void> {
-  await supabase.rpc('set_session_context', {
+  const res = await supabase.rpc('set_session_context', {
     p_user_id: callerId,
     p_role: callerRole,
   });
+  if (res?.error) throw res.error;
 }
 
 export async function fetchAllPosJaga(callerId: string, callerRole: string): Promise<PosJaga[]> {
@@ -18,10 +19,16 @@ export async function fetchAllPosJaga(callerId: string, callerRole: string): Pro
   return (data as PosJaga[]) ?? [];
 }
 
-export async function insertPosJaga(callerId: string, callerRole: string, payload: { nama: string }): Promise<void> {
+export async function insertPosJaga(callerId: string, callerRole: string, payload: { nama: string }): Promise<PosJaga> {
   await ensureSessionContext(callerId, callerRole);
-  const { error } = await supabase.from('pos_jaga').insert([payload]);
+  const { data, error } = await supabase
+    .from('pos_jaga')
+    .insert([payload])
+    .select('*')
+    .single();
   if (error) throw error;
+  if (!data) throw new Error('Gagal membuat QR pos jaga');
+  return data as PosJaga;
 }
 
 export async function patchPosJagaActive(callerId: string, callerRole: string, id: string, is_active: boolean): Promise<void> {

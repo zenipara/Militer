@@ -63,20 +63,27 @@ describe('posJaga API', () => {
 
   // ── insertPosJaga ─────────────────────────────────────────
   describe('insertPosJaga', () => {
-    it('calls insert with correct payload', async () => {
-      const insertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    it('calls insert with correct payload and returns created row', async () => {
+      const created = { id: 'p3', nama: 'Pos Baru', qr_token: 'tok3', is_active: true, created_at: '2024-01-01' };
+      const singleMock = vi.fn().mockResolvedValue({ data: created, error: null });
+      const selectMock = vi.fn().mockReturnValue({ single: singleMock });
+      const insertMock = vi.fn().mockReturnValue({ select: selectMock });
       const q = buildQuery({ data: null, error: null }) as Record<string, unknown>;
       q.insert = insertMock;
       mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
       mockSupabase.from.mockReturnValue(q);
 
-      await insertPosJaga(CALLER_ID, CALLER_ROLE, { nama: 'Pos Baru' });
+      const result = await insertPosJaga(CALLER_ID, CALLER_ROLE, { nama: 'Pos Baru' });
 
       expect(insertMock).toHaveBeenCalledWith([{ nama: 'Pos Baru' }]);
+      expect(result.id).toBe('p3');
+      expect(result.qr_token).toBe('tok3');
     });
 
     it('throws when insert fails', async () => {
-      const insertMock = vi.fn().mockResolvedValue({ error: new Error('insert error') });
+      const singleMock = vi.fn().mockResolvedValue({ data: null, error: new Error('insert error') });
+      const selectMock = vi.fn().mockReturnValue({ single: singleMock });
+      const insertMock = vi.fn().mockReturnValue({ select: selectMock });
       const q = buildQuery({ data: null, error: null }) as Record<string, unknown>;
       q.insert = insertMock;
       mockSupabase.rpc.mockResolvedValue({ data: null, error: null });

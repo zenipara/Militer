@@ -11,7 +11,7 @@ import { useAuthStore } from './authStore';
 interface PosJagaState {
   posJagaList: PosJaga[];
   fetchPosJaga: () => Promise<void>;
-  createPosJaga: (nama: string) => Promise<void>;
+  createPosJaga: (nama: string) => Promise<PosJaga>;
   setActive: (id: string, is_active: boolean) => Promise<void>;
   scanPosJaga: (posToken: string) => Promise<ScanPosJagaResult>;
 }
@@ -29,8 +29,11 @@ export const usePosJagaStore = create<PosJagaState>()((set, get) => ({
   async createPosJaga(nama) {
     const user = useAuthStore.getState().user;
     if (!user) throw new Error('User tidak ditemukan');
-    await insertPosJaga(user.id, user.role, { nama });
-    await get().fetchPosJaga();
+    const created = await insertPosJaga(user.id, user.role, { nama });
+    set((state) => ({
+      posJagaList: [created, ...state.posJagaList.filter((p) => p.id !== created.id)],
+    }));
+    return created;
   },
 
   async setActive(id, is_active) {
