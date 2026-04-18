@@ -125,13 +125,13 @@ describe('posJaga API', () => {
   // ── rpcScanPosJaga ────────────────────────────────────────
   describe('rpcScanPosJaga', () => {
     it('calls RPC with correct params and returns result', async () => {
-      const scanResult = { gate_pass_id: 'gp1', pos_nama: 'Pos Jaga Utara', status: 'out', message: 'Keluar berhasil dicatat' };
+      const scanResult = { gate_pass_id: 'gp1', pos_nama: 'Pos Jaga Utara', status: 'checked_in', message: 'Scan keluar berhasil (Checked-In)' };
       mockSupabase.rpc.mockResolvedValue({ data: scanResult, error: null });
 
       const result = await rpcScanPosJaga('tok1', 'u1');
 
       expect(mockSupabase.rpc).toHaveBeenCalledWith('scan_pos_jaga', { p_pos_token: 'tok1', p_user_id: 'u1' });
-      expect(result.status).toBe('out');
+      expect(result.status).toBe('checked_in');
     });
 
     it('throws when RPC returns error', async () => {
@@ -148,7 +148,7 @@ describe('posJaga API', () => {
   // ── rpcScanPosJagaWithCredentials ─────────────────────────
   describe('rpcScanPosJagaWithCredentials', () => {
     it('verifies NRP/PIN then scans using resolved user_id', async () => {
-      const scanResult = { gate_pass_id: 'gp1', pos_nama: 'Pos Jaga Utara', status: 'out', message: 'Keluar berhasil dicatat' };
+      const scanResult = { gate_pass_id: 'gp1', pos_nama: 'Pos Jaga Utara', status: 'checked_in', message: 'Scan keluar berhasil (Checked-In)' };
       mockSupabase.rpc
         .mockResolvedValueOnce({ data: { user_id: 'u1', user_role: 'prajurit' }, error: null })
         .mockResolvedValueOnce({ data: scanResult, error: null });
@@ -163,7 +163,7 @@ describe('posJaga API', () => {
         p_pos_token: 'tok1',
         p_user_id: 'u1',
       });
-      expect(result.status).toBe('out');
+      expect(result.status).toBe('checked_in');
     });
 
     it('throws when NRP/PIN invalid', async () => {

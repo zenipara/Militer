@@ -45,7 +45,7 @@ describe('GatePassMonitorPage', () => {
     mockState.fetchGatePasses = vi.fn(async () => undefined);
   });
 
-  it('prioritizes critical rows: overdue first, then out, then approved', async () => {
+  it('prioritizes critical rows: overdue first, then checked_in, then approved', async () => {
     mockState.gatePasses = [
       makeGatePass({
         id: 'approved-1',
@@ -54,9 +54,9 @@ describe('GatePassMonitorPage', () => {
         waktu_keluar: '2026-04-16T08:00:00Z',
       }),
       makeGatePass({
-        id: 'out-1',
-        tujuan: 'Posko Out',
-        status: 'out',
+        id: 'checked-in-1',
+        tujuan: 'Posko Checked-In',
+        status: 'checked_in',
         waktu_kembali: '2026-04-16T11:00:00Z',
       }),
       makeGatePass({
@@ -73,7 +73,7 @@ describe('GatePassMonitorPage', () => {
 
     const cards = screen.getAllByTestId(/monitor-card-/i);
     expect(cards[0]).toHaveTextContent('Posko Overdue');
-    expect(cards[1]).toHaveTextContent('Posko Out');
+    expect(cards[1]).toHaveTextContent('Posko Checked-In');
     expect(cards[2]).toHaveTextContent('Posko Approved');
   });
 

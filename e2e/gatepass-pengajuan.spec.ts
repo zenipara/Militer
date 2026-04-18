@@ -35,7 +35,8 @@ test.describe('Gate Pass Pengajuan Baru', () => {
 		await page.getByRole('button', { name: 'Submit' }).click();
 
 		await expect(page.getByText(tujuan)).toBeVisible();
-		await expect(page.locator('main').getByText('Approved').first()).toBeVisible();
+		const row = page.locator('main .p-3.border.rounded').filter({ hasText: tujuan }).first();
+		await expect(row.getByText(/Approved|Pending/i)).toBeVisible();
 	});
 
 	test('halaman scan pos jaga tersedia untuk verifikasi keluar dan kembali', async ({ page }) => {

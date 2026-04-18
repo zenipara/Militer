@@ -13,8 +13,8 @@ const GatePassStatusBadge: React.FC<Props> = ({ gatePass }) => {
     rejected: 'Rejected',
     checked_in: 'Checked-In',
     completed: 'Completed',
-    out: 'Keluar',
-    returned: 'Kembali',
+    out: 'Checked-In',
+    returned: 'Completed',
     overdue: 'Overdue',
   }[gatePass.status];
   const color = {

@@ -13,11 +13,11 @@ const mockSupabase = supabase as unknown as {
 
 const now = new Date();
 const overdueTime = new Date(now.getTime() - 1000 * 60 * 60).toISOString();
-const gatePassOut: GatePass = {
+const gatePassCheckedIn: GatePass = {
   id: 'gp1', user_id: 'u1', keperluan: 'Cuti', tujuan: 'Rumah',
   waktu_keluar: now.toISOString(), waktu_kembali: overdueTime,
   actual_keluar: now.toISOString(), actual_kembali: null,
-  status: 'out', approved_by: 'u2', qr_token: 'qr-1',
+  status: 'checked_in', approved_by: 'u2', qr_token: 'qr-1',
   created_at: now.toISOString(), updated_at: now.toISOString(),
 };
 
@@ -55,7 +55,7 @@ describe('gatePassStore', () => {
 
   it('fetches gate passes and updates overdue status for prajurit', async () => {
     // fetchGatePassesByUser uses rpc('api_get_gate_passes')
-    mockSupabase.rpc.mockResolvedValue({ data: [gatePassOut], error: null });
+    mockSupabase.rpc.mockResolvedValue({ data: [gatePassCheckedIn], error: null });
 
     const store = useGatePassStore.getState();
     await store.fetchGatePasses();

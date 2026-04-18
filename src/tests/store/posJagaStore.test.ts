@@ -142,8 +142,8 @@ describe('posJagaStore', () => {
       const scanResult: ScanPosJagaResult = {
         gate_pass_id: 'gp1',
         pos_nama: 'Pos Jaga Utara',
-        status: 'out',
-        message: 'Keluar berhasil dicatat',
+        status: 'checked_in',
+        message: 'Scan keluar berhasil (Checked-In)',
       };
       mockSupabase.rpc
         .mockResolvedValueOnce({ data: { user_id: 'u1', user_role: 'prajurit' }, error: null })
@@ -160,16 +160,16 @@ describe('posJagaStore', () => {
         p_pos_token: 'token-utara',
         p_user_id: 'u1',
       });
-      expect(result.status).toBe('out');
-      expect(result.message).toBe('Keluar berhasil dicatat');
+      expect(result.status).toBe('checked_in');
+      expect(result.message).toBe('Scan keluar berhasil (Checked-In)');
     });
 
-    it('returns "returned" status when gate pass was already out', async () => {
+    it('returns "completed" status when gate pass was already checked_in', async () => {
       const scanResult: ScanPosJagaResult = {
         gate_pass_id: 'gp2',
         pos_nama: 'Pos Jaga Selatan',
-        status: 'returned',
-        message: 'Kembali berhasil dicatat',
+        status: 'completed',
+        message: 'Scan kembali berhasil (Completed)',
       };
       mockSupabase.rpc
         .mockResolvedValueOnce({ data: { user_id: 'u1', user_role: 'prajurit' }, error: null })
@@ -177,7 +177,7 @@ describe('posJagaStore', () => {
 
       const result = await usePosJagaStore.getState().scanPosJaga('token-selatan', '1000001', '123456');
 
-      expect(result.status).toBe('returned');
+      expect(result.status).toBe('completed');
     });
 
     it('throws when NRP/PIN invalid', async () => {

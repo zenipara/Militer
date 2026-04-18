@@ -3,12 +3,12 @@ import { render, screen } from '@testing-library/react';
 import ScanResultCard from '../../../components/guard/ScanResultCard';
 
 describe('ScanResultCard', () => {
-  it('shows allow entry button for out status', () => {
+  it('shows allow entry button for checked_in status', () => {
     render(
       <ScanResultCard
         data={{
           user: { nama: 'Prajurit B', nrp: '22334' },
-          status: 'out',
+          status: 'checked_in',
           actual_keluar: '2026-04-14T08:00:00Z',
           actual_kembali: null,
         }}

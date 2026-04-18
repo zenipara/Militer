@@ -57,8 +57,8 @@ function getStatusLabel(status: GatePassStatus | 'all') {
     rejected: 'Rejected',
     checked_in: 'Checked-In (Sedang Keluar)',
     completed: 'Completed (Sudah Kembali)',
-    out: 'Sedang keluar',
-    returned: 'Sudah kembali',
+    out: 'Checked-In (Sedang Keluar)',
+    returned: 'Completed (Sudah Kembali)',
     overdue: 'Overdue',
   };
   return labels[status];
