@@ -33,10 +33,20 @@ export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
   return (data as User[]) ?? [];
 }
 
+// Explicit safe column list — deliberately excludes pin_hash
+const USERS_SAFE_COLUMNS = [
+  'id', 'nrp', 'nama', 'role', 'pangkat', 'jabatan', 'satuan', 'foto_url',
+  'is_active', 'is_online', 'login_attempts', 'locked_until', 'last_login',
+  'created_at', 'updated_at', 'tempat_lahir', 'tanggal_lahir', 'no_telepon',
+  'alamat', 'tanggal_masuk_dinas', 'pendidikan_terakhir', 'agama',
+  'status_pernikahan', 'golongan_darah', 'nomor_ktp',
+  'kontak_darurat_nama', 'kontak_darurat_telp', 'catatan_khusus',
+].join(',');
+
 export async function fetchUsersDirect(params: FetchUsersParams): Promise<User[]> {
   let query = supabase
     .from('users')
-    .select('*')
+    .select(USERS_SAFE_COLUMNS)
     .order(params.orderBy ?? 'nama', { ascending: params.ascending ?? true });
 
   if (params.role) {
