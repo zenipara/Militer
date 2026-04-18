@@ -19,9 +19,9 @@ export default function Attendance() {
     setCheckingIn(true);
     try {
       await checkIn();
-      showNotification('Check-in berhasil!', 'success');
+      showNotification('Absen masuk berhasil!', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal check-in', 'error');
+      showNotification(err instanceof Error ? err.message : 'Gagal absen masuk', 'error');
     } finally {
       setCheckingIn(false);
     }
@@ -31,9 +31,9 @@ export default function Attendance() {
     setCheckingOut(true);
     try {
       await checkOut();
-      showNotification('Check-out berhasil!', 'success');
+      showNotification('Absen pulang berhasil!', 'success');
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal check-out', 'error');
+      showNotification(err instanceof Error ? err.message : 'Gagal absen pulang', 'error');
     } finally {
       setCheckingOut(false);
     }
@@ -48,7 +48,7 @@ export default function Attendance() {
       <div className="space-y-6">
         <PageHeader
           title="Absensi"
-          subtitle="Pantau check-in, check-out, dan riwayat kehadiran Anda secara real-time."
+          subtitle="Pantau absen masuk, absen pulang, dan riwayat kehadiran Anda secara real-time."
           meta={<span>{today}</span>}
         />
 
@@ -73,7 +73,7 @@ export default function Attendance() {
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="rounded-xl bg-surface/40 p-3">
-                  <p className="text-text-muted text-xs mb-1">Check-In</p>
+                  <p className="text-text-muted text-xs mb-1">Absen Masuk</p>
                   <p className="font-semibold text-text-primary">
                     {todayAttendance.check_in
                       ? new Date(todayAttendance.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
@@ -81,7 +81,7 @@ export default function Attendance() {
                   </p>
                 </div>
                 <div className="rounded-xl bg-surface/40 p-3">
-                  <p className="text-text-muted text-xs mb-1">Check-Out</p>
+                  <p className="text-text-muted text-xs mb-1">Absen Pulang</p>
                   <p className="font-semibold text-text-primary">
                     {todayAttendance.check_out
                       ? new Date(todayAttendance.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
@@ -91,15 +91,15 @@ export default function Attendance() {
               </div>
               {todayAttendance.check_in && !todayAttendance.check_out && (
                 <Button onClick={handleCheckOut} isLoading={checkingOut} variant="secondary" size="lg" className="w-full">
-                  Check-Out Sekarang
+                  Absen Pulang Sekarang
                 </Button>
               )}
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-text-muted text-sm">Anda belum check-in hari ini.</p>
+              <p className="text-text-muted text-sm">Anda belum absen masuk hari ini.</p>
               <Button onClick={handleCheckIn} isLoading={checkingIn} size="lg" className="w-full">
-                Check-In Sekarang
+                Absen Masuk Sekarang
               </Button>
             </div>
           )}
@@ -127,7 +127,7 @@ export default function Attendance() {
                             ? `Masuk: ${new Date(a.check_in).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
                             : ''}
                           {a.check_out
-                            ? ` | Keluar: ${new Date(a.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
+                            ? ` | Pulang: ${new Date(a.check_out).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
                             : ''}
                         </p>
                       </div>

@@ -6,6 +6,7 @@ import { usePlatformStore } from '../../store/platformStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { isPathEnabled } from '../../lib/featureFlags';
 import type { Role } from '../../types';
+import { useRef } from 'react';
 
 interface NavItem {
   path: string;
@@ -37,6 +38,7 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
     { path: '/komandan/evaluation',         label: 'Evaluasi',             icon: 'NotebookPen' },
     { path: '/komandan/reports',            label: 'Laporan',              icon: 'BarChart2' },
     { path: '/komandan/logistics-request',  label: 'Permintaan Logistik',  icon: 'ClipboardList' },
+    { path: '/komandan/messages',           label: 'Pesan',                icon: 'Megaphone' },
   ],
   prajurit: [
     { path: '/prajurit/dashboard',   label: 'Beranda',           icon: 'LayoutDashboard' },
@@ -59,6 +61,21 @@ export default function Sidebar() {
   const { settings } = usePlatformStore();
   const { flags } = useFeatureStore();
   const navigate = useNavigate();
+
+  // Swipe-to-close: track touch start X position
+  const touchStartX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    // Swipe left ≥ 60px → close sidebar
+    if (dx < -60) setSidebarOpen(false);
+    touchStartX.current = null;
+  };
 
   if (!user) return null;
 
@@ -95,6 +112,8 @@ export default function Sidebar() {
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
         `}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Logo */}
         <div className="border-b border-surface/80 px-5 py-5">
@@ -140,7 +159,7 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
           {navItems.map((item) => {
             const Icon = ICONS[item.icon] as IconType;
             return (
@@ -148,7 +167,7 @@ export default function Sidebar() {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200
+                  `group flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200
                   ${
                     isActive
                       ? 'bg-primary text-white shadow-sm shadow-primary/30'
@@ -172,7 +191,7 @@ export default function Sidebar() {
         <div className="border-t border-surface/80 px-3 py-4">
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-accent-red transition-colors hover:bg-accent-red/10"
+            className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-accent-red transition-colors hover:bg-accent-red/10"
           >
             <span className="grid h-6 w-6 place-items-center rounded-lg bg-accent-red/10 text-center text-sm">
               {ICONS.LogOut ? <ICONS.LogOut className="w-4 h-4" aria-hidden="true" /> : null}

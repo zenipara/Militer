@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import Input from '../../components/common/Input';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
@@ -39,6 +40,8 @@ export default function ShiftSchedule() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // List view: selected single day
   const today = new Date();
@@ -136,13 +139,22 @@ export default function ShiftSchedule() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Hapus jadwal ini?')) return;
-    const { error } = await supabase.from('shift_schedules').delete().eq('id', id);
-    if (error) { showNotification('Gagal menghapus', 'error'); return; }
-    showNotification('Jadwal dihapus', 'success');
-    if (viewMode === 'list') await fetchSchedules();
-    else await fetchMonthSchedules();
+  const handleDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return;
+    setIsDeleting(true);
+    const { error } = await supabase.from('shift_schedules').delete().eq('id', confirmDeleteId);
+    if (error) { showNotification('Gagal menghapus', 'error'); }
+    else {
+      showNotification('Jadwal dihapus', 'success');
+      if (viewMode === 'list') await fetchSchedules();
+      else await fetchMonthSchedules();
+    }
+    setConfirmDeleteId(null);
+    setIsDeleting(false);
   };
 
   const prevMonth = () => {
@@ -432,6 +444,17 @@ export default function ShiftSchedule() {
           </div>
         </div>
       </Modal>
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        onClose={() => { if (!isDeleting) setConfirmDeleteId(null); }}
+        onConfirm={() => { void handleConfirmDelete(); }}
+        title="Hapus Jadwal Shift"
+        message="Jadwal shift ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan."
+        confirmLabel="Ya, Hapus"
+        isConfirming={isDeleting}
+      />
     </DashboardLayout>
   );
 }

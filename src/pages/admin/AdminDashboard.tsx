@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/common/Button';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { StatCardsSkeleton } from '../../components/common/Skeleton';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -50,6 +51,7 @@ export default function AdminDashboard() {
   const { flags } = useFeatureStore();
   const { users: latestUsers, isLoading: isMembersLoading, deleteUser } = useUsers({ orderBy: 'created_at', ascending: false });
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [confirmMember, setConfirmMember] = useState<{ id: string; nama: string } | null>(null);
   const {
     snapshot,
     isLoading,
@@ -97,7 +99,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDeleteMember = async (targetId: string, targetName: string) => {
+  const handleDeleteMember = (targetId: string, targetName: string) => {
     if (!isUserManagementEnabled) {
       showNotification('Fitur manajemen personel sedang dinonaktifkan admin', 'warning');
       return;
@@ -109,13 +111,17 @@ export default function AdminDashboard() {
       return;
     }
 
-    const confirmed = window.confirm(`Hapus data anggota ${targetName}? Tindakan ini tidak dapat dibatalkan.`);
-    if (!confirmed) return;
+    setConfirmMember({ id: targetId, nama: targetName });
+  };
 
-    setDeletingUserId(targetId);
+  const handleConfirmDeleteMember = async () => {
+    if (!confirmMember) return;
+    const { id, nama } = confirmMember;
+    setConfirmMember(null);
+    setDeletingUserId(id);
     try {
-      await deleteUser(targetId);
-      showNotification(`Data anggota ${targetName} berhasil dihapus`, 'success');
+      await deleteUser(id);
+      showNotification(`Data anggota ${nama} berhasil dihapus`, 'success');
       void refreshDashboard();
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal menghapus anggota', 'error');
@@ -282,7 +288,7 @@ export default function AdminDashboard() {
                           size="sm"
                           variant="danger"
                           disabled={member.id === user?.id || deletingUserId === member.id}
-                          onClick={() => void handleDeleteMember(member.id, member.nama)}
+                          onClick={() => handleDeleteMember(member.id, member.nama)}
                           isLoading={deletingUserId === member.id}
                         >
                           Hapus
@@ -366,6 +372,16 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Confirm Delete Member Modal */}
+      <ConfirmModal
+        isOpen={confirmMember !== null}
+        onClose={() => setConfirmMember(null)}
+        onConfirm={() => { void handleConfirmDeleteMember(); }}
+        title="Hapus Anggota"
+        message={`Hapus data anggota ${confirmMember?.nama ?? ''}? Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Ya, Hapus"
+      />
     </DashboardLayout>
   );
 }

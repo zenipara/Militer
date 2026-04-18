@@ -87,7 +87,7 @@ export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
     key: 'messages',
     label: 'Pesan',
     description: 'Fitur pesan internal antar personel.',
-    paths: ['/prajurit/messages'],
+    paths: ['/prajurit/messages', '/komandan/messages'],
   },
   {
     key: 'leave_requests',

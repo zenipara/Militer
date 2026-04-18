@@ -37,7 +37,9 @@ export default function Input({
         <input
           id={inputId}
           className={`
-            w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5 text-sm text-text-primary shadow-sm shadow-slate-900/[0.03]
+            w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5
+            text-base sm:text-sm text-text-primary shadow-sm shadow-slate-900/[0.03]
+            min-h-[44px]
             placeholder:text-text-muted
             transition-all duration-200 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15
             disabled:cursor-not-allowed disabled:opacity-50

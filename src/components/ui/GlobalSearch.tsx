@@ -44,6 +44,8 @@ const TYPE_ICON: Record<ApiSearchResult['type'], keyof typeof ICONS> = {
   announcement: 'Megaphone',
 };
 
+const LISTBOX_ID = 'global-search-listbox';
+
 export default function GlobalSearch() {
   const { user } = useAuthStore();
   const { flags } = useFeatureStore();
@@ -53,6 +55,7 @@ export default function GlobalSearch() {
   const [rawQuery, setRawQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const query = useDebounce(rawQuery, 300);
@@ -62,6 +65,7 @@ export default function GlobalSearch() {
   const search = useCallback(async (q: string) => {
     if (!q.trim() || !activeRole) {
       setResults([]);
+      setActiveIndex(-1);
       return;
     }
     setIsLoading(true);
@@ -74,6 +78,7 @@ export default function GlobalSearch() {
           icon: TYPE_ICON[r.type],
         })).filter((r) => isPathEnabled(r.href, flags)),
       );
+      setActiveIndex(-1);
     } catch (err) {
       if (import.meta.env.DEV) console.error(handleError(err, 'Gagal mencari data'));
       setResults([]);
@@ -105,34 +110,71 @@ export default function GlobalSearch() {
         setIsOpen(true);
         setTimeout(() => inputRef.current?.focus(), 50);
       }
-      if (e.key === 'Escape') setIsOpen(false);
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, []);
 
-  const handleSelect = (result: SearchResult) => {
+  const openSearch = () => {
+    setIsOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const closeSearch = () => {
     setIsOpen(false);
     setRawQuery('');
     setResults([]);
+    setActiveIndex(-1);
+  };
+
+  const handleSelect = (result: SearchResult) => {
+    closeSearch();
     if (isPathEnabled(result.href, flags)) {
       navigate(result.href);
       return;
     }
-
     const safeRole = (activeRole ?? 'prajurit') as Role;
     navigate(ROLE_DEFAULT_PATH[safeRole]);
   };
+
+  /** Handle keyboard navigation inside the search overlay */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      closeSearch();
+      return;
+    }
+    if (results.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % results.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev <= 0 ? results.length - 1 : prev - 1));
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      handleSelect(results[activeIndex]);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setActiveIndex(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setActiveIndex(results.length - 1);
+    }
+  };
+
+  const activeOptionId = activeIndex >= 0 ? `search-option-${activeIndex}` : undefined;
 
   return (
     <div ref={containerRef} className="relative" data-print-hide>
       {/* Search trigger button */}
       <button
-        onClick={() => { setIsOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
+        onClick={openSearch}
         className="flex items-center gap-2 rounded-xl border border-surface bg-slate-50 px-3 py-2 text-sm text-text-muted transition-colors hover:bg-slate-100 hover:text-text-primary dark:bg-surface/35 dark:hover:bg-surface/65"
         aria-label="Cari (Ctrl+K)"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
         </svg>
         <span className="hidden sm:block">Cari...</span>
@@ -141,33 +183,55 @@ export default function GlobalSearch() {
 
       {/* Search modal/dropdown */}
       {isOpen && (
-        <div className="app-panel absolute right-0 top-full z-50 mt-2 w-[min(92vw,460px)] overflow-hidden rounded-2xl animate-slide-in">
+        <div
+          className="app-panel absolute right-0 top-full z-50 mt-2 w-[min(92vw,460px)] overflow-hidden rounded-2xl animate-slide-in"
+          role="dialog"
+          aria-label="Pencarian global"
+          aria-modal="true"
+        >
           {/* Input */}
           <div className="flex items-center gap-2 border-b border-surface/80 px-4 py-3">
-            <svg className="h-4 w-4 text-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-4 w-4 text-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
             </svg>
             <input
               ref={inputRef}
+              id="global-search-input"
               type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={results.length > 0}
+              aria-controls={LISTBOX_ID}
+              aria-activedescendant={activeOptionId}
               placeholder="Cari tugas, personel, pengumuman..."
               value={rawQuery}
               onChange={(e) => setRawQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
               className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
               autoFocus
+              autoComplete="off"
             />
             {isLoading && (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface border-t-primary flex-shrink-0" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface border-t-primary flex-shrink-0" aria-hidden="true" />
             )}
-            <button onClick={() => setIsOpen(false)} className="text-xs text-text-muted hover:text-text-primary">
+            <button
+              onClick={closeSearch}
+              className="text-xs text-text-muted hover:text-text-primary"
+              aria-label="Tutup pencarian"
+            >
               Esc
             </button>
           </div>
 
           {/* Results */}
-          <div className="max-h-72 overflow-y-auto">
+          <div
+            id={LISTBOX_ID}
+            role="listbox"
+            aria-label="Hasil pencarian"
+            className="max-h-72 overflow-y-auto"
+          >
             {rawQuery && results.length === 0 && !isLoading && (
-              <p className="px-4 py-6 text-center text-sm text-text-muted">
+              <p className="px-4 py-6 text-center text-sm text-text-muted" role="status">
                 Tidak ada hasil untuk &ldquo;{rawQuery}&rdquo;
               </p>
             )}
@@ -176,29 +240,38 @@ export default function GlobalSearch() {
                 Ketik untuk mencari tugas, personel, atau pengumuman
               </p>
             )}
-            {results.map((r) => (
-              <button
-                key={r.id}
-                onClick={() => handleSelect(r)}
-                className="w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-surface/55"
-              >
-                <span className="text-lg flex-shrink-0">{
-                  (() => {
-                    const Icon = ICONS[r.icon];
-                    return Icon ? <Icon className="w-5 h-5" aria-hidden="true" /> : null;
-                  })()
-                }</span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-text-primary truncate">{r.title}</p>
-                  <p className="text-xs text-text-muted truncate mt-0.5">{r.subtitle}</p>
-                </div>
-              </button>
-            ))}
+            {results.map((r, idx) => {
+              const Icon = ICONS[r.icon];
+              const isActive = idx === activeIndex;
+              return (
+                <button
+                  key={r.id}
+                  id={`search-option-${idx}`}
+                  role="option"
+                  aria-selected={isActive}
+                  onClick={() => handleSelect(r)}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                  className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'hover:bg-slate-50 dark:hover:bg-surface/55'
+                  }`}
+                >
+                  <span className="flex-shrink-0 mt-0.5">
+                    {Icon ? <Icon className="w-4 h-4" aria-hidden="true" /> : null}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-primary truncate">{r.title}</p>
+                    <p className="text-xs text-text-muted truncate mt-0.5">{r.subtitle}</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           {results.length > 0 && (
             <div className="border-t border-surface/80 px-4 py-2 text-center text-xs text-text-muted">
-              {results.length} hasil — klik untuk navigasi
+              {results.length} hasil — gunakan ↑↓ untuk navigasi, Enter untuk pilih
             </div>
           )}
         </div>

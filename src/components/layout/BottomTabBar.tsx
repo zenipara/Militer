@@ -55,25 +55,35 @@ export default function BottomTabBar() {
 
   const tabs = BOTTOM_TABS[user.role].filter((tab) => isPathEnabled(tab.path, flags));
 
-  if (!tabs) return null;
+  if (!tabs || tabs.length === 0) return null;
+
+  const gridColsClass: Record<number, string> = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-2',
+    3: 'grid-cols-3',
+    4: 'grid-cols-4',
+    5: 'grid-cols-5',
+  };
+  const colsClass = gridColsClass[Math.min(tabs.length, 5)] ?? 'grid-cols-5';
 
   return (
     <nav
-      className="safe-area-inset-bottom fixed bottom-0 left-0 right-0 z-30 border-t border-surface/80 bg-bg-card/90 backdrop-blur-xl lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-30 border-t border-surface/80 bg-bg-card/90 backdrop-blur-xl lg:hidden"
       aria-label="Bottom navigation"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="mx-auto grid max-w-xl grid-cols-5 gap-1 px-2 py-1.5">
+      <div className={`mx-auto grid max-w-xl ${colsClass} gap-0 px-1 pt-1 pb-2`}>
         {tabs.map((tab) => (
           <NavLink
             key={tab.path}
             to={tab.path}
             className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-xs font-medium transition-colors
+              `flex flex-col items-center justify-center gap-0.5 rounded-xl min-h-[52px] py-1 px-1 text-xs font-medium transition-colors
               ${isActive ? 'bg-primary/15 text-primary' : 'text-text-muted hover:bg-surface/60 hover:text-text-primary'}`
             }
           >
-            <span className="text-lg leading-none">{tab.icon}</span>
-            <span className="text-[10px] leading-none">{tab.label}</span>
+            <span className="text-[22px] leading-none">{tab.icon}</span>
+            <span className="text-[10px] leading-none mt-0.5">{tab.label}</span>
           </NavLink>
         ))}
       </div>

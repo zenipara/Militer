@@ -3,6 +3,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import Input from '../../components/common/Input';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
@@ -20,6 +21,8 @@ export default function Documents() {
   const [filterKategori, setFilterKategori] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState<{
     nama: string;
     kategori: string;
@@ -84,18 +87,26 @@ export default function Documents() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!user) {
       showNotification('User tidak ditemukan', 'error');
       return;
     }
-    if (!window.confirm('Hapus dokumen ini?')) return;
+    setConfirmDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId || !user) return;
+    setIsDeleting(true);
     try {
-      await deleteDocument(user.id, user.role, id);
+      await deleteDocument(user.id, user.role, confirmDeleteId);
       showNotification('Dokumen dihapus', 'success');
       await fetchDocs();
     } catch {
       showNotification('Gagal menghapus dokumen', 'error');
+    } finally {
+      setConfirmDeleteId(null);
+      setIsDeleting(false);
     }
   };
 
@@ -240,6 +251,17 @@ export default function Documents() {
           />
         </div>
       </Modal>
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        onClose={() => { if (!isDeleting) setConfirmDeleteId(null); }}
+        onConfirm={() => { void handleConfirmDelete(); }}
+        title="Hapus Dokumen"
+        message="Dokumen ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan."
+        confirmLabel="Ya, Hapus"
+        isConfirming={isDeleting}
+      />
     </DashboardLayout>
   );
 }

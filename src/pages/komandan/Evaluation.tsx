@@ -3,6 +3,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import Badge from '../../components/common/Badge';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUsers } from '../../hooks/useUsers';
@@ -20,6 +21,8 @@ export default function Evaluation() {
   const [filterUserId, setFilterUserId] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState({
     user_id: '',
     jenis: 'catatan' as 'peringatan' | 'penghargaan' | 'catatan',
@@ -69,12 +72,21 @@ export default function Evaluation() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Hapus catatan ini?')) return;
-    const { error } = await supabase.from('discipline_notes').delete().eq('id', id);
-    if (error) { showNotification('Gagal menghapus', 'error'); return; }
-    showNotification('Catatan dihapus', 'success');
-    await fetchNotes();
+  const handleDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return;
+    setIsDeleting(true);
+    const { error } = await supabase.from('discipline_notes').delete().eq('id', confirmDeleteId);
+    if (error) { showNotification('Gagal menghapus', 'error'); }
+    else {
+      showNotification('Catatan dihapus', 'success');
+      await fetchNotes();
+    }
+    setConfirmDeleteId(null);
+    setIsDeleting(false);
   };
 
   const jenisBadge = {
@@ -215,6 +227,17 @@ export default function Evaluation() {
           </div>
         </div>
       </Modal>
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        onClose={() => { if (!isDeleting) setConfirmDeleteId(null); }}
+        onConfirm={() => { void handleConfirmDelete(); }}
+        title="Hapus Catatan Evaluasi"
+        message="Catatan evaluasi ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan."
+        confirmLabel="Ya, Hapus"
+        isConfirming={isDeleting}
+      />
     </DashboardLayout>
   );
 }

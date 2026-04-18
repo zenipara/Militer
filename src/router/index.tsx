@@ -30,8 +30,7 @@ const PrajuritDashboard = lazy(() => import('../pages/prajurit/PrajuritDashboard
 const MyTasks = lazy(() => import('../pages/prajurit/MyTasks'));
 const Attendance = lazy(() => import('../pages/prajurit/Attendance'));
 const Messages = lazy(() => import('../pages/prajurit/Messages'));
-const LeaveRequest = lazy(() => import('../pages/prajurit/LeaveRequest'));
-const Profile = lazy(() => import('../pages/prajurit/Profile'));
+const LeaveRequest = lazy(() => import('../pages/prajurit/LeaveRequest'));const Profile = lazy(() => import('../pages/prajurit/Profile'));
 const GatePassPage = lazy(() => import('../pages/prajurit/GatePassPage'));
 const ScanPosJagaPage = lazy(() => import('../pages/prajurit/ScanPosJagaPage'));
 const GatePassApprovalPage = lazy(() => import('../pages/komandan/GatePassApprovalPage'));
@@ -83,6 +82,7 @@ export const router = createHashRouter([
       { path: '/komandan/logistics-request', element: wrap(<LogisticsRequest />) },
       { path: '/komandan/gatepass-approval', element: wrap(<GatePassApprovalPage />) },
       { path: '/komandan/gatepass-monitor', element: wrap(<GatePassMonitorPage />) },
+      { path: '/komandan/messages', element: wrap(<Messages />) },
     ],
   },
   // Prajurit routes

@@ -115,7 +115,7 @@ export default function LeaveRequest() {
               key={status}
               type="button"
               onClick={() => setFilterStatus(status)}
-              className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+              className={`flex min-h-[44px] items-center rounded-xl border px-4 py-2 text-sm font-medium transition-colors ${
                 filterStatus === status
                   ? 'border-primary bg-primary text-white'
                   : 'border-surface/70 text-text-muted hover:border-primary hover:text-text-primary'
@@ -124,7 +124,6 @@ export default function LeaveRequest() {
               {status === 'all' ? 'Semua' : status === 'pending' ? 'Menunggu' : status === 'approved' ? 'Disetujui' : 'Ditolak'}
             </button>
           ))}
-          <span className="ml-auto text-xs text-text-muted self-center">Klik kartu permohonan untuk detail lengkap.</span>
         </div>
 
         {isLoading ? (
@@ -244,7 +243,7 @@ export default function LeaveRequest() {
               <option value="dinas_luar">📋 Dinas Luar</option>
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input
               label="Tanggal Mulai"
               type="date"

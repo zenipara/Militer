@@ -2,6 +2,7 @@ import { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
 import PageHeader from '../../components/ui/PageHeader';
@@ -15,6 +16,8 @@ export default function Announcements() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState({
     judul: '',
     isi: '',
@@ -54,13 +57,22 @@ export default function Announcements() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Hapus pengumuman ini?')) return;
+  const handleDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return;
+    setIsDeleting(true);
     try {
-      await deleteAnnouncement(id);
+      await deleteAnnouncement(confirmDeleteId);
       showNotification('Pengumuman dihapus', 'success');
+      setConfirmDeleteId(null);
     } catch {
       showNotification('Gagal menghapus', 'error');
+      setConfirmDeleteId(null);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -214,6 +226,17 @@ export default function Announcements() {
           </label>
         </div>
       </Modal>
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        onClose={() => { if (!isDeleting) setConfirmDeleteId(null); }}
+        onConfirm={() => { void handleConfirmDelete(); }}
+        title="Hapus Pengumuman"
+        message="Pengumuman ini akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan."
+        confirmLabel="Ya, Hapus"
+        isConfirming={isDeleting}
+      />
     </DashboardLayout>
   );
 }

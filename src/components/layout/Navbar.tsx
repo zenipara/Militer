@@ -23,8 +23,7 @@ const PROFILE_PATH: Record<Role, string> = {
 /** Rute inbox pesan per role. Guard tidak memiliki halaman pesan. */
 const MESSAGES_PATH: Partial<Record<Role, string>> = {
   prajurit: '/prajurit/messages',
-  komandan: '/prajurit/messages',
-  admin: '/prajurit/messages',
+  komandan: '/komandan/messages',
 };
 
 export default function Navbar({ title }: NavbarProps) {
@@ -73,7 +72,7 @@ export default function Navbar({ title }: NavbarProps) {
       <div className="flex h-16 items-center gap-3">
         <button
           onClick={toggleSidebar}
-          className="lg:hidden rounded-xl p-2 text-text-muted transition-colors hover:bg-slate-100 hover:text-text-primary dark:hover:bg-surface/75"
+          className="lg:hidden flex h-11 w-11 items-center justify-center rounded-xl text-text-muted transition-colors hover:bg-slate-100 hover:text-text-primary active:scale-[0.93] dark:hover:bg-surface/75"
           aria-label="Toggle sidebar"
         >
           {ICONS.Menu ? (
@@ -103,7 +102,7 @@ export default function Navbar({ title }: NavbarProps) {
           {canOpenMessages && (
             <div className="relative">
               <button
-                className="rounded-xl border border-surface bg-slate-50 p-2 text-text-muted transition-colors hover:text-text-primary dark:bg-surface/45"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-surface bg-slate-50 text-text-muted transition-colors hover:text-text-primary active:scale-[0.93] dark:bg-surface/45"
                 aria-label={`Pesan${unreadCount > 0 ? ` — ${unreadCount} belum dibaca` : ''}`}
                 title="Pesan & Notifikasi"
                 onClick={() => {
@@ -126,7 +125,7 @@ export default function Navbar({ title }: NavbarProps) {
           {/* Dark mode toggle */}
           <button
             onClick={toggleDarkMode}
-            className="rounded-xl border border-surface bg-slate-50 p-2 text-text-muted transition-colors hover:text-text-primary dark:bg-surface/45"
+            className="hidden sm:flex h-11 w-11 items-center justify-center rounded-xl border border-surface bg-slate-50 text-text-muted transition-colors hover:text-text-primary active:scale-[0.93] dark:bg-surface/45"
             aria-label={isDarkMode ? 'Beralih ke mode terang' : 'Beralih ke mode gelap'}
             title={isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
           >
@@ -142,7 +141,7 @@ export default function Navbar({ title }: NavbarProps) {
             <button
               onClick={() => setIsAvatarDropdownOpen(!isAvatarDropdownOpen)}
               onKeyDown={handleAvatarKeyDown}
-              className="flex items-center gap-2 rounded-xl border border-surface bg-slate-50 px-2 py-1.5 text-left transition-colors hover:bg-slate-100 focus:border-primary focus:bg-blue-50 dark:bg-surface/40 dark:hover:bg-surface/60 dark:focus:bg-primary/10"
+              className="flex h-11 items-center gap-2 rounded-xl border border-surface bg-slate-50 px-2 py-1 text-left transition-colors hover:bg-slate-100 active:scale-[0.97] focus:border-primary focus:bg-blue-50 dark:bg-surface/40 dark:hover:bg-surface/60 dark:focus:bg-primary/10"
               aria-label="Profil pengguna"
               aria-expanded={isAvatarDropdownOpen}
               aria-haspopup="menu"
@@ -185,7 +184,7 @@ export default function Navbar({ title }: NavbarProps) {
                   to={PROFILE_PATH[user.role]}
                   role="menuitem"
                   onClick={() => setIsAvatarDropdownOpen(false)}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-text-primary transition-colors hover:bg-slate-100 dark:hover:bg-surface/60"
+                  className="flex min-h-[44px] items-center gap-2.5 rounded-lg px-2 py-2.5 text-sm text-text-primary transition-colors hover:bg-slate-100 dark:hover:bg-surface/60"
                 >
                   {ICONS.User ? <ICONS.User className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
                   Profil Saya
@@ -198,7 +197,7 @@ export default function Navbar({ title }: NavbarProps) {
                   to="/admin/settings"
                   role="menuitem"
                   onClick={() => setIsAvatarDropdownOpen(false)}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-text-primary transition-colors hover:bg-slate-100 dark:hover:bg-surface/60"
+                  className="flex min-h-[44px] items-center gap-2.5 rounded-lg px-2 py-2.5 text-sm text-text-primary transition-colors hover:bg-slate-100 dark:hover:bg-surface/60"
                 >
                   {ICONS.Settings ? <ICONS.Settings className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
                   Pengaturan
@@ -211,7 +210,7 @@ export default function Navbar({ title }: NavbarProps) {
               <button
                 role="menuitem"
                 onClick={handleLogout}
-                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-accent-red transition-colors hover:bg-accent-red/10"
+                className="flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-2 py-2.5 text-sm text-accent-red transition-colors hover:bg-accent-red/10"
               >
                 {ICONS.LogOut ? <ICONS.LogOut className="w-4 h-4" aria-hidden="true" /> : null}
                 Keluar

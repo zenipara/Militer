@@ -40,6 +40,8 @@ interface TableProps<T> {
   isLoading?: boolean;
   /** Pesan yang ditampilkan saat data kosong */
   emptyMessage?: string;
+  /** Deskripsi aksesibel untuk tabel — dirender sebagai caption tersembunyi */
+  caption?: string;
 }
 
 export default function Table<T>({
@@ -48,6 +50,7 @@ export default function Table<T>({
   keyExtractor,
   isLoading,
   emptyMessage = 'Tidak ada data',
+  caption,
 }: TableProps<T>) {
   if (isLoading) {
     return (
@@ -64,7 +67,8 @@ export default function Table<T>({
   return (
     <div className="app-panel overflow-hidden rounded-2xl">
       <div className="overflow-x-auto">
-        <table className="w-full" aria-label={emptyMessage}>
+        <table className="w-full">
+          {caption && <caption className="sr-only">{caption}</caption>}
           <thead className="sticky top-0 z-[1]">
             <tr className="border-b border-surface bg-slate-50/95 backdrop-blur-sm dark:bg-surface/45">
               {columns.map((col) => (
