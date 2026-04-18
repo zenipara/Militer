@@ -46,8 +46,9 @@ const dataMap = {
     { id: 'm1', isi: 'Pesan latihan', is_read: false, from_user: 'u1', to_user: 'u2', created_at: '2026-04-14T08:00:00Z' },
   ],
   gate_pass: [
-    { status: 'out' },
-    { status: 'overdue' },
+    { status: 'checked_in' },
+    { status: 'completed' },
+    { status: 'checked_in', waktu_kembali: '2000-01-01T00:00:00Z' },
   ],
   logistics_items: [
     { id: 'l1', nama_item: 'Obat', jumlah: 2, kondisi: 'kurang_baik', kategori: 'Medis', lokasi: 'Brankas', satuan_item: 'pcs' },
@@ -174,7 +175,7 @@ describe('End-to-end dashboard rendering', () => {
 
     await waitFor(() => expect(screen.getByText(/Selamat datang, Admin One/i)).toBeInTheDocument());
     expect(screen.getByText(/Muat Ulang/i)).toBeInTheDocument();
-    expect(screen.getByText(/Gate Pass keluar/i)).toBeInTheDocument();
+    expect(screen.getByText(/Gate Pass checked-in/i)).toBeInTheDocument();
     expect(
       screen
         .getAllByRole('link', { name: /Pos Jaga/i })

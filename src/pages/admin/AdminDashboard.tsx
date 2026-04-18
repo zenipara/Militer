@@ -63,7 +63,7 @@ export default function AdminDashboard() {
   const recentLogs = snapshot?.recentLogs ?? [];
   const lowStockItems = snapshot?.lowStockItems ?? [];
   const heatmapAttendances = snapshot?.heatmapAttendances ?? [];
-  const gatePassStats = snapshot?.gatePassStats ?? { out: 0, overdue: 0 };
+  const gatePassStats = snapshot?.gatePassStats ?? { checkedIn: 0, completed: 0, overdue: 0 };
   const lastUpdated = snapshot?.fetchedAt ? new Date(snapshot.fetchedAt) : null;
 
   useEffect(() => {
@@ -132,7 +132,8 @@ export default function AdminDashboard() {
     ? [
         { label: 'Absensi hari ini', value: `${stats.absensiMasuk}/${stats.absensiHariIni}`, hint: `${attendanceRate}% hadir` },
         { label: 'Izin pending', value: String(stats.pendingIzin), hint: 'Menunggu persetujuan' },
-        { label: 'Gate Pass keluar', value: String(gatePassStats.out), hint: 'Sedang di luar' },
+        { label: 'Gate Pass checked-in', value: String(gatePassStats.checkedIn), hint: 'Sudah scan keluar' },
+        { label: 'Gate Pass completed', value: String(gatePassStats.completed), hint: 'Sudah scan kembali' },
         { label: 'Gate Pass overdue', value: String(gatePassStats.overdue), hint: 'Terlambat kembali' },
         { label: 'Pengumuman pin', value: String(stats.pinnedPengumuman), hint: 'Tersemat di feed' },
         { label: 'Stok rendah', value: String(lowStockItems.length), hint: 'Perlu pengecekan' },

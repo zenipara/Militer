@@ -13,7 +13,8 @@ export interface DashboardStats {
 }
 
 export interface GatePassStats {
-  out: number;
+  checkedIn: number;
+  completed: number;
   overdue: number;
 }
 
@@ -98,10 +99,12 @@ export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnaps
 
   const gatePassRows = (gatePassResult.data as GatePassRow[]) ?? [];
   const now = new Date();
-  const outRows = gatePassRows.filter((g) => g.status === 'out');
+  const checkedInRows = gatePassRows.filter((g) => g.status === 'checked_in' || g.status === 'out');
+  const completedRows = gatePassRows.filter((g) => g.status === 'completed' || g.status === 'returned');
   const gatePassStats: GatePassStats = {
-    out: outRows.filter((g) => !g.waktu_kembali || new Date(g.waktu_kembali) >= now).length,
-    overdue: outRows.filter((g) => g.waktu_kembali && new Date(g.waktu_kembali) < now).length,
+    checkedIn: checkedInRows.filter((g) => !g.waktu_kembali || new Date(g.waktu_kembali) >= now).length,
+    completed: completedRows.length,
+    overdue: checkedInRows.filter((g) => g.waktu_kembali && new Date(g.waktu_kembali) < now).length,
   };
 
   return {

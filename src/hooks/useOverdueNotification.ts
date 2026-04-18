@@ -6,7 +6,7 @@ import { useGatePassStore } from '../store/gatePassStore';
  *
  * The overdue status is computed client-side in the store's fetchGatePasses()
  * by comparing waktu_kembali with the current time for passes with status
- * 'out'. Querying the database directly would always return an empty list
+ * 'checked_in'. Querying the database directly would always return an empty list
  * because 'overdue' is never persisted to the database.
  */
 export function useOverdueNotification() {
