@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ICONS } from '../../icons';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import { useMessages } from '../../hooks/useMessages';
+import { isPathEnabled } from '../../lib/featureFlags';
 import GlobalSearch from '../ui/GlobalSearch';
 import type { Role } from '../../types';
 
@@ -27,6 +29,7 @@ const MESSAGES_PATH: Partial<Record<Role, string>> = {
 
 export default function Navbar({ title }: NavbarProps) {
   const { user, logout } = useAuthStore();
+  const { flags } = useFeatureStore();
   const { toggleSidebar, toggleDarkMode, isDarkMode } = useUIStore();
   const { unreadCount } = useMessages();
   const navigate = useNavigate();
@@ -62,6 +65,9 @@ export default function Navbar({ title }: NavbarProps) {
     guard: 'Guard',
   };
 
+  const messagePath = user?.role ? MESSAGES_PATH[user.role] : undefined;
+  const canOpenMessages = Boolean(messagePath && isPathEnabled(messagePath, flags));
+
   return (
     <header className="sticky top-0 z-20 border-b border-surface/70 bg-bg-card/88 px-4 backdrop-blur-xl sm:px-5 lg:px-8" data-print-hide>
       <div className="flex h-16 items-center gap-3">
@@ -94,27 +100,28 @@ export default function Navbar({ title }: NavbarProps) {
           </span>
 
           {/* Bell — shows unread message count badge */}
-          <div className="relative">
-            <button
-              className="rounded-xl border border-surface bg-slate-50 p-2 text-text-muted transition-colors hover:text-text-primary dark:bg-surface/45"
-              aria-label={`Pesan${unreadCount > 0 ? ` — ${unreadCount} belum dibaca` : ''}`}
-              title="Pesan & Notifikasi"
-              onClick={() => {
-                const path = user?.role ? MESSAGES_PATH[user.role] : undefined;
-                if (path) navigate(path);
-              }}
-            >
-              {ICONS.Bell ? <ICONS.Bell className="h-4 w-4" aria-hidden="true" /> : null}
-            </button>
-            {unreadCount > 0 && (
-              <span
-                className="pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-accent-red px-0.5 text-[10px] font-bold text-white"
-                aria-hidden="true"
+          {canOpenMessages && (
+            <div className="relative">
+              <button
+                className="rounded-xl border border-surface bg-slate-50 p-2 text-text-muted transition-colors hover:text-text-primary dark:bg-surface/45"
+                aria-label={`Pesan${unreadCount > 0 ? ` — ${unreadCount} belum dibaca` : ''}`}
+                title="Pesan & Notifikasi"
+                onClick={() => {
+                  if (messagePath) navigate(messagePath);
+                }}
               >
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </div>
+                {ICONS.Bell ? <ICONS.Bell className="h-4 w-4" aria-hidden="true" /> : null}
+              </button>
+              {unreadCount > 0 && (
+                <span
+                  className="pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-accent-red px-0.5 text-[10px] font-bold text-white"
+                  aria-hidden="true"
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Dark mode toggle */}
           <button

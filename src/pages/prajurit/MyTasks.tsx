@@ -7,15 +7,20 @@ import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/ui/PageHeader';
 import { useTasks } from '../../hooks/useTasks';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import type { Task, TaskStatus } from '../../types';
+import { isPathEnabled } from '../../lib/featureFlags';
 
 export default function MyTasks() {
   const { user } = useAuthStore();
+  const { flags } = useFeatureStore();
   const { showNotification } = useUIStore();
   const { tasks, isLoading, updateTaskStatus, submitTaskReport } = useTasks({ assignedTo: user?.id });
   const navigate = useNavigate();
+  const canOpenMessages = isPathEnabled('/prajurit/messages', flags);
+  const canOpenLeave = isPathEnabled('/prajurit/leave', flags);
 
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -78,10 +83,12 @@ export default function MyTasks() {
           }
           actions={
             <>
-              <Link to="/prajurit/messages" className="inline-flex items-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary hover:border-primary">
-                Pesan
-              </Link>
-              <Button onClick={() => navigate('/prajurit/leave')} variant="outline">Ajukan Izin</Button>
+              {canOpenMessages && (
+                <Link to="/prajurit/messages" className="inline-flex items-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary hover:border-primary">
+                  Pesan
+                </Link>
+              )}
+              {canOpenLeave && <Button onClick={() => navigate('/prajurit/leave')} variant="outline">Ajukan Izin</Button>}
             </>
           }
         />

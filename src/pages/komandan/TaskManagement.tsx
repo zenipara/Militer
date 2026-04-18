@@ -8,17 +8,21 @@ import { TaskStatusBadge } from '../../components/common/Badge';
 import { useTasks } from '../../hooks/useTasks';
 import { useUsers } from '../../hooks/useUsers';
 import { useAuthStore } from '../../store/authStore';
+import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import PageHeader from '../../components/ui/PageHeader';
 import type { Task, TaskReport, TaskStatus } from '../../types';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { Link } from 'react-router-dom';
+import { isPathEnabled } from '../../lib/featureFlags';
 
 export default function TaskManagement() {
   const { user } = useAuthStore();
+  const { flags } = useFeatureStore();
   const { showNotification } = useUIStore();
   const { tasks, isLoading, createTask, approveTask, rejectTask, getTaskReport } = useTasks({ assignedBy: user?.id });
   const { users } = useUsers({ role: 'prajurit', isActive: true });
+  const canOpenReports = isPathEnabled('/komandan/reports', flags);
 
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [showCreate, setShowCreate] = useState(false);
@@ -151,9 +155,11 @@ export default function TaskManagement() {
           actions={
             <>
               <Button variant="outline" onClick={() => setShowCreate(true)}>+ Buat Tugas</Button>
-              <Link to="/komandan/reports" className="inline-flex items-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary hover:border-primary">
-                Laporan
-              </Link>
+              {canOpenReports && (
+                <Link to="/komandan/reports" className="inline-flex items-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary hover:border-primary">
+                  Laporan
+                </Link>
+              )}
             </>
           }
         />
