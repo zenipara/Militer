@@ -6,6 +6,7 @@ import { useGatePassStore } from '../../store/gatePassStore';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import PageHeader from '../../components/ui/PageHeader';
 import type { ScanPosJagaResult } from '../../types';
 
 type ScanState = 'idle' | 'auth' | 'processing' | 'success' | 'error';
@@ -118,13 +119,11 @@ export default function ScanPosJagaPage() {
 
   return (
     <DashboardLayout title="Scan Pos Jaga">
-      <div className="max-w-md mx-auto py-8 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Scan Pos Jaga</h1>
-          <p className="text-sm text-text-muted mt-1">
-            Pindai QR statis di pos jaga, lalu masukkan NRP dan PIN untuk mencatat izin keluar/kembali.
-          </p>
-        </div>
+      <div className="mx-auto max-w-md space-y-5">
+        <PageHeader
+          title="Scan Pos Jaga"
+          subtitle="Pindai QR statis di pos jaga, lalu masukkan NRP dan PIN untuk mencatat izin keluar/kembali."
+        />
 
         {/* Idle — tombol mulai scan */}
         {state === 'idle' && !scanning && (

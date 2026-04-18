@@ -223,8 +223,9 @@ export default function Messages() {
       >
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-semibold text-text-primary">Kepada *</label>
+            <label htmlFor="compose-to" className="text-sm font-semibold text-text-primary">Kepada *</label>
             <select
+              id="compose-to"
               className="form-control mt-1"
               value={composeForm.to_user}
               onChange={(e) => setComposeForm({ ...composeForm, to_user: e.target.value })}
@@ -240,8 +241,9 @@ export default function Messages() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-semibold text-text-primary">Pesan *</label>
+            <label htmlFor="compose-isi" className="text-sm font-semibold text-text-primary">Pesan *</label>
             <textarea
+              id="compose-isi"
               className="form-control mt-1 min-h-28"
               rows={5}
               placeholder="Tuliskan pesan Anda..."

@@ -77,7 +77,7 @@ export default function PrajuritDashboard() {
           subtitle={`${user?.satuan ?? '—'} · ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
           meta={
             <>
-              <span>{todayAttendance ? 'Absensi hari ini tercatat' : 'Belum check-in'}</span>
+              <span>{todayAttendance ? 'Absensi hari ini tercatat' : 'Belum absen masuk'}</span>
               <span>{unreadCount} pesan belum dibaca</span>
             </>
           }
@@ -124,12 +124,37 @@ export default function PrajuritDashboard() {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {canOpenGatePass && <Link to="/prajurit/gatepass" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Gate Pass</Link>}
-          {canOpenScanPos && <Link to="/prajurit/scan-pos" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Scan Pos Jaga</Link>}
-          {canOpenTasks && <Link to="/prajurit/tasks" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Tugas Saya</Link>}
-          {canOpenMessages && <Link to="/prajurit/messages" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Pesan</Link>}
-          {canOpenLeave && <Link to="/prajurit/leave" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Ajukan Izin</Link>}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2">
+          {canOpenGatePass && (
+            <Link to="/prajurit/gatepass" className="flex min-h-[44px] items-center gap-2 rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary active:scale-[0.97] transition-all">
+              {ICONS.ClipboardCheck ? <ICONS.ClipboardCheck className="h-4 w-4 text-primary flex-shrink-0" aria-hidden="true" /> : null}
+              Gate Pass
+            </Link>
+          )}
+          {canOpenScanPos && (
+            <Link to="/prajurit/scan-pos" className="flex min-h-[44px] items-center gap-2 rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary active:scale-[0.97] transition-all">
+              {ICONS.ScanLine ? <ICONS.ScanLine className="h-4 w-4 text-primary flex-shrink-0" aria-hidden="true" /> : null}
+              Scan Pos
+            </Link>
+          )}
+          {canOpenTasks && (
+            <Link to="/prajurit/tasks" className="flex min-h-[44px] items-center gap-2 rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary active:scale-[0.97] transition-all">
+              {ICONS.CheckSquare ? <ICONS.CheckSquare className="h-4 w-4 text-primary flex-shrink-0" aria-hidden="true" /> : null}
+              Tugas Saya
+            </Link>
+          )}
+          {canOpenMessages && (
+            <Link to="/prajurit/messages" className="flex min-h-[44px] items-center gap-2 rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary active:scale-[0.97] transition-all">
+              {ICONS.Megaphone ? <ICONS.Megaphone className="h-4 w-4 text-primary flex-shrink-0" aria-hidden="true" /> : null}
+              Pesan
+            </Link>
+          )}
+          {canOpenLeave && (
+            <Link to="/prajurit/leave" className="flex min-h-[44px] items-center gap-2 rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-medium text-text-primary hover:border-primary active:scale-[0.97] transition-all">
+              {ICONS.UserCheck ? <ICONS.UserCheck className="h-4 w-4 text-primary flex-shrink-0" aria-hidden="true" /> : null}
+              Ajukan Izin
+            </Link>
+          )}
         </div>
 
         {/* Alert: rejected tasks */}

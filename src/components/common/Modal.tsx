@@ -82,23 +82,33 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-slate-900/35 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
-      {/* Modal */}
+      {/* Modal — bottom sheet on mobile, centered on sm+ */}
       <div
         ref={dialogRef}
-        className={`app-panel relative w-full ${sizes[size]} overflow-hidden rounded-2xl`}
+        className={`
+          app-panel relative w-full overflow-hidden
+          rounded-t-2xl sm:rounded-2xl
+          animate-slide-up sm:animate-fade-up
+          ${sizes[size]}
+          max-h-[90dvh] flex flex-col
+        `}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
+        {/* Drag handle — mobile only visual cue */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden" aria-hidden="true">
+          <div className="h-1 w-10 rounded-full bg-surface" />
+        </div>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-surface/80 px-5 py-4 sm:px-6">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-surface/80 px-5 py-4 sm:px-6">
           <h2 id="modal-title" className="text-base font-bold tracking-tight text-text-primary sm:text-lg">
             {title}
           </h2>
@@ -109,10 +119,13 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
           </Button>
         </div>
         {/* Body */}
-        <div className="px-5 py-4 sm:px-6">{children}</div>
+        <div className="overflow-y-auto scroll-y px-5 py-4 sm:px-6">{children}</div>
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 border-t border-surface/80 px-5 py-4 sm:px-6">
+          <div
+            className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-surface/80 px-5 py-4 sm:px-6"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 1rem)' }}
+          >
             {footer}
           </div>
         )}
