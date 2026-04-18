@@ -37,7 +37,7 @@ test.describe('Gate Pass Monitor', () => {
     const endDate = page.getByLabel('Tanggal keluar sampai');
 
     await searchInput.fill('andi');
-    await statusFilter.selectOption('overdue');
+    await statusFilter.selectOption('checked_in');
     await startDate.fill('2026-04-10');
     await endDate.fill('2026-04-20');
 
@@ -47,6 +47,22 @@ test.describe('Gate Pass Monitor', () => {
     await expect(statusFilter).toHaveValue('all');
     await expect(startDate).toHaveValue('');
     await expect(endDate).toHaveValue('');
+  });
+
+  test('status filter menampilkan opsi checked_in dan completed', async ({ page }) => {
+    await page.goto('./#/login');
+    await page.locator('#nrp').fill('1000001');
+    await page.locator('#pin').fill('123456');
+    await page.getByRole('button', { name: 'Masuk' }).click();
+
+    await page.goto('./#/admin/gatepass-monitor');
+
+    const statusFilter = page.getByRole('combobox');
+    await statusFilter.selectOption('checked_in');
+    await expect(statusFilter).toHaveValue('checked_in');
+
+    await statusFilter.selectOption('completed');
+    await expect(statusFilter).toHaveValue('completed');
   });
 
   test('preset tanggal mengisi rentang tanggal', async ({ page }) => {
