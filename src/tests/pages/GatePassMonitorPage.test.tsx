@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act } from 'react';
 import type { ReactNode } from 'react';
 import GatePassMonitorPage from '../../pages/admin/GatePassMonitorPage';
 import type { GatePass } from '../../types';
@@ -298,6 +299,128 @@ describe('GatePassMonitorPage', () => {
     const summaryPanel = screen.getByTestId('gatepass-monitor-unit-summary');
     expect(within(summaryPanel).getByText('Yon A')).toBeInTheDocument();
     expect(within(summaryPanel).getByText('Yon B')).toBeInTheDocument();
+  });
+
+  it('filters rows when clicking a unit summary card', async () => {
+    mockState.gatePasses = [
+      makeGatePass({
+        id: 'sum-click-1',
+        tujuan: 'Unit Alpha',
+        status: 'overdue',
+        user: { id: 'u1', nama: 'Andi', nrp: '12345', role: 'prajurit', satuan: 'Yon A', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+      makeGatePass({
+        id: 'sum-click-2',
+        tujuan: 'Unit Bravo',
+        status: 'approved',
+        user: { id: 'u2', nama: 'Budi', nrp: '67890', role: 'prajurit', satuan: 'Yon B', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+    ];
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    fireEvent.click(within(screen.getByTestId('gatepass-monitor-unit-summary')).getByText('Yon A'));
+
+    expect(screen.getByTestId('gatepass-monitor-unit-filter')).toHaveValue('Yon A');
+    expect(screen.getByText('Unit Alpha')).toBeInTheDocument();
+    expect(screen.queryByText('Unit Bravo')).not.toBeInTheDocument();
+
+    fireEvent.click(within(screen.getByTestId('gatepass-monitor-unit-summary')).getByText('Yon A'));
+
+    expect(screen.getByTestId('gatepass-monitor-unit-filter')).toHaveValue('all');
+  });
+
+  it('copies gate pass detail and unit summary to clipboard', async () => {
+    const writeTextMock = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextMock },
+      configurable: true,
+    });
+
+    mockState.gatePasses = [
+      makeGatePass({
+        id: 'copy-1',
+        tujuan: 'Unit Alpha',
+        keperluan: 'Patroli',
+        status: 'overdue',
+        actual_keluar: '2026-04-16T10:00:00Z',
+        actual_kembali: '2026-04-16T12:00:00Z',
+        user: { id: 'u1', nama: 'Andi', nrp: '12345', role: 'prajurit', satuan: 'Yon A', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+      makeGatePass({
+        id: 'copy-2',
+        tujuan: 'Unit Bravo',
+        status: 'approved',
+        user: { id: 'u2', nama: 'Budi', nrp: '67890', role: 'prajurit', satuan: 'Yon B', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+    ];
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Ringkasan Yon A/i }));
+    });
+
+    const summaryCard = screen.getByRole('button', { name: /Ringkasan Yon A/i });
+    await act(async () => {
+      fireEvent.click(within(summaryCard).getByRole('button', { name: /Salin ringkasan/i }));
+    });
+    await waitFor(() => expect(screen.getByText(/Ringkasan Yon A disalin/i)).toBeInTheDocument());
+
+    const monitorCard = screen.getByTestId('monitor-card-copy-1');
+    await act(async () => {
+      fireEvent.click(within(monitorCard).getByRole('button', { name: /Salin detail/i }));
+    });
+    await waitFor(() => expect(screen.getByText(/Detail Andi disalin/i)).toBeInTheDocument());
+
+    expect(writeTextMock).toHaveBeenCalledTimes(2);
+    expect(writeTextMock.mock.calls[0][0]).toContain('Satuan: Yon A');
+    expect(writeTextMock.mock.calls[1][0]).toContain('Nama: Andi');
+  });
+
+  it('exports unit summary to csv file', async () => {
+    mockState.gatePasses = [
+      makeGatePass({
+        id: 'summary-1',
+        tujuan: 'Unit Alpha',
+        status: 'overdue',
+        user: { id: 'u1', nama: 'Andi', nrp: '12345', role: 'prajurit', satuan: 'Yon A', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+      makeGatePass({
+        id: 'summary-2',
+        tujuan: 'Unit Bravo',
+        status: 'approved',
+        user: { id: 'u2', nama: 'Budi', nrp: '67890', role: 'prajurit', satuan: 'Yon B', is_active: true, is_online: true, login_attempts: 0, created_at: '2026-04-16T00:00:00Z', updated_at: '2026-04-16T00:00:00Z' },
+      }),
+    ];
+
+    const createObjectURLMock = vi.fn(() => 'blob:unit-summary');
+    const revokeObjectURLMock = vi.fn(() => undefined);
+    Object.defineProperty(URL, 'createObjectURL', {
+      writable: true,
+      value: createObjectURLMock,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      writable: true,
+      value: revokeObjectURLMock,
+    });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: /Export Ringkasan/i }));
+
+    expect(createObjectURLMock).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:unit-summary');
+
+    clickSpy.mockRestore();
   });
 
   it('exports filtered rows to csv file', async () => {

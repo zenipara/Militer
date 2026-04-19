@@ -30,6 +30,7 @@ test.describe('Gate Pass Monitor', () => {
     await expect(page.getByTestId('gatepass-monitor-unit-filter')).toBeVisible();
     await expect(page.getByTestId('gatepass-monitor-overdue-filter')).toBeVisible();
     await expect(page.getByText('Ringkasan per Satuan')).toBeVisible();
+    await expect(page.getByTestId('gatepass-monitor-unit-summary-export')).toBeVisible();
     await expect(page.getByPlaceholder('Cari nama, NRP, tujuan, atau keperluan')).toBeVisible();
     await expect(page.getByLabel('Tanggal keluar dari')).toBeVisible();
     await expect(page.getByLabel('Tanggal keluar sampai')).toBeVisible();

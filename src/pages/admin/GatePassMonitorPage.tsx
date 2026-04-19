@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
 import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
@@ -156,6 +156,33 @@ function toDateInputValue(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function buildCopyTextForGatePass(gatePass: MonitorGatePass) {
+  const lines = [
+    `Nama: ${gatePass.user?.nama ?? '-'}`,
+    `NRP: ${gatePass.user?.nrp ?? '-'}`,
+    `Satuan: ${gatePass.user?.satuan ?? '-'}`,
+    `Status: ${gatePass.effectiveStatus}`,
+    `Tujuan: ${gatePass.tujuan}`,
+    `Keperluan: ${gatePass.keperluan}`,
+    `Waktu keluar: ${formatDateTime(gatePass.waktu_keluar)}`,
+    `Batas kembali: ${formatDateTime(gatePass.waktu_kembali)}`,
+    `Scan keluar: ${formatDateTime(gatePass.actual_keluar)}`,
+    `Scan kembali: ${formatDateTime(gatePass.actual_kembali)}`,
+  ];
+
+  return lines.join('\n');
+}
+
+function buildCopyTextForUnitSummary(item: { unit: string; total: number; overdue: number; checkedIn: number; approved: number }) {
+  return [
+    `Satuan: ${item.unit}`,
+    `Total data: ${item.total}`,
+    `Overdue: ${item.overdue}`,
+    `Checked-in: ${item.checkedIn}`,
+    `Approved: ${item.approved}`,
+  ].join('\n');
+}
+
 export default function GatePassMonitorPage() {
   const gatePasses = useGatePassStore(s => s.gatePasses);
   const fetchGatePasses = useGatePassStore(s => s.fetchGatePasses);
@@ -171,9 +198,11 @@ export default function GatePassMonitorPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [totalPersonil, setTotalPersonil] = useState(0);
   useGatePassRealtime();
   const debouncedQuery = useDebounce(query, 250);
+  const copyFeedbackTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
@@ -314,6 +343,24 @@ export default function GatePassMonitorPage() {
     }
   };
 
+  const showCopyFeedback = (message: string) => {
+    setCopyFeedback(message);
+    if (copyFeedbackTimerRef.current) {
+      window.clearTimeout(copyFeedbackTimerRef.current);
+    }
+    copyFeedbackTimerRef.current = window.setTimeout(() => setCopyFeedback(null), 2500);
+  };
+
+  const handleCopyText = async (text: string, message: string) => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard tidak tersedia');
+      await navigator.clipboard.writeText(text);
+      showCopyFeedback(message);
+    } catch {
+      showCopyFeedback('Gagal menyalin ke clipboard');
+    }
+  };
+
   const resetFilters = () => {
     setQuery('');
     setStatusFilter('all');
@@ -378,6 +425,23 @@ export default function GatePassMonitorPage() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `gatepass-monitor-${fileDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportUnitSummaryCsv = () => {
+    if (unitSummary.length === 0) return;
+
+    const header = ['Satuan', 'Total Data', 'Overdue', 'Checked-in', 'Approved'];
+    const rows = unitSummary.map((item) => [item.unit, item.total, item.overdue, item.checkedIn, item.approved].map(csvEscape).join(','));
+    const csv = [header.map(csvEscape).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const fileDate = new Date().toISOString().slice(0, 10);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gatepass-unit-summary-${fileDate}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -505,6 +569,12 @@ export default function GatePassMonitorPage() {
           </div>
         )}
 
+        {copyFeedback && (
+          <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
+            {copyFeedback}
+          </div>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div className="app-card p-4" data-testid="gatepass-stat-personil-tersedia">
             <div className="text-xs text-text-muted">Personil Tersedia</div>
@@ -583,13 +653,42 @@ export default function GatePassMonitorPage() {
               <h2 className="text-sm font-semibold text-text-primary">Ringkasan per Satuan</h2>
               <p className="text-xs text-text-muted">Distribusi gate pass pada hasil filter aktif.</p>
             </div>
-            <div className="text-xs text-text-muted">{unitSummary.length} satuan tampil</div>
+            <div className="flex items-center gap-2">
+              <div className="text-xs text-text-muted">{unitSummary.length} satuan tampil</div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExportUnitSummaryCsv}
+                disabled={unitSummary.length === 0}
+                data-testid="gatepass-monitor-unit-summary-export"
+              >
+                Export Ringkasan
+              </Button>
+            </div>
           </div>
 
           {unitSummary.length > 0 ? (
             <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="gatepass-monitor-unit-summary">
               {unitSummary.map((item) => (
-                <div key={item.unit} className="rounded-xl border border-surface/75 bg-surface/20 p-4">
+                <div
+                  key={item.unit}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Ringkasan ${item.unit}`}
+                  className={`rounded-xl border p-4 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                    unitFilter === item.unit
+                      ? 'border-primary bg-primary/10'
+                      : 'border-surface/75 bg-surface/20 hover:border-primary/60 hover:bg-primary/5'
+                  }`}
+                  aria-pressed={unitFilter === item.unit}
+                  onClick={() => setUnitFilter((current) => (current === item.unit ? 'all' : item.unit))}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setUnitFilter((current) => (current === item.unit ? 'all' : item.unit));
+                    }
+                  }}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-text-primary">{item.unit}</p>
@@ -600,6 +699,30 @@ export default function GatePassMonitorPage() {
                       <div><span className="font-semibold text-orange-500">{item.checkedIn}</span> checked-in</div>
                       <div><span className="font-semibold text-blue-500">{item.approved}</span> approved</div>
                     </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        void handleCopyText(buildCopyTextForUnitSummary(item), `Ringkasan ${item.unit} disalin`);
+                      }}
+                    >
+                      Salin ringkasan
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setUnitFilter((current) => (current === item.unit ? 'all' : item.unit));
+                      }}
+                    >
+                      Fokus unit
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -779,6 +902,13 @@ export default function GatePassMonitorPage() {
                   <GatePassStatusBadge gatePass={{ ...gp, status: gp.effectiveStatus }} />
                   {showLate && <div className="text-xs font-semibold text-accent-red">Terlambat {formatDuration(deltaMs)}</div>}
                   {showRemaining && <div className="text-xs font-semibold text-orange-500">Sisa waktu {formatDuration(deltaMs)}</div>}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => void handleCopyText(buildCopyTextForGatePass(gp), `Detail ${gp.user?.nama ?? gp.id} disalin`)}
+                  >
+                    Salin detail
+                  </Button>
                 </div>
               </div>
             );
