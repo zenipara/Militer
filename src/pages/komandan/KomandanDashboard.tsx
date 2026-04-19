@@ -90,46 +90,61 @@ export default function KomandanDashboard() {
         )}
 
         <StatsGrid>
-          {canOpenPersonnel && <StatCard icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel" value={totalPersonel} />}
-          {canOpenPersonnel && <StatCard icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={onlineCount} trend="aktif sekarang" trendUp />}
-          {canOpenTasks && <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={pendingTasks.length} />}
-          {canOpenTasks && <StatCard icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Disetujui" value={approvedTasks.length} trend={doneTasks.length > 0 ? `${doneTasks.length} menunggu review` : 'belum ada'} />}
+          {canOpenPersonnel && <StatCard accent="blue" icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel" value={totalPersonel} />}
+          {canOpenPersonnel && <StatCard accent="green" icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={onlineCount} trend="aktif sekarang" trendUp />}
+          {canOpenTasks && <StatCard accent="gold" icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={pendingTasks.length} />}
+          {canOpenTasks && <StatCard accent="green" icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Disetujui" value={approvedTasks.length} trend={doneTasks.length > 0 ? `${doneTasks.length} menunggu review` : 'belum ada'} />}
         </StatsGrid>
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="app-card p-5">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-bold text-text-primary">Ringkasan Operasi</h3>
-                <p className="text-sm text-text-muted">Situasi cepat untuk pengambilan keputusan harian.</p>
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+                  <ICONS.LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-text-primary">Ringkasan Operasi</h3>
+                  <p className="text-xs text-text-muted">Situasi cepat untuk pengambilan keputusan harian.</p>
+                </div>
               </div>
-              {canOpenReports && <Link to="/komandan/reports" className="text-sm text-primary hover:underline">Lihat laporan →</Link>}
+              {canOpenReports && <Link to="/komandan/reports" className="text-sm font-medium text-primary hover:underline">Lihat laporan →</Link>}
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
               {[
-                ...(canOpenTasks ? [{ label: 'Pending', value: pendingTasks.length }, { label: 'Selesai', value: doneTasks.length }] : []),
-                { label: 'Pin pengumuman', value: pinnedAnnouncements.length },
+                ...(canOpenTasks ? [
+                  { label: 'Pending', value: pendingTasks.length, color: 'text-accent-gold', bg: 'bg-amber-500/10' },
+                  { label: 'Selesai', value: doneTasks.length, color: 'text-success', bg: 'bg-emerald-500/10' },
+                ] : []),
+                { label: 'Pin pengumuman', value: pinnedAnnouncements.length, color: 'text-primary', bg: 'bg-primary/10' },
               ].map((item) => (
-                <div key={item.label} className="rounded-xl border border-surface/70 bg-surface/20 p-4">
+                <div key={item.label} className="rounded-2xl border border-surface/70 bg-surface/15 p-4">
+                  <div className={`mb-2 grid h-8 w-8 place-items-center rounded-lg ${item.bg}`}>
+                    <span className={`text-lg font-black leading-none ${item.color}`}>{item.value}</span>
+                  </div>
                   <p className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">{item.label}</p>
-                  <p className="mt-1 text-2xl font-extrabold tracking-tight text-text-primary">{item.value}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {canOpenTasks && <Link to="/komandan/tasks" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Buka tugas</Link>}
-              {canOpenAttendance && <Link to="/komandan/attendance" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Absensi</Link>}
-              {canOpenPersonnel && <Link to="/komandan/personnel" className="rounded-xl border border-surface/70 bg-bg-card px-4 py-2 text-sm font-medium text-text-primary hover:border-primary">Personel</Link>}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {canOpenTasks && <Link to="/komandan/tasks" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Buka tugas</Link>}
+              {canOpenAttendance && <Link to="/komandan/attendance" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Absensi</Link>}
+              {canOpenPersonnel && <Link to="/komandan/personnel" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Personel</Link>}
             </div>
           </div>
 
           <div className="app-card p-5">
             <div className="flex items-center justify-between gap-3 mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-text-primary">Pengumuman Terbaru</h3>
-                <p className="text-sm text-text-muted">Pin resmi yang relevan untuk satuan.</p>
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent-gold/15 text-accent-gold">
+                  <ICONS.Pin className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-text-primary">Pengumuman Terbaru</h3>
+                  <p className="text-xs text-text-muted">Informasi yang disematkan untuk satuan.</p>
+                </div>
               </div>
-              {canOpenReports && <Link to="/komandan/reports" className="text-sm text-primary hover:underline">Ke laporan →</Link>}
+              {canOpenReports && <Link to="/komandan/reports" className="text-sm font-medium text-primary hover:underline">Ke laporan →</Link>}
             </div>
             {pinnedAnnouncements.length === 0 ? (
               <EmptyState
@@ -140,9 +155,14 @@ export default function KomandanDashboard() {
             ) : (
               <div className="space-y-2">
                 {pinnedAnnouncements.slice(0, 3).map((announcement) => (
-                  <div key={announcement.id} className="rounded-xl border border-accent-gold/30 bg-accent-gold/10 p-4">
-                    <p className="text-sm font-semibold text-text-primary">{announcement.judul}</p>
-                    <p className="mt-1 text-xs text-text-muted line-clamp-2">{announcement.isi}</p>
+                  <div key={announcement.id} className="rounded-2xl border border-accent-gold/30 bg-gradient-to-r from-amber-50/80 to-transparent p-4 dark:from-amber-900/10">
+                    <div className="flex items-start gap-2 mb-1">
+                      <span className="mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-md bg-accent-gold/15 text-accent-gold">
+                        <ICONS.Pin className="h-3 w-3" aria-hidden="true" />
+                      </span>
+                      <p className="text-sm font-semibold text-text-primary">{announcement.judul}</p>
+                    </div>
+                    <p className="ml-7 text-xs text-text-muted line-clamp-2">{announcement.isi}</p>
                   </div>
                 ))}
               </div>
@@ -154,8 +174,13 @@ export default function KomandanDashboard() {
         {canOpenTasks && (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-text-primary">Tugas Terkini</h3>
-              <Link to="/komandan/tasks" className="text-sm text-primary hover:underline">Lihat semua →</Link>
+              <h3 className="flex items-center gap-2 font-bold text-text-primary">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-accent-gold">
+                  <ICONS.CheckSquare className="h-4 w-4" aria-hidden="true" />
+                </span>
+                Tugas Terkini
+              </h3>
+              <Link to="/komandan/tasks" className="text-sm font-medium text-primary hover:underline">Lihat semua →</Link>
             </div>
 
             {tasksLoading ? (

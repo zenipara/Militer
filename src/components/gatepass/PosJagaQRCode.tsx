@@ -17,10 +17,16 @@ export default function PosJagaQRCode({ posJaga }: Props) {
   const handlePrint = () => {
     const win = window.open('', '_blank');
     if (!win || !printRef.current) return;
+    // Escape user-supplied name to prevent XSS in the document.write context
+    const safeName = posJaga.nama
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
     win.document.write(`
       <html>
         <head>
-          <title>QR Pos Jaga — ${posJaga.nama}</title>
+          <title>QR Pos Jaga — ${safeName}</title>
           <style>
             body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
             .wrap { text-align: center; padding: 32px; border: 2px solid #ccc; border-radius: 12px; }
@@ -32,7 +38,7 @@ export default function PosJagaQRCode({ posJaga }: Props) {
           <div class="wrap">
             ${printRef.current.innerHTML}
           </div>
-          <script>window.onload = () => { window.print(); window.close(); }</script>
+          <script>window.onload = () => { window.print(); window.close(); }<\/script>
         </body>
       </html>
     `);

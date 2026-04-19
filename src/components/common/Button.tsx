@@ -10,11 +10,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants = {
-  primary: 'bg-primary text-white shadow-sm shadow-primary/35 hover:bg-blue-600',
-  secondary: 'border border-surface bg-slate-50 text-text-primary hover:bg-slate-100 dark:bg-surface/60 dark:hover:bg-surface',
-  danger: 'bg-accent-red text-white shadow-sm shadow-accent-red/30 hover:bg-red-600',
+  primary: 'bg-gradient-to-br from-primary to-blue-700 text-white shadow-md shadow-primary/30 hover:shadow-lg hover:shadow-primary/35 hover:from-blue-600 hover:to-blue-700',
+  secondary: 'border border-surface bg-bg-card text-text-primary hover:bg-slate-50 hover:border-slate-300 dark:bg-surface/40 dark:hover:bg-surface dark:border-surface/80',
+  danger: 'bg-gradient-to-br from-accent-red to-red-700 text-white shadow-sm shadow-accent-red/30 hover:shadow-md hover:shadow-accent-red/35 hover:from-red-500 hover:to-red-700',
   ghost: 'text-text-muted hover:bg-slate-100 hover:text-text-primary dark:hover:bg-surface/60',
-  outline: 'border border-surface bg-transparent text-text-primary hover:border-primary/40 hover:bg-primary/5 hover:text-primary',
+  outline: 'border border-surface bg-transparent text-text-primary hover:border-primary/50 hover:bg-primary/5 hover:text-primary',
 };
 
 const sizes = {
@@ -39,7 +39,7 @@ export default function Button({
       className={`
         inline-flex items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap
         transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2 focus:ring-offset-transparent
-        active:scale-[0.97]
+        active:scale-[0.96] active:brightness-95
         disabled:cursor-not-allowed disabled:opacity-50
         ${variants[variant]} ${sizes[size]} ${className}
       `}

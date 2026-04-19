@@ -98,7 +98,7 @@ export default function Sidebar() {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-20 bg-slate-950/25 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-20 bg-slate-950/30 backdrop-blur-[3px] lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -107,8 +107,8 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          app-panel fixed left-0 top-0 z-30 h-full w-[240px] border-r border-surface/80
-          flex flex-col transition-transform duration-300
+          app-panel fixed left-0 top-0 z-30 h-full w-[248px] border-r border-surface/60
+          flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
         `}
@@ -116,50 +116,50 @@ export default function Sidebar() {
         onTouchEnd={handleTouchEnd}
       >
         {/* Logo */}
-        <div className="border-b border-surface/80 px-5 py-5">
+        <div className="border-b border-surface/60 px-5 py-4">
           <div className="flex items-center gap-3">
             {settings.platformLogoUrl ? (
               <img
                 src={settings.platformLogoUrl}
                 alt={settings.platformName}
-                className="h-10 w-10 rounded-2xl border border-primary/20 bg-primary/10 object-cover"
+                className="h-10 w-10 rounded-2xl border border-primary/20 bg-primary/10 object-cover shadow-sm"
               />
             ) : (
-              <span className="grid h-10 w-10 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-lg text-primary">◈</span>
+              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-primary to-blue-700 text-lg text-white shadow-md shadow-primary/30">◈</span>
             )}
             <div>
-              <div className="text-base font-extrabold tracking-tight text-text-primary leading-tight">{settings.platformName}</div>
+              <div className="text-sm font-extrabold tracking-tight text-text-primary leading-tight">{settings.platformName}</div>
               <div className="text-[10px] uppercase tracking-[0.14em] text-text-muted">{settings.platformTagline}</div>
             </div>
           </div>
         </div>
 
         {/* User info */}
-        <div className="border-b border-surface/80 px-4 py-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-surface/70 bg-slate-50/70 p-3 dark:bg-surface/35">
+        <div className="border-b border-surface/60 px-4 py-3">
+          <div className="flex items-center gap-3 rounded-xl border border-surface/50 bg-slate-50/80 p-2.5 dark:bg-surface/30">
             {user.foto_url ? (
               <img
                 src={user.foto_url}
                 alt={user.nama}
-                className="h-10 w-10 rounded-xl object-cover flex-shrink-0"
+                className="h-9 w-9 rounded-xl object-cover flex-shrink-0 ring-2 ring-primary/20"
               />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 font-bold text-primary flex-shrink-0">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/20 font-bold text-primary flex-shrink-0 text-sm">
                 {user.nama.charAt(0).toUpperCase()}
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-semibold text-text-primary">{user.nama}</div>
-              <div className="truncate text-xs text-text-muted">
+              <div className="truncate text-xs font-semibold text-text-primary">{user.nama}</div>
+              <div className="truncate text-[10px] text-text-muted">
                 {user.pangkat ?? roleLabelMap[user.role]} — {user.satuan}
               </div>
             </div>
-            <div className="h-2 w-2 rounded-full bg-success flex-shrink-0" title="Online" />
+            <div className="h-2 w-2 rounded-full bg-success flex-shrink-0 ring-2 ring-success/20" title="Online" />
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
           {navItems.map((item) => {
             const Icon = ICONS[item.icon] as IconType;
             return (
@@ -167,19 +167,19 @@ export default function Sidebar() {
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `group flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200
+                  `group relative flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200
                   ${
                     isActive
-                      ? 'bg-primary text-white shadow-sm shadow-primary/30'
-                      : 'text-text-muted hover:bg-slate-100 hover:text-text-primary dark:hover:bg-surface/60'
+                      ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-md shadow-primary/25'
+                      : 'text-text-muted hover:bg-slate-100/80 hover:text-text-primary dark:hover:bg-surface/50'
                   }`
                 }
                 onClick={() => {
                   if (window.innerWidth < 1024) setSidebarOpen(false);
                 }}
               >
-                <span className="grid h-6 w-6 place-items-center rounded-lg bg-black/[0.04] text-center dark:bg-white/[0.06]">
-                  {Icon ? <Icon className="w-5 h-5" aria-hidden="true" /> : null}
+                <span className="grid h-6 w-6 place-items-center rounded-lg bg-black/[0.06] text-center transition-colors duration-200 dark:bg-white/[0.08]">
+                  {Icon ? <Icon className="w-4 h-4" aria-hidden="true" /> : null}
                 </span>
                 {item.label}
               </NavLink>
@@ -188,18 +188,18 @@ export default function Sidebar() {
         </nav>
 
         {/* Logout */}
-        <div className="border-t border-surface/80 px-3 py-4 space-y-1">
+        <div className="border-t border-surface/60 px-3 py-3 space-y-1">
           <button
             onClick={handleLogout}
-            className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-accent-red transition-colors hover:bg-accent-red/10"
+            className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-accent-red transition-all duration-200 hover:bg-accent-red/8 active:scale-[0.97]"
           >
             <span className="grid h-6 w-6 place-items-center rounded-lg bg-accent-red/10 text-center text-sm">
               {ICONS.LogOut ? <ICONS.LogOut className="w-4 h-4" aria-hidden="true" /> : null}
             </span>
             Keluar
           </button>
-          <p className="px-3 text-[10px] text-text-muted/60 select-none">
-            v{import.meta.env.VITE_APP_VERSION ?? '1.0.1'}
+          <p className="px-3 text-[10px] text-text-muted/50 select-none">
+            v{import.meta.env.VITE_APP_VERSION ?? '1.2.1'}
           </p>
         </div>
       </aside>

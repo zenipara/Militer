@@ -68,7 +68,7 @@ export default function ErrorPage() {
       </div>
 
       <p className="mt-6 text-xs text-text-muted">
-        KARYO OS v1.0.0 — Jika masalah berlanjut, hubungi Administrator.
+        KARYO OS v1.2.1 — Jika masalah berlanjut, hubungi Administrator.
       </p>
     </div>
   );

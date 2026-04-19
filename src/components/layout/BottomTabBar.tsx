@@ -72,11 +72,11 @@ export default function BottomTabBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-30 border-t border-surface/80 bg-bg-card/92 backdrop-blur-xl lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-30 border-t border-surface/60 bg-bg-card/95 backdrop-blur-2xl lg:hidden"
       aria-label="Bottom navigation"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className={`mx-auto grid max-w-xl ${colsClass} gap-0 px-1 pt-1 pb-1.5`}>
+      <div className={`mx-auto grid max-w-xl ${colsClass} gap-0 px-2 pt-1 pb-1`}>
         {tabs.map((tab) => {
           const showBadge = tab.hasMessageBadge && unreadCount > 0;
           return (
@@ -84,23 +84,34 @@ export default function BottomTabBar() {
               key={tab.path}
               to={tab.path}
               className={({ isActive }) =>
-                `relative flex flex-col items-center justify-center gap-0.5 rounded-xl min-h-[52px] py-1 px-1 text-xs font-medium transition-colors
-                ${isActive ? 'bg-primary/12 text-primary' : 'text-text-muted hover:bg-surface/60 hover:text-text-primary'}`
+                `relative flex flex-col items-center justify-center gap-0.5 rounded-2xl min-h-[56px] py-1.5 px-1 text-xs font-medium transition-all duration-200
+                ${isActive
+                  ? 'text-primary'
+                  : 'text-text-muted hover:text-text-primary'
+                }`
               }
               aria-label={showBadge ? `${tab.label} — ${unreadCount} belum dibaca` : tab.label}
             >
-              <span className="relative text-[22px] leading-none">
-                {tab.icon}
-                {showBadge && (
-                  <span
-                    className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-accent-red px-0.5 text-[9px] font-bold text-white leading-none"
-                    aria-hidden="true"
-                  >
-                    {unreadCount > 9 ? '9+' : unreadCount}
+              {({ isActive }) => (
+                <>
+                  {/* Active background pill */}
+                  {isActive && (
+                    <span className="absolute inset-x-1.5 inset-y-1 rounded-xl bg-primary/10 animate-scale-in" aria-hidden="true" />
+                  )}
+                  <span className="relative text-[22px] leading-none">
+                    {tab.icon}
+                    {showBadge && (
+                      <span
+                        className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-accent-red px-0.5 text-[9px] font-bold text-white leading-none"
+                        aria-hidden="true"
+                      >
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-              <span className="text-[10px] leading-none mt-0.5">{tab.label}</span>
+                  <span className={`text-[10px] leading-none mt-0.5 transition-all duration-200 ${isActive ? 'font-semibold' : ''}`}>{tab.label}</span>
+                </>
+              )}
             </NavLink>
           );
         })}

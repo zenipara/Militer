@@ -7,23 +7,34 @@ interface StatCardProps {
   trend?: string;
   trendUp?: boolean;
   className?: string;
+  accent?: 'blue' | 'green' | 'gold' | 'red';
 }
 
-export default function StatCard({ icon, label, value, trend, trendUp, className = '' }: StatCardProps) {
+const accentMap = {
+  blue:  { bg: 'from-blue-500/12 to-indigo-500/4',  border: 'hover:border-blue-300/40 dark:hover:border-blue-700/40' },
+  green: { bg: 'from-emerald-500/12 to-teal-500/4', border: 'hover:border-emerald-300/40 dark:hover:border-emerald-700/40' },
+  gold:  { bg: 'from-amber-500/12 to-yellow-400/4', border: 'hover:border-amber-300/40 dark:hover:border-amber-700/40' },
+  red:   { bg: 'from-rose-500/12 to-red-400/4',     border: 'hover:border-rose-300/40 dark:hover:border-rose-700/40' },
+};
+
+export default function StatCard({ icon, label, value, trend, trendUp, className = '', accent = 'blue' }: StatCardProps) {
+  const a = accentMap[accent];
   return (
-    <div className={`app-panel group relative overflow-hidden rounded-2xl border border-surface/80 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md sm:p-6 ${className}`}>
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-primary/10 to-transparent opacity-90 transition-opacity group-hover:opacity-100" />
-      <div className="flex items-start justify-between">
+    <div className={`app-card group relative overflow-hidden rounded-2xl border border-surface/70 p-5 transition-all duration-250 hover:-translate-y-0.5 hover:shadow-lg ${a.border} sm:p-6 ${className}`}>
+      {/* Gradient header wash */}
+      <div className={`pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b ${a.bg} opacity-80 transition-opacity duration-300 group-hover:opacity-100`} />
+      <div className="relative flex items-start justify-between">
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">{label}</p>
-          <p className="text-3xl font-semibold tracking-tight text-text-primary sm:text-[2.1rem]">{value}</p>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">{label}</p>
+          <p className="text-3xl font-bold tracking-tight text-text-primary sm:text-[2rem]">{value}</p>
           {trend && (
-            <p className={`mt-2 text-xs font-semibold ${trendUp ? 'text-success' : 'text-accent-red'}`}>
-              {trendUp ? '↑' : '↓'} {trend}
+            <p className={`mt-2 flex items-center gap-1 text-xs font-semibold ${trendUp ? 'text-success' : 'text-accent-red'}`}>
+              <span aria-hidden="true">{trendUp ? '↑' : '↓'}</span>
+              {trend}
             </p>
           )}
         </div>
-        <span className="grid h-11 w-11 place-items-center rounded-xl border border-surface bg-bg-card text-lg shadow-sm transition-transform group-hover:scale-105 dark:bg-surface/45">{icon}</span>
+        <span className="grid h-11 w-11 place-items-center rounded-xl border border-surface/70 bg-bg-card text-lg shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:shadow-md dark:bg-surface/40">{icon}</span>
       </div>
     </div>
   );

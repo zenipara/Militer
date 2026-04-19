@@ -14,6 +14,7 @@ import { useUsers } from '../../hooks/useUsers';
 import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
+import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
 import type { User, Role } from '../../types';
 
@@ -38,12 +39,14 @@ export default function UserManagement() {
   const [searchRaw, setSearchRaw] = useState('');
   const search = useDebounce(searchRaw, 300);
   const [filterRole, setFilterRole] = useState<Role | ''>('');
+  const [filterStatus, setFilterStatus] = useState<'active' | 'inactive' | ''>('');
   const [showCreate, setShowCreate] = useState(false);
   const [showResetPin, setShowResetPin] = useState(false);
   const [showBulkReset, setShowBulkReset] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showUnlock, setShowUnlock] = useState(false);
   const [detailUser, setDetailUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -66,7 +69,10 @@ export default function UserManagement() {
       u.nama.toLowerCase().includes(search.toLowerCase()) ||
       u.nrp.includes(search);
     const matchRole = !filterRole || u.role === filterRole;
-    return matchSearch && matchRole;
+    const matchStatus =
+      !filterStatus ||
+      (filterStatus === 'active' ? u.is_active : !u.is_active);
+    return matchSearch && matchRole && matchStatus;
   });
 
   const { currentPage, totalPages, totalItems, paginated, setPage } = usePagination(filtered, PAGE_SIZE);
@@ -233,6 +239,49 @@ export default function UserManagement() {
     URL.revokeObjectURL(url);
   };
 
+  const exportFilteredCSV = () => {
+    if (filtered.length === 0) {
+      showNotification('Tidak ada data untuk diekspor', 'error');
+      return;
+    }
+    const header = 'nrp,nama,pangkat,jabatan,satuan,role,status';
+    const rows = filtered.map((u) =>
+      [
+        u.nrp,
+        `"${u.nama.replace(/"/g, '""')}"`,
+        u.pangkat ?? '',
+        u.jabatan ?? '',
+        `"${u.satuan.replace(/"/g, '""')}"`,
+        u.role,
+        u.is_active ? 'aktif' : 'nonaktif',
+      ].join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `personel_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showNotification(`${filtered.length} personel berhasil diekspor`, 'success');
+  };
+
+  const handleUnlockUser = async () => {
+    if (!selectedUser) return;
+    setIsSaving(true);
+    try {
+      await updateUser(selectedUser.id, { login_attempts: 0, locked_until: undefined });
+      showNotification(`Akun ${selectedUser.nama} berhasil dibuka`, 'success');
+      setShowUnlock(false);
+      setSelectedUser(null);
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal membuka akun', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const toggleSelectUser = (id: string) => {
     setSelectedUserIds((prev) => {
       const next = new Set(prev);
@@ -279,41 +328,82 @@ export default function UserManagement() {
         <PageHeader
           title="Manajemen Personel"
           subtitle="Kelola akun, role, status aktif, reset PIN personel, dan impor data massal."
+          meta={
+            <>
+              <span>{users.length} personel terdaftar</span>
+              {filtered.length !== users.length && <span>{filtered.length} hasil pencarian</span>}
+            </>
+          }
         />
 
         {error && (
-          <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">
+          <div className="flex items-center gap-2.5 rounded-2xl border border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5 p-4 text-sm text-accent-red">
+            <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-accent-red/15">
+              <span className="text-base font-bold">!</span>
+            </span>
             {error}
           </div>
         )}
 
         {/* Header actions */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-surface/70 bg-bg-card p-4 shadow-sm sm:flex-row sm:items-center">
-          <input
-            type="text"
-            placeholder="Cari nama atau NRP..."
-            value={searchRaw}
-            onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
-            className="form-control flex-1 bg-bg-card"
-          />
-          <select
-            value={filterRole}
-            onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
-            className="form-control sm:w-44 bg-bg-card"
-          >
-            <option value="">Semua Role</option>
-            <option value="admin">Admin</option>
-            <option value="komandan">Komandan</option>
-            <option value="prajurit">Prajurit</option>
-          </select>
-          <Button variant="secondary" onClick={() => setShowImport(true)} leftIcon={<span aria-hidden="true">⬆</span>}>Import CSV</Button>
-          <Button onClick={() => setShowCreate(true)}>+ Tambah Personel</Button>
+        <div className="app-card flex flex-col gap-3 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-muted">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Cari nama atau NRP..."
+                value={searchRaw}
+                onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
+                className="form-control w-full bg-bg-card pl-9"
+              />
+            </div>
+            <select
+              value={filterRole}
+              onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
+              className="form-control sm:w-40 bg-bg-card"
+            >
+              <option value="">Semua Role</option>
+              <option value="admin">Admin</option>
+              <option value="komandan">Komandan</option>
+              <option value="prajurit">Prajurit</option>
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); setPage(1); }}
+              className="form-control sm:w-40 bg-bg-card"
+            >
+              <option value="">Semua Status</option>
+              <option value="active">Aktif</option>
+              <option value="inactive">Nonaktif</option>
+            </select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={exportFilteredCSV}>
+              <span className="flex items-center gap-1.5">
+                <ICONS.Download className="h-3.5 w-3.5" aria-hidden="true" />
+                Export CSV
+              </span>
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowImport(true)}>
+              <span className="flex items-center gap-1.5">
+                <span aria-hidden="true">⬆</span>
+                Import CSV
+              </span>
+            </Button>
+            <Button size="sm" onClick={() => setShowCreate(true)}>+ Tambah</Button>
+          </div>
         </div>
 
         {/* Bulk selection toolbar */}
         {selectedUserIds.size > 0 && (
-          <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-sm font-medium text-primary">{selectedUserIds.size} personel dipilih</span>
+          <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 to-blue-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="flex items-center gap-2 text-sm font-semibold text-primary">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/20 text-xs font-bold">{selectedUserIds.size}</span>
+              personel dipilih
+            </span>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="secondary" onClick={() => setShowBulkReset(true)}>
                 Reset PIN Massal
@@ -359,47 +449,78 @@ export default function UserManagement() {
               { key: 'satuan', header: 'Satuan' },
               { key: 'role', header: 'Role', render: (u) => <RoleBadge role={u.role} /> },
               {
-                key: 'is_online', header: 'Status', render: (u) => (
-                  <div className="flex items-center gap-1.5">
-                    <div className={`h-2 w-2 rounded-full ${u.is_online ? 'bg-success' : 'bg-text-muted'}`} />
-                    <span className="text-xs text-text-muted">{u.is_online ? 'Online' : 'Offline'}</span>
-                  </div>
-                ),
+                key: 'is_online', header: 'Status', render: (u) => {
+                  const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
+                  return (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`h-2 w-2 rounded-full ${u.is_online ? 'bg-success' : 'bg-text-muted'}`} />
+                        <span className="text-xs text-text-muted">{u.is_online ? 'Online' : 'Offline'}</span>
+                      </div>
+                      {isLocked && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-accent-red/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-red">
+                          <ICONS.Lock className="h-2.5 w-2.5" aria-hidden="true" />
+                          Terkunci
+                        </span>
+                      )}
+                      {!u.is_active && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-surface/50 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
+                          Nonaktif
+                        </span>
+                      )}
+                    </div>
+                  );
+                },
               },
               {
-                key: 'actions', header: 'Aksi', render: (u) => (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleOpenDetail(u)}
-                    >
-                      Detail
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setSelectedUser(u); setShowResetPin(true); }}
-                    >
-                      Reset PIN
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={u.is_active ? 'ghost' : 'secondary'}
-                      onClick={() => handleToggleActive(u)}
-                    >
-                      {u.is_active ? 'Nonaktif' : 'Aktifkan'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      disabled={authUser?.id === u.id}
-                      onClick={() => { setSelectedUser(u); setShowDelete(true); }}
-                    >
-                      Hapus
-                    </Button>
-                  </div>
-                ),
+                key: 'actions', header: 'Aksi', render: (u) => {
+                  const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
+                  return (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleOpenDetail(u)}
+                      >
+                        Detail
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setSelectedUser(u); setShowResetPin(true); }}
+                      >
+                        Reset PIN
+                      </Button>
+                      {isLocked && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setSelectedUser(u); setShowUnlock(true); }}
+                        >
+                          <span className="flex items-center gap-1 text-accent-gold">
+                            <ICONS.Unlock className="h-3 w-3" aria-hidden="true" />
+                            Buka Kunci
+                          </span>
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant={u.is_active ? 'ghost' : 'secondary'}
+                        onClick={() => handleToggleActive(u)}
+                      >
+                        {u.is_active ? 'Nonaktif' : 'Aktifkan'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        disabled={authUser?.id === u.id}
+                        onClick={() => { setSelectedUser(u); setShowDelete(true); }}
+                      >
+                        Hapus
+                      </Button>
+                    </div>
+                  );
+                },
               },
             ]}
             data={paginated}
@@ -489,9 +610,10 @@ export default function UserManagement() {
         }
       >
         <div className="space-y-4">
-          <div className="rounded-xl border border-accent-gold/30 bg-accent-gold/10 p-3">
-            <p className="text-xs text-accent-gold">
-              ⚠ Semua {selectedUserIds.size} personel yang dipilih akan mendapat PIN yang sama. Pastikan PIN disebarkan dengan aman.
+          <div className="flex items-start gap-3 rounded-2xl border border-accent-gold/30 bg-gradient-to-r from-amber-50/80 to-transparent p-4 dark:from-amber-900/10">
+            <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-accent-gold/15 text-accent-gold text-xs font-bold">⚠</span>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Semua <span className="font-semibold text-accent-gold">{selectedUserIds.size}</span> personel yang dipilih akan mendapat PIN yang sama. Pastikan PIN disebarkan dengan aman.
             </p>
           </div>
           <Input
@@ -528,9 +650,12 @@ export default function UserManagement() {
         <div className="space-y-4">
           {!importResult ? (
             <>
-              <div className="rounded-xl border border-surface/70 bg-surface/20 p-4 text-sm text-text-muted space-y-1">
-                <p className="font-semibold text-text-primary">Format CSV yang diperlukan:</p>
-                <p>Kolom: <code className="font-mono text-xs bg-surface/50 px-1 rounded">nrp, nama, pin, role, satuan, pangkat, jabatan</code></p>
+              <div className="rounded-2xl border border-surface/60 bg-surface/15 p-4 text-sm text-text-muted space-y-1.5">
+                <p className="font-bold text-text-primary flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary text-xs">📋</span>
+                  Format CSV yang diperlukan:
+                </p>
+                <p>Kolom: <code className="font-mono text-xs bg-surface/50 px-1.5 py-0.5 rounded-md">nrp, nama, pin, role, satuan, pangkat, jabatan</code></p>
                 <p>• PIN default 6 digit angka (contoh: 123456)</p>
                 <p>• Role: <code className="font-mono text-xs">prajurit</code> / <code className="font-mono text-xs">komandan</code> / <code className="font-mono text-xs">admin</code></p>
                 <p>• Unduh template di bawah untuk format yang tepat</p>
@@ -548,9 +673,9 @@ export default function UserManagement() {
               </div>
 
               {importRows.length > 0 && (
-                <div className="rounded-xl border border-surface/70 bg-surface/20 p-4">
-                  <p className="text-sm font-semibold text-text-primary mb-2">
-                    Preview — {importRows.length} baris ditemukan
+                <div className="rounded-2xl border border-surface/60 bg-surface/15 p-4">
+                  <p className="text-sm font-bold text-text-primary mb-2">
+                    Preview — <span className="text-primary">{importRows.length}</span> baris ditemukan
                   </p>
                   <div className="overflow-x-auto max-h-40 overflow-y-auto">
                     <table className="w-full text-xs">
@@ -581,22 +706,22 @@ export default function UserManagement() {
           ) : (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-center">
-                  <p className="text-2xl font-bold text-success">{importResult.success}</p>
-                  <p className="text-xs text-text-muted">Berhasil diimpor</p>
+                <div className="rounded-2xl border border-success/30 bg-gradient-to-br from-success/10 to-emerald-500/5 p-5 text-center">
+                  <p className="text-3xl font-black text-success">{importResult.success}</p>
+                  <p className="mt-1 text-xs font-semibold text-text-muted">Berhasil diimpor</p>
                 </div>
-                <div className={`rounded-xl border p-4 text-center ${importResult.failed > 0 ? 'border-accent-red/30 bg-accent-red/10' : 'border-surface/70 bg-surface/20'}`}>
-                  <p className={`text-2xl font-bold ${importResult.failed > 0 ? 'text-accent-red' : 'text-text-muted'}`}>{importResult.failed}</p>
-                  <p className="text-xs text-text-muted">Gagal diimpor</p>
+                <div className={`rounded-2xl border p-5 text-center ${importResult.failed > 0 ? 'border-accent-red/30 bg-gradient-to-br from-accent-red/10 to-rose-500/5' : 'border-surface/60 bg-surface/15'}`}>
+                  <p className={`text-3xl font-black ${importResult.failed > 0 ? 'text-accent-red' : 'text-text-muted'}`}>{importResult.failed}</p>
+                  <p className="mt-1 text-xs font-semibold text-text-muted">Gagal diimpor</p>
                 </div>
               </div>
               {importResult.errors.length > 0 && (
-                <div className="rounded-xl border border-accent-red/20 bg-accent-red/10 p-4 space-y-1 max-h-40 overflow-y-auto">
-                  <p className="text-xs font-semibold text-accent-red mb-2">Detail Error:</p>
+                <div className="rounded-2xl border border-accent-red/20 bg-accent-red/10 p-4 space-y-1 max-h-40 overflow-y-auto">
+                  <p className="text-xs font-bold text-accent-red mb-2">Detail Error:</p>
                   {importResult.errors.map((e, i) => (
-                    <div key={i} className="text-xs">
-                      <span className="font-mono text-accent-red/80">{e.nrp}</span>
-                      <span className="text-text-muted ml-2">{e.error}</span>
+                    <div key={i} className="flex items-start gap-2 text-xs">
+                      <span className="font-mono font-bold text-accent-red/80">{e.nrp}</span>
+                      <span className="text-text-muted">{e.error}</span>
                     </div>
                   ))}
                 </div>
@@ -628,10 +753,54 @@ export default function UserManagement() {
           </>
         }
       >
-        <p className="text-sm text-text-muted">
-          Data anggota <span className="font-semibold text-text-primary">{selectedUser?.nama ?? '-'}</span> akan dihapus permanen.
-          Tindakan ini tidak dapat dibatalkan.
-        </p>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-accent-red/20 bg-accent-red/5 p-4">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-red/20 to-rose-500/10 text-accent-red text-sm font-black">
+              {selectedUser?.nama.charAt(0).toUpperCase() ?? '?'}
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold text-text-primary truncate">{selectedUser?.nama ?? '-'}</p>
+              <p className="text-xs text-text-muted">NRP {selectedUser?.nrp ?? '-'} · {selectedUser?.role}</p>
+            </div>
+          </div>
+          <p className="text-sm text-text-muted">
+            Data anggota ini akan dihapus secara permanen. Tindakan ini <span className="font-semibold text-accent-red">tidak dapat dibatalkan</span>.
+          </p>
+        </div>
+      </Modal>
+
+      {/* Unlock Modal */}
+      <Modal
+        isOpen={showUnlock}
+        onClose={() => { setShowUnlock(false); setSelectedUser(null); }}
+        title="Buka Kunci Akun"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setShowUnlock(false); setSelectedUser(null); }}>Batal</Button>
+            <Button onClick={() => void handleUnlockUser()} isLoading={isSaving}>
+              <span className="flex items-center gap-1.5">
+                <ICONS.Unlock className="h-3.5 w-3.5" aria-hidden="true" />
+                Buka Kunci
+              </span>
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-accent-gold/20 bg-accent-gold/5 p-4">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-gold/20 to-amber-500/10 text-accent-gold">
+              <ICONS.Lock className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold text-text-primary truncate">{selectedUser?.nama ?? '-'}</p>
+              <p className="text-xs text-text-muted">NRP {selectedUser?.nrp ?? '-'} · {selectedUser?.login_attempts ?? 0}× percobaan gagal</p>
+            </div>
+          </div>
+          <p className="text-sm text-text-muted">
+            Akun ini terkunci karena terlalu banyak percobaan login gagal. Membuka kunci akan mengizinkan personel login kembali.
+          </p>
+        </div>
       </Modal>
     </DashboardLayout>
   );

@@ -229,8 +229,8 @@ describe('End-to-end dashboard rendering', () => {
     );
 
     await waitFor(() => expect(screen.getByRole('heading', { name: /Sersan Prajurit C/i })).toBeInTheDocument());
-    expect(screen.getByText('Pesan belum dibaca', { exact: true })).toBeInTheDocument();
-    expect(screen.getByText('Tugas aktif', { exact: true })).toBeInTheDocument();
+    expect(screen.getByText('Pesan Belum Dibaca', { exact: true })).toBeInTheDocument();
+    expect(screen.getAllByText('Tugas Aktif', { exact: true }).length).toBeGreaterThan(0);
     expect(
       screen
         .getAllByRole('link', { name: /^Gate Pass$/i })

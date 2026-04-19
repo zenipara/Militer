@@ -1,5 +1,5 @@
 # 📋 SPESIFIKASI TEKNIS — KARYO OS
-### Versi 1.0.1 | April 2026
+### Versi 1.2.1 | April 2026
 
 ---
 
@@ -30,7 +30,7 @@
 |---|---|
 | **Nama Sistem** | Karyo OS |
 | **Kepanjangan** | Operational System — Command & Battalion Tracking |
-| **Versi** | 1.0.0 (MVP) |
+| **Versi** | 1.2.1 |
 | **Target Pengguna** | Unit militer TNI Indonesia |
 | **Jenis Aplikasi** | Web Application (SPA) |
 | **Bahasa Antarmuka** | Bahasa Indonesia |
@@ -1007,15 +1007,28 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 
 ## 14. Roadmap Pengembangan
 
-### Phase 1 — MVP (v1.0) ✅ Target
+### Phase 1 — MVP (v1.0) ✅ Selesai
 - [x] Spesifikasi & desain sistem
-- [ ] Setup project (Vite + React + TS + Tailwind)
-- [ ] Supabase schema & RLS
-- [ ] Halaman Login + routing RBAC
-- [ ] Dashboard Prajurit (core features)
-- [ ] Dashboard Komandan (core features)
-- [ ] Dashboard Admin (core features)
-- [ ] Deploy ke GitHub Pages
+- [x] Setup project (Vite + React + TS + Tailwind)
+- [x] Supabase schema & RLS
+- [x] Halaman Login + routing RBAC
+- [x] Dashboard Prajurit (core features)
+- [x] Dashboard Komandan (core features)
+- [x] Dashboard Admin (core features)
+- [x] Deploy ke GitHub Pages
+
+### Phase 1.5 — Stabilisasi (v1.2.1) ✅ Selesai
+- [x] Gate Pass & QR Scanner (pengajuan, scan pos jaga, monitoring, approval)
+- [x] Guard dashboard untuk verifikasi Gate Pass
+- [x] Backup & restore database multi-tabel dengan format JSON terversi
+- [x] Feature flags berbasis database (aktifkan/nonaktifkan fitur per role)
+- [x] Platform branding (nama satuan, tagline, logo)
+- [x] Auto-refresh dashboard & display density setting
+- [x] Audit log dengan pembersihan berdasar rentang waktu
+- [x] Global realtime sync via Supabase subscription
+- [x] Unit test & e2e test dengan Vitest + Playwright
+- [x] CI/CD pipeline: lint, type-check, test, build, security scan, smoke prod
+- [x] Service worker untuk cache management di GitHub Pages SPA
 
 ### Phase 2 — Enhancement (v1.5)
 - [ ] Notifikasi push (browser notifications)

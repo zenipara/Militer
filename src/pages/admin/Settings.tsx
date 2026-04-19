@@ -38,6 +38,12 @@ interface BackupData {
 
 type AuditClearRange = '7d' | '30d' | '90d' | 'all';
 
+/** Supported backup format versions for restore compatibility */
+const SUPPORTED_BACKUP_VERSIONS = ['1.0', '1.2'] as const;
+
+/** Current backup format version written on export */
+const CURRENT_BACKUP_VERSION = '1.2';
+
 /** Download a JS object as a .json file */
 function downloadJson(data: unknown, filename: string) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -124,7 +130,7 @@ export default function Settings() {
         tables[table] = data ?? [];
       }
       const backup: BackupData = {
-        version: '1.0',
+        version: CURRENT_BACKUP_VERSION,
         exported_at: new Date().toISOString(),
         satuan: user?.satuan ?? '—',
         tables,
@@ -149,6 +155,9 @@ export default function Settings() {
       try {
         const parsed = JSON.parse(ev.target?.result as string) as BackupData;
         if (!parsed.version || !parsed.tables) throw new Error('Format file tidak valid');
+        if (!(SUPPORTED_BACKUP_VERSIONS as readonly string[]).includes(parsed.version)) {
+          throw new Error(`Versi backup v${parsed.version} tidak didukung. Versi yang didukung: ${SUPPORTED_BACKUP_VERSIONS.join(', ')}`);
+        }
         setRestorePreview(parsed);
         setShowRestoreModal(true);
       } catch {

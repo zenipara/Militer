@@ -85,7 +85,7 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/35 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-fade-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -94,10 +94,10 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
         ref={dialogRef}
         className={`
           app-panel relative w-full overflow-hidden
-          rounded-t-2xl sm:rounded-2xl
-          animate-slide-up sm:animate-fade-up
+          rounded-t-3xl sm:rounded-2xl
+          animate-slide-up sm:animate-scale-in
           ${sizes[size]}
-          max-h-[90dvh] flex flex-col
+          max-h-[92dvh] flex flex-col
         `}
         role="dialog"
         aria-modal="true"
@@ -105,14 +105,14 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
       >
         {/* Drag handle — mobile only visual cue */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden" aria-hidden="true">
-          <div className="h-1 w-10 rounded-full bg-surface" />
+          <div className="h-1 w-10 rounded-full bg-surface/80" />
         </div>
         {/* Header */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-surface/80 px-5 py-4 sm:px-6">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-surface/60 px-5 py-4 sm:px-6">
           <h2 id="modal-title" className="text-base font-bold tracking-tight text-text-primary sm:text-lg">
             {title}
           </h2>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Tutup">
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Tutup" className="rounded-xl">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -123,7 +123,7 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
         {/* Footer */}
         {footer && (
           <div
-            className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-surface/80 px-5 py-4 sm:px-6"
+            className="flex flex-shrink-0 items-center justify-end gap-3 border-t border-surface/60 px-5 py-4 sm:px-6"
             style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 1rem)' }}
           >
             {footer}

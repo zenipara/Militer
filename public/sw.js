@@ -1,7 +1,8 @@
 // Service Worker for cache management on GitHub Pages SPA
 // Handles stale cache cleanup and asset revalidation
 
-const CACHE_VERSION = 'v' + new Date().getTime();
+const APP_VERSION = '1.2.1';
+const CACHE_VERSION = 'v' + APP_VERSION;
 const ASSET_CACHE = 'assets-' + CACHE_VERSION;
 const DOC_CACHE = 'docs-' + CACHE_VERSION;
 

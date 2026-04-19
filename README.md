@@ -310,7 +310,7 @@ SUPABASE_PROJECT_ID=xxxxxxxxxxxx
 
 # App Config
 VITE_APP_NAME=Karyo OS
-VITE_APP_VERSION=1.0.0
+VITE_APP_VERSION=1.2.1
 ```
 
 > **Penting:** Semua env variable frontend React **wajib** diawali `VITE_`. File `.env.local` tidak boleh di-commit ke Git (sudah ada di `.gitignore`).
