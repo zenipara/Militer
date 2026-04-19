@@ -5,6 +5,7 @@ import StatCard, { StatsGrid } from '../../components/ui/StatCard';
 import TaskCard from '../../components/ui/TaskCard';
 import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/common/Button';
+import EmptyState from '../../components/common/EmptyState';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useTasks } from '../../hooks/useTasks';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
@@ -132,7 +133,11 @@ export default function KomandanDashboard() {
               {canOpenReports && <Link to="/komandan/reports" className="text-sm text-primary hover:underline">Ke laporan →</Link>}
             </div>
             {pinnedAnnouncements.length === 0 ? (
-              <p className="text-sm text-text-muted">Belum ada pengumuman yang disematkan.</p>
+              <EmptyState
+                title="Belum ada pengumuman penting"
+                description="Pengumuman yang disematkan akan muncul di sini agar komandan cepat melihat informasi prioritas."
+                className="border-0 bg-transparent px-0 py-8"
+              />
             ) : (
               <div className="space-y-2">
                 {pinnedAnnouncements.slice(0, 3).map((announcement) => (
@@ -156,9 +161,19 @@ export default function KomandanDashboard() {
           {tasksLoading ? (
             <CardListSkeleton count={4} />
           ) : tasks.length === 0 ? (
-            <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
-              Belum ada tugas yang dibuat
-            </div>
+            <EmptyState
+              title="Belum ada tugas dibuat"
+              description="Mulai distribusikan pekerjaan ke personel agar progres harian bisa dipantau dari dashboard ini."
+              action={canOpenTasks ? (
+                <Link
+                  to="/komandan/tasks"
+                  className="inline-flex min-h-[40px] items-center rounded-xl border border-surface bg-slate-50 px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:text-primary dark:bg-surface/45"
+                >
+                  Buat atau kelola tugas
+                </Link>
+              ) : undefined}
+              className="py-10"
+            />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {tasks.slice(0, 6).map((task) => (

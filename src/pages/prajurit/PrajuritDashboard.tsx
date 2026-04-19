@@ -9,6 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import Button from '../../components/common/Button';
+import EmptyState from '../../components/common/EmptyState';
 import { AttendanceBadge } from '../../components/common/Badge';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useState } from 'react';
@@ -190,43 +191,47 @@ export default function PrajuritDashboard() {
         </StatsGrid>
 
         {/* Announcements */}
-        {(annLoading || recentAnnouncements.length > 0) && (
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="flex items-center gap-2 font-semibold text-text-primary">
-                <ICONS.Megaphone className="h-4 w-4 text-primary" aria-hidden="true" />
-                Pengumuman
-              </h3>
-            </div>
-            {annLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="h-14 animate-pulse bg-surface/70 rounded-xl" />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {recentAnnouncements.map((ann) => (
-                  <div
-                    key={ann.id}
-                    className={`bg-bg-card border rounded-xl px-4 py-3 ${ann.is_pinned ? 'border-accent-gold/40' : 'border-surface'}`}
-                  >
-                    <div className="flex items-start gap-2">
-                      {ann.is_pinned && <ICONS.Pin className="mt-0.5 h-3.5 w-3.5 text-accent-gold" aria-hidden="true" />}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text-primary">{ann.judul}</p>
-                        <p className="text-xs text-text-muted mt-0.5 line-clamp-2">{ann.isi}</p>
-                      </div>
-                      <span className="text-xs text-text-muted flex-shrink-0">
-                        {new Date(ann.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="flex items-center gap-2 font-semibold text-text-primary">
+              <ICONS.Megaphone className="h-4 w-4 text-primary" aria-hidden="true" />
+              Pengumuman
+            </h3>
           </div>
-        )}
+          {annLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="h-14 animate-pulse bg-surface/70 rounded-xl" />
+              ))}
+            </div>
+          ) : recentAnnouncements.length === 0 ? (
+            <EmptyState
+              title="Belum ada pengumuman"
+              description="Info terbaru dari komando akan muncul otomatis di sini."
+              className="py-8"
+            />
+          ) : (
+            <div className="space-y-2">
+              {recentAnnouncements.map((ann) => (
+                <div
+                  key={ann.id}
+                  className={`bg-bg-card border rounded-xl px-4 py-3 ${ann.is_pinned ? 'border-accent-gold/40' : 'border-surface'}`}
+                >
+                  <div className="flex items-start gap-2">
+                    {ann.is_pinned && <ICONS.Pin className="mt-0.5 h-3.5 w-3.5 text-accent-gold" aria-hidden="true" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-text-primary">{ann.judul}</p>
+                      <p className="text-xs text-text-muted mt-0.5 line-clamp-2">{ann.isi}</p>
+                    </div>
+                    <span className="text-xs text-text-muted flex-shrink-0">
+                      {new Date(ann.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* My active tasks */}
         <div>
@@ -238,9 +243,19 @@ export default function PrajuritDashboard() {
           {tasksLoading ? (
             <CardListSkeleton count={2} />
           ) : activeTasks.length === 0 ? (
-            <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
-              Tidak ada tugas aktif saat ini
-            </div>
+            <EmptyState
+              title="Tidak ada tugas aktif"
+              description="Tugas baru akan muncul di sini begitu komandan menugaskan Anda."
+              action={canOpenTasks ? (
+                <Link
+                  to="/prajurit/tasks"
+                  className="inline-flex min-h-[40px] items-center rounded-xl border border-surface bg-slate-50 px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:text-primary dark:bg-surface/45"
+                >
+                  Buka daftar tugas
+                </Link>
+              ) : undefined}
+              className="py-10"
+            />
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {activeTasks.slice(0, 4).map((task) => (
