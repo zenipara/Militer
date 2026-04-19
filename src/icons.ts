@@ -53,6 +53,13 @@ import {
   ChevronRight,
   ChevronDown,
   Search,
+  RefreshCcw,
+  Download,
+  Lock,
+  Unlock,
+  Filter,
+  ArrowUpDown,
+  Copy,
 } from 'lucide-react';
 
 
@@ -111,6 +118,13 @@ export const ICONS = {
   ChevronRight,
   ChevronDown,
   Search,
+  RefreshCcw,
+  Download,
+  Lock,
+  Unlock,
+  Filter,
+  ArrowUpDown,
+  Copy,
 } as const;
 
 export type IconName = keyof typeof ICONS;

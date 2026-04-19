@@ -40,6 +40,42 @@ export async function patchPosJagaActive(callerId: string, callerRole: string, i
   if (error) throw error;
 }
 
+export async function deletePosJaga(callerId: string, callerRole: string, id: string): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
+  const { error } = await supabase
+    .from('pos_jaga')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function renamePosJaga(callerId: string, callerRole: string, id: string, nama: string): Promise<PosJaga> {
+  await ensureSessionContext(callerId, callerRole);
+  const { data, error } = await supabase
+    .from('pos_jaga')
+    .update({ nama })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  if (!data) throw new Error('Gagal mengubah nama pos jaga');
+  return data as PosJaga;
+}
+
+export async function rotatePosJagaQr(callerId: string, callerRole: string, id: string): Promise<PosJaga> {
+  await ensureSessionContext(callerId, callerRole);
+  const newToken = crypto.randomUUID();
+  const { data, error } = await supabase
+    .from('pos_jaga')
+    .update({ qr_token: newToken })
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  if (!data) throw new Error('Gagal memperbarui QR pos jaga');
+  return data as PosJaga;
+}
+
 export async function rpcScanPosJaga(posToken: string, userId: string): Promise<ScanPosJagaResult> {
   const { data, error } = await supabase.rpc('scan_pos_jaga', {
     p_pos_token: posToken,
