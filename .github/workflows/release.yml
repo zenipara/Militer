@@ -101,12 +101,10 @@ jobs:
           echo "$NOTES" > /tmp/release_notes.md
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: KARYO OS ${{ github.ref_name }}
+          name: KARYO OS ${{ github.ref_name }}
           body_path: /tmp/release_notes.md
           draft: false
           prerelease: false

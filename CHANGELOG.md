@@ -20,7 +20,8 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 - **Global Realtime Sync**: sinkronisasi lintas tab/perangkat via Supabase Realtime subscription di semua dashboard.
 - **Unit & E2E Tests**: suite pengujian lengkap dengan Vitest (unit/integration) dan Playwright (e2e + smoke production).
 - **CI/CD Pipeline**: workflow otomatis lint, type-check, unit test, build, security scan (npm audit + Gitleaks), dan smoke production.
-- **Workflow Rilis**: workflow GitHub Actions baru (`release.yml`) untuk validasi versi tag dan pembuatan GitHub Release otomatis.
+- **Workflow Rilis**: workflow GitHub Actions baru (`release.yml`) untuk validasi versi tag dan pembuatan GitHub Release otomatis via `softprops/action-gh-release@v2`.
+- **Panduan Upgrade**: dokumen `UPGRADE_GUIDE.md` dengan prosedur lengkap untuk dev/ops/admin termasuk checklist rollback ke v1.0.1.
 - **Request Coalescer & Cache TTL**: lapisan optimasi performa untuk mengurangi query redundan ke Supabase.
 - **Metrics & Error Handling**: pengukuran page load, error boundary global, dan penanganan error terpusat.
 
@@ -28,6 +29,18 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 - Backup format version dinaikkan dari `1.0` ke `1.2`; backup lama `v1.0` tetap dapat di-restore (backward compatible).
 - Roadmap `SPESIFIKASI.md` diperbarui: Phase 1 & 1.5 ditandai selesai.
 - Service Worker beralih dari cache berbasis timestamp ke cache berbasis versi aplikasi statis untuk konsistensi deployment.
+
+### Dependensi Diperbarui
+
+| Paket | Sebelum | Sesudah |
+|-------|---------|---------|
+| `@supabase/supabase-js` | ^2.49.4 | ^2.103.0 |
+| `autoprefixer` | ^10.4.21 | ^10.5.0 |
+| `postcss` | ^8.5.3 | ^8.5.10 |
+| `typescript-eslint` | ^8.30.1 | ^8.58.0 |
+| `@vitest/coverage-v8` | ^3.1.1 | ^3.2.0 |
+
+> Major upgrade (`react-router-dom` v7, `vite` v8, `vitest` v4, `typescript` v6) ditahan untuk evaluasi di v1.3.x.
 
 ### Diperbaiki
 - Proteksi route role-based kini mengevaluasi feature flags sebelum memberikan akses, mencegah akses ke modul yang dinonaktifkan.
