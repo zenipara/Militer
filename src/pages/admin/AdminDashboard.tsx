@@ -165,6 +165,24 @@ export default function AdminDashboard() {
           actions={<Button variant="outline" onClick={() => void handleRefresh()} isLoading={isLoading || isRefreshing}>Muat Ulang</Button>}
         />
 
+        {enabledQuickLinks.length > 0 && (
+          <div className="grid gap-2 sm:grid-cols-3">
+            {enabledQuickLinks.slice(0, 3).map((item) => {
+              const Icon = ICONS[item.icon];
+              return (
+                <Link
+                  key={`primary-${item.href}`}
+                  to={item.href}
+                  className="group inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-surface/80 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary transition-all hover:border-primary/40 hover:text-primary"
+                >
+                  <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  <span className="truncate">{item.title}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
         {error && (
           <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">
             {error}

@@ -21,7 +21,11 @@ export default function PageHeader({ title, subtitle, actions, meta }: PageHeade
             </div>
           )}
         </div>
-        {actions && <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">{actions}</div>}
+        {actions && (
+          <div className="flex w-full flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end [&>*]:min-h-[44px] [&>*]:justify-center">
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   );

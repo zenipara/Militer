@@ -75,7 +75,7 @@ export default function KomandanDashboard() {
             <>
               <Button variant="outline" onClick={() => void refresh()} isLoading={isRefreshing}>Muat Ulang</Button>
               {canOpenTasks && (
-                <Link to="/komandan/tasks" className="inline-flex items-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25">
+                <Link to="/komandan/tasks" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25">
                   Kelola Tugas
                 </Link>
               )}
