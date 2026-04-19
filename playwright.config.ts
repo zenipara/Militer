@@ -23,7 +23,7 @@ export default defineConfig({
   ],
   webServer: useWebServer
     ? {
-        command: 'npm run dev',
+        command: 'env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY npm run dev',
         url: 'http://localhost:5173',
         reuseExistingServer: !process.env.CI,
       }

@@ -400,10 +400,10 @@ export default function GatePassMonitorPage() {
           }
           actions={
             <>
-              <Button variant="outline" onClick={resetFilters}>Reset Filter</Button>
+              <Button variant="outline" onClick={resetFilters} data-testid="gatepass-monitor-reset-filters">Reset Filter</Button>
               <Button variant="outline" onClick={handlePrintReport} disabled={filteredRows.length === 0}>Print Laporan</Button>
               <Button variant="outline" onClick={handleExportCsv} disabled={filteredRows.length === 0}>Export CSV</Button>
-              <Button variant="outline" onClick={() => void handleRefresh()} isLoading={isRefreshing}>Muat Ulang</Button>
+              <Button variant="outline" onClick={() => void handleRefresh()} isLoading={isRefreshing} data-testid="gatepass-monitor-refresh">Muat Ulang</Button>
             </>
           }
         />
@@ -415,11 +415,11 @@ export default function GatePassMonitorPage() {
         )}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <div className="app-card p-4">
+          <div className="app-card p-4" data-testid="gatepass-stat-personil-tersedia">
             <div className="text-xs text-text-muted">Personil Tersedia</div>
             <div className="mt-1 text-2xl font-bold text-green-600">{personilTersedia}</div>
           </div>
-          <div className="app-card p-4">
+          <div className="app-card p-4" data-testid="gatepass-stat-personil-di-luar">
             <div className="text-xs text-text-muted">Personil di Luar</div>
             <div className="mt-1 text-2xl font-bold text-purple-500">{personilDiLuar}</div>
           </div>
@@ -502,8 +502,8 @@ export default function GatePassMonitorPage() {
                 Coba ubah kata kunci, status, atau rentang tanggal. Jika perlu, reset filter untuk melihat semua data.
               </p>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                <Button variant="outline" size="sm" onClick={resetFilters}>Reset Filter</Button>
-                <Button variant="ghost" size="sm" onClick={() => void handleRefresh()}>Muat Ulang</Button>
+                <Button variant="outline" size="sm" onClick={resetFilters} data-testid="gatepass-monitor-reset-filters-empty">Reset Filter</Button>
+                <Button variant="ghost" size="sm" onClick={() => void handleRefresh()} data-testid="gatepass-monitor-refresh-empty">Muat Ulang</Button>
               </div>
             </div>
           )}

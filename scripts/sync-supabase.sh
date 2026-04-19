@@ -15,6 +15,15 @@ read_env_key() {
 }
 
 ENV_FILE=".env.local"
+
+if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" && -n "${SUPABASE_TOKEN:-}" ]]; then
+  SUPABASE_ACCESS_TOKEN="$SUPABASE_TOKEN"
+fi
+
+if [[ -z "${SUPABASE_PROJECT_REF:-}" && -n "${SUPABASE_PROJECT_ID:-}" ]]; then
+  SUPABASE_PROJECT_REF="$SUPABASE_PROJECT_ID"
+fi
+
 if [[ -z "${SUPABASE_PROJECT_REF:-}" ]]; then
   SUPABASE_PROJECT_REF="$(read_env_key "SUPABASE_PROJECT_REF" "$ENV_FILE" || true)"
 fi

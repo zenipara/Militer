@@ -658,6 +658,8 @@ $$;
 -- Fix: prajurit may only read reports for tasks assigned to them;
 -- admin and komandan can read any.
 -- ============================================================
+DROP FUNCTION IF EXISTS public.api_get_latest_task_report(UUID, TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION public.api_get_latest_task_report(
   p_user_id UUID,
   p_role    TEXT,

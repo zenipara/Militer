@@ -280,6 +280,7 @@ npm run sync:supabase
 ```
 
 Perintah di atas membaca `SUPABASE_ACCESS_TOKEN` dan `SUPABASE_PROJECT_REF` (atau menurunkan project ref dari `VITE_SUPABASE_URL`) lalu menjalankan link + `db push` secara non-interaktif.
+Script juga otomatis mendukung nama secret alternatif: `SUPABASE_TOKEN` dan `SUPABASE_PROJECT_ID`.
 
 File migration tersedia di `supabase/migrations/` dengan urutan:
 - `001_initial_schema.sql` — Tabel, RPC, trigger, RLS dev
@@ -303,6 +304,9 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 # Supabase CLI Sync (opsional)
 SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxxxxxxxxxx
 SUPABASE_PROJECT_REF=xxxxxxxxxxxx
+# Alternatif naming secret juga didukung:
+SUPABASE_TOKEN=sbp_xxxxxxxxxxxxxxxxxxxx
+SUPABASE_PROJECT_ID=xxxxxxxxxxxx
 
 # App Config
 VITE_APP_NAME=Karyo OS
