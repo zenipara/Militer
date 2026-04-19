@@ -4,7 +4,10 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
+import EmptyState from '../../components/common/EmptyState';
+import PageHeader from '../../components/ui/PageHeader';
 import PosJagaQRCode from '../../components/gatepass/PosJagaQRCode';
+import { ICONS } from '../../icons';
 import type { PosJaga } from '../../types';
 
 export default function PosJagaPage() {
@@ -42,16 +45,38 @@ export default function PosJagaPage() {
     }
   };
 
+  const activeCount = posJagaList.filter(p => p.is_active).length;
+
   return (
     <DashboardLayout title="Kelola Pos Jaga">
-      <div className="max-w-2xl mx-auto py-8 space-y-8">
-        <h1 className="text-2xl font-bold">Kelola Pos Jaga</h1>
+      <div className="space-y-6">
+        <PageHeader
+          title="Kelola Pos Jaga"
+          subtitle="Tambah, aktifkan/nonaktifkan pos jaga, dan kelola QR statis untuk absensi personel."
+          meta={
+            <>
+              <span>{posJagaList.length} pos terdaftar</span>
+              <span>{activeCount} aktif</span>
+            </>
+          }
+        />
 
         {/* Form tambah pos jaga */}
-        <div className="rounded-2xl border border-surface bg-bg-card p-6 space-y-4">
-          <h2 className="text-base font-semibold">Tambah Pos Jaga Baru</h2>
+        <div className="app-card p-5">
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
+              <ICONS.Plus className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold text-text-primary">Tambah Pos Jaga Baru</h2>
+              <p className="text-xs text-text-muted">Masukkan nama pos lalu klik Tambah untuk membuat QR statis.</p>
+            </div>
+          </div>
           {error && (
-            <div className="rounded-xl border border-accent-red/20 bg-accent-red/10 px-4 py-3 text-sm text-accent-red">
+            <div className="mb-4 flex items-center gap-2.5 rounded-2xl border border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5 px-4 py-3 text-sm text-accent-red">
+              <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-lg bg-accent-red/15">
+                <ICONS.AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+              </span>
               {error}
             </div>
           )}
@@ -72,44 +97,67 @@ export default function PosJagaPage() {
         </div>
 
         {/* Daftar pos jaga */}
-        <div className="space-y-3">
-          <h2 className="text-base font-semibold">Daftar Pos Jaga</h2>
-          {posJagaList.length === 0 && (
-            <div className="text-text-muted text-sm">Belum ada pos jaga. Tambahkan pos di atas.</div>
-          )}
-          {posJagaList.map((pos) => (
-            <div
-              key={pos.id}
-              className="rounded-2xl border border-surface bg-bg-card px-5 py-4 flex items-center justify-between gap-4"
-            >
-              <div>
-                <div className="font-semibold text-text-primary">{pos.nama}</div>
-                <div className="text-xs text-text-muted mt-0.5">
-                  {pos.is_active ? (
-                    <span className="text-success font-medium">Aktif</span>
-                  ) : (
-                    <span className="text-accent-red font-medium">Nonaktif</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setSelected(pos)}
-                >
-                  Lihat QR
-                </Button>
-                <Button
-                  variant={pos.is_active ? 'danger' : 'outline'}
-                  size="sm"
-                  onClick={() => void setActive(pos.id, !pos.is_active)}
-                >
-                  {pos.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                </Button>
-              </div>
+        <div>
+          <div className="flex items-center gap-2.5 mb-3">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent-gold/15 text-accent-gold">
+              <ICONS.MapPin className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold text-text-primary">Daftar Pos Jaga</h2>
+              <p className="text-xs text-text-muted">{posJagaList.length} pos terdaftar · {activeCount} sedang aktif</p>
             </div>
-          ))}
+          </div>
+
+          {posJagaList.length === 0 ? (
+            <EmptyState
+              title="Belum ada pos jaga"
+              description="Tambahkan pos jaga baru di atas. Setiap pos akan mendapat QR statis yang bisa dicetak dan dipasang di lokasi."
+              className="py-12"
+            />
+          ) : (
+            <div className="space-y-2.5">
+              {posJagaList.map((pos) => (
+                <div
+                  key={pos.id}
+                  className="group app-card flex items-center justify-between gap-4 px-5 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl shadow-sm transition-transform duration-200 group-hover:scale-105 ${pos.is_active ? 'bg-gradient-to-br from-success/20 to-emerald-600/10 text-success' : 'bg-surface/40 text-text-muted'}`}>
+                      <ICONS.MapPin className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-text-primary truncate">{pos.nama}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${pos.is_active ? 'bg-success/10 text-success' : 'bg-accent-red/10 text-accent-red'}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${pos.is_active ? 'bg-success' : 'bg-accent-red'}`} aria-hidden="true" />
+                          {pos.is_active ? 'Aktif' : 'Nonaktif'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setSelected(pos)}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <ICONS.QrCode className="h-3.5 w-3.5" aria-hidden="true" />
+                        Lihat QR
+                      </span>
+                    </Button>
+                    <Button
+                      variant={pos.is_active ? 'danger' : 'outline'}
+                      size="sm"
+                      onClick={() => void setActive(pos.id, !pos.is_active)}
+                    >
+                      {pos.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

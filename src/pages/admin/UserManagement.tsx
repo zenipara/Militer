@@ -279,23 +279,37 @@ export default function UserManagement() {
         <PageHeader
           title="Manajemen Personel"
           subtitle="Kelola akun, role, status aktif, reset PIN personel, dan impor data massal."
+          meta={
+            <>
+              <span>{users.length} personel terdaftar</span>
+              {filtered.length !== users.length && <span>{filtered.length} hasil pencarian</span>}
+            </>
+          }
         />
 
         {error && (
-          <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">
+          <div className="flex items-center gap-2.5 rounded-2xl border border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5 p-4 text-sm text-accent-red">
+            <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-accent-red/15">
+              <span className="text-base font-bold">!</span>
+            </span>
             {error}
           </div>
         )}
 
         {/* Header actions */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-surface/70 bg-bg-card p-4 shadow-sm sm:flex-row sm:items-center">
-          <input
-            type="text"
-            placeholder="Cari nama atau NRP..."
-            value={searchRaw}
-            onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
-            className="form-control flex-1 bg-bg-card"
-          />
+        <div className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-muted">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Cari nama atau NRP..."
+              value={searchRaw}
+              onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
+              className="form-control w-full bg-bg-card pl-9"
+            />
+          </div>
           <select
             value={filterRole}
             onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
@@ -306,14 +320,19 @@ export default function UserManagement() {
             <option value="komandan">Komandan</option>
             <option value="prajurit">Prajurit</option>
           </select>
-          <Button variant="secondary" onClick={() => setShowImport(true)} leftIcon={<span aria-hidden="true">⬆</span>}>Import CSV</Button>
-          <Button onClick={() => setShowCreate(true)}>+ Tambah Personel</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setShowImport(true)} leftIcon={<span aria-hidden="true">⬆</span>}>Import CSV</Button>
+            <Button onClick={() => setShowCreate(true)}>+ Tambah</Button>
+          </div>
         </div>
 
         {/* Bulk selection toolbar */}
         {selectedUserIds.size > 0 && (
-          <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-sm font-medium text-primary">{selectedUserIds.size} personel dipilih</span>
+          <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 to-blue-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="flex items-center gap-2 text-sm font-semibold text-primary">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/20 text-xs font-bold">{selectedUserIds.size}</span>
+              personel dipilih
+            </span>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="secondary" onClick={() => setShowBulkReset(true)}>
                 Reset PIN Massal
@@ -368,7 +387,7 @@ export default function UserManagement() {
               },
               {
                 key: 'actions', header: 'Aksi', render: (u) => (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -489,9 +508,10 @@ export default function UserManagement() {
         }
       >
         <div className="space-y-4">
-          <div className="rounded-xl border border-accent-gold/30 bg-accent-gold/10 p-3">
-            <p className="text-xs text-accent-gold">
-              ⚠ Semua {selectedUserIds.size} personel yang dipilih akan mendapat PIN yang sama. Pastikan PIN disebarkan dengan aman.
+          <div className="flex items-start gap-3 rounded-2xl border border-accent-gold/30 bg-gradient-to-r from-amber-50/80 to-transparent p-4 dark:from-amber-900/10">
+            <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-accent-gold/15 text-accent-gold text-xs font-bold">⚠</span>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Semua <span className="font-semibold text-accent-gold">{selectedUserIds.size}</span> personel yang dipilih akan mendapat PIN yang sama. Pastikan PIN disebarkan dengan aman.
             </p>
           </div>
           <Input
@@ -528,9 +548,12 @@ export default function UserManagement() {
         <div className="space-y-4">
           {!importResult ? (
             <>
-              <div className="rounded-xl border border-surface/70 bg-surface/20 p-4 text-sm text-text-muted space-y-1">
-                <p className="font-semibold text-text-primary">Format CSV yang diperlukan:</p>
-                <p>Kolom: <code className="font-mono text-xs bg-surface/50 px-1 rounded">nrp, nama, pin, role, satuan, pangkat, jabatan</code></p>
+              <div className="rounded-2xl border border-surface/60 bg-surface/15 p-4 text-sm text-text-muted space-y-1.5">
+                <p className="font-bold text-text-primary flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary text-xs">📋</span>
+                  Format CSV yang diperlukan:
+                </p>
+                <p>Kolom: <code className="font-mono text-xs bg-surface/50 px-1.5 py-0.5 rounded-md">nrp, nama, pin, role, satuan, pangkat, jabatan</code></p>
                 <p>• PIN default 6 digit angka (contoh: 123456)</p>
                 <p>• Role: <code className="font-mono text-xs">prajurit</code> / <code className="font-mono text-xs">komandan</code> / <code className="font-mono text-xs">admin</code></p>
                 <p>• Unduh template di bawah untuk format yang tepat</p>
@@ -548,9 +571,9 @@ export default function UserManagement() {
               </div>
 
               {importRows.length > 0 && (
-                <div className="rounded-xl border border-surface/70 bg-surface/20 p-4">
-                  <p className="text-sm font-semibold text-text-primary mb-2">
-                    Preview — {importRows.length} baris ditemukan
+                <div className="rounded-2xl border border-surface/60 bg-surface/15 p-4">
+                  <p className="text-sm font-bold text-text-primary mb-2">
+                    Preview — <span className="text-primary">{importRows.length}</span> baris ditemukan
                   </p>
                   <div className="overflow-x-auto max-h-40 overflow-y-auto">
                     <table className="w-full text-xs">
@@ -581,22 +604,22 @@ export default function UserManagement() {
           ) : (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-center">
-                  <p className="text-2xl font-bold text-success">{importResult.success}</p>
-                  <p className="text-xs text-text-muted">Berhasil diimpor</p>
+                <div className="rounded-2xl border border-success/30 bg-gradient-to-br from-success/10 to-emerald-500/5 p-5 text-center">
+                  <p className="text-3xl font-black text-success">{importResult.success}</p>
+                  <p className="mt-1 text-xs font-semibold text-text-muted">Berhasil diimpor</p>
                 </div>
-                <div className={`rounded-xl border p-4 text-center ${importResult.failed > 0 ? 'border-accent-red/30 bg-accent-red/10' : 'border-surface/70 bg-surface/20'}`}>
-                  <p className={`text-2xl font-bold ${importResult.failed > 0 ? 'text-accent-red' : 'text-text-muted'}`}>{importResult.failed}</p>
-                  <p className="text-xs text-text-muted">Gagal diimpor</p>
+                <div className={`rounded-2xl border p-5 text-center ${importResult.failed > 0 ? 'border-accent-red/30 bg-gradient-to-br from-accent-red/10 to-rose-500/5' : 'border-surface/60 bg-surface/15'}`}>
+                  <p className={`text-3xl font-black ${importResult.failed > 0 ? 'text-accent-red' : 'text-text-muted'}`}>{importResult.failed}</p>
+                  <p className="mt-1 text-xs font-semibold text-text-muted">Gagal diimpor</p>
                 </div>
               </div>
               {importResult.errors.length > 0 && (
-                <div className="rounded-xl border border-accent-red/20 bg-accent-red/10 p-4 space-y-1 max-h-40 overflow-y-auto">
-                  <p className="text-xs font-semibold text-accent-red mb-2">Detail Error:</p>
+                <div className="rounded-2xl border border-accent-red/20 bg-accent-red/10 p-4 space-y-1 max-h-40 overflow-y-auto">
+                  <p className="text-xs font-bold text-accent-red mb-2">Detail Error:</p>
                   {importResult.errors.map((e, i) => (
-                    <div key={i} className="text-xs">
-                      <span className="font-mono text-accent-red/80">{e.nrp}</span>
-                      <span className="text-text-muted ml-2">{e.error}</span>
+                    <div key={i} className="flex items-start gap-2 text-xs">
+                      <span className="font-mono font-bold text-accent-red/80">{e.nrp}</span>
+                      <span className="text-text-muted">{e.error}</span>
                     </div>
                   ))}
                 </div>
@@ -628,10 +651,20 @@ export default function UserManagement() {
           </>
         }
       >
-        <p className="text-sm text-text-muted">
-          Data anggota <span className="font-semibold text-text-primary">{selectedUser?.nama ?? '-'}</span> akan dihapus permanen.
-          Tindakan ini tidak dapat dibatalkan.
-        </p>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-accent-red/20 bg-accent-red/5 p-4">
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-red/20 to-rose-500/10 text-accent-red text-sm font-black">
+              {selectedUser?.nama.charAt(0).toUpperCase() ?? '?'}
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold text-text-primary truncate">{selectedUser?.nama ?? '-'}</p>
+              <p className="text-xs text-text-muted">NRP {selectedUser?.nrp ?? '-'} · {selectedUser?.role}</p>
+            </div>
+          </div>
+          <p className="text-sm text-text-muted">
+            Data anggota ini akan dihapus secara permanen. Tindakan ini <span className="font-semibold text-accent-red">tidak dapat dibatalkan</span>.
+          </p>
+        </div>
       </Modal>
     </DashboardLayout>
   );
