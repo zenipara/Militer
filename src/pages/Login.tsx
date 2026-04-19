@@ -117,6 +117,19 @@ export default function Login() {
 
         {/* Login form */}
         <section className="mx-auto w-full max-w-sm lg:max-w-md">
+          {/* Mobile-only feature chips (hidden on desktop) */}
+          <div className="mb-4 flex flex-wrap justify-center gap-2 lg:hidden">
+            {[
+              { label: 'Realtime', icon: '⚡' },
+              { label: 'Secure', icon: '🔒' },
+              { label: 'Terintegrasi', icon: '🔗' },
+            ].map((chip) => (
+              <span key={chip.label} className="inline-flex items-center gap-1.5 rounded-full border border-surface/70 bg-bg-card/80 px-3 py-1 text-xs font-medium text-text-muted backdrop-blur-sm">
+                <span aria-hidden="true">{chip.icon}</span>
+                {chip.label}
+              </span>
+            ))}
+          </div>
           <div className="app-card overflow-hidden p-0">
             {/* Card gradient top bar */}
             <div className="h-1.5 w-full bg-gradient-to-r from-primary via-blue-500 to-indigo-400" aria-hidden="true" />

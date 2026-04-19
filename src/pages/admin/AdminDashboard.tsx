@@ -166,16 +166,18 @@ export default function AdminDashboard() {
         />
 
         {enabledQuickLinks.length > 0 && (
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="flex flex-wrap gap-2">
             {enabledQuickLinks.slice(0, 3).map((item) => {
               const Icon = ICONS[item.icon];
               return (
                 <Link
                   key={`primary-${item.href}`}
                   to={item.href}
-                  className="group inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-surface/80 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary transition-all hover:border-primary/40 hover:text-primary"
+                  className="group inline-flex min-h-[44px] items-center gap-2.5 rounded-2xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:text-primary"
                 >
-                  <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-105">
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                  </span>
                   <span className="truncate">{item.title}</span>
                 </Link>
               );
@@ -194,10 +196,10 @@ export default function AdminDashboard() {
           <StatCardsSkeleton />
         ) : (
           <StatsGrid>
-            <StatCard icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel Aktif" value={stats?.totalPersonel ?? 0} />
-            <StatCard icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={stats?.totalOnline ?? 0} trend="saat ini" trendUp />
-            <StatCard icon={<ICONS.ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Tugas" value={stats?.totalTugas ?? 0} />
-            <StatCard icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={stats?.tugasAktif ?? 0} />
+            <StatCard accent="blue" icon={<ICONS.UsersRound className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Personel Aktif" value={stats?.totalPersonel ?? 0} />
+            <StatCard accent="green" icon={<ICONS.UserCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Sedang Online" value={stats?.totalOnline ?? 0} trend="saat ini" trendUp />
+            <StatCard accent="blue" icon={<ICONS.ClipboardList className="h-5 w-5 text-primary" aria-hidden="true" />} label="Total Tugas" value={stats?.totalTugas ?? 0} />
+            <StatCard accent="gold" icon={<ICONS.Clipboard className="h-5 w-5 text-accent-gold" aria-hidden="true" />} label="Tugas Aktif" value={stats?.tugasAktif ?? 0} />
           </StatsGrid>
         )}
 
@@ -210,20 +212,20 @@ export default function AdminDashboard() {
                   <p className="text-sm text-text-muted">Akses langsung ke modul yang paling sering dipakai admin.</p>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+              <div className="mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-3">
                 {enabledQuickLinks.map((item) => {
                   const Icon = ICONS[item.icon];
                   return (
                   <Link
                     key={item.href}
                     to={item.href}
-                    className="group rounded-xl border border-surface/80 bg-bg-card/90 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-slate-50 hover:shadow-md dark:hover:bg-surface/35"
+                    className="group rounded-2xl border border-surface/70 bg-bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:hover:bg-surface/30"
                   >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="grid h-8 w-8 place-items-center rounded-lg border border-surface/80 bg-slate-50 text-primary transition-transform group-hover:scale-105 dark:bg-surface/35">
+                    <div className="mb-2 flex items-center gap-2.5">
+                      <span className="grid h-9 w-9 place-items-center rounded-xl border border-surface/60 bg-gradient-to-br from-primary/12 to-primary/4 text-primary transition-transform duration-200 group-hover:scale-110 shadow-sm">
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
-                      <h3 className="font-semibold text-text-primary text-sm transition-colors">
+                      <h3 className="font-semibold text-text-primary text-sm">
                         {item.title}
                       </h3>
                     </div>
@@ -246,21 +248,25 @@ export default function AdminDashboard() {
                   <p className="text-sm text-text-muted">Ringkasan yang langsung berguna untuk pengambilan keputusan.</p>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
                 {operationalHighlights.map((item) => (
-                  <div key={item.label} className="group rounded-xl border border-surface/80 bg-surface/20 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-surface/25 hover:shadow-sm">
-                    <div className="mb-3 h-1.5 w-12 rounded-full bg-gradient-to-r from-primary/60 via-primary to-accent-gold/70" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-text-muted">{item.label}</p>
+                  <div key={item.label} className="group rounded-2xl border border-surface/70 bg-surface/15 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-surface/20 hover:shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-text-muted">{item.label}</p>
                     <p className="mt-1 text-2xl font-extrabold tracking-tight text-text-primary">{item.value}</p>
                     <p className="mt-1 text-xs text-text-muted">{item.hint}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-4 rounded-xl border border-surface/80 bg-bg-card/90 p-4">
+              <div className="mt-4 rounded-2xl border border-surface/70 bg-bg-card p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <h4 className="font-semibold text-text-primary">Stok Perlu Perhatian</h4>
-                  <span className="text-xs text-text-muted">{lowStockItems.length} item</span>
+                  <h4 className="font-semibold text-text-primary flex items-center gap-2">
+                    <span className="grid h-6 w-6 place-items-center rounded-lg bg-accent-red/10 text-accent-red">
+                      <ICONS.AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+                    </span>
+                    Stok Perlu Perhatian
+                  </h4>
+                  <span className="rounded-full border border-surface/70 bg-surface/30 px-2 py-0.5 text-xs font-semibold text-text-muted">{lowStockItems.length} item</span>
                 </div>
                 {lowStockItems.length === 0 ? (
                   <EmptyState
@@ -307,10 +313,15 @@ export default function AdminDashboard() {
                     />
                   ) : (
                     latestUsers.slice(0, 6).map((member) => (
-                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-xl border border-surface/70 bg-surface/20 px-3 py-2.5">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-text-primary">{member.nama}</p>
-                          <p className="text-xs text-text-muted">NRP {member.nrp} · {member.role}</p>
+                      <div key={member.id} className="flex items-center justify-between gap-3 rounded-2xl border border-surface/60 bg-surface/15 px-3 py-2.5 transition-colors hover:border-surface/80">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 text-sm font-bold text-primary">
+                            {member.nama.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-text-primary">{member.nama}</p>
+                            <p className="text-xs text-text-muted">NRP {member.nrp} · {member.role}</p>
+                          </div>
                         </div>
                         <Button
                           size="sm"
@@ -330,18 +341,23 @@ export default function AdminDashboard() {
           </div>
 
           <div className="app-card overflow-hidden p-0">
-            <div className="px-5 py-4 border-b border-surface flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-text-primary">Aktivitas Terbaru</h3>
-                <p className="text-xs text-text-muted">Audit log terakhir yang masuk dari sistem.</p>
+            <div className="px-5 py-4 border-b border-surface/60 flex items-center justify-between bg-surface/10">
+              <div className="flex items-center gap-2">
+                <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <ICONS.ScrollText className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-text-primary text-sm">Aktivitas Terbaru</h3>
+                  <p className="text-xs text-text-muted">Audit log terakhir dari sistem.</p>
+                </div>
               </div>
-              <Link to="/admin/audit" className="text-xs text-primary hover:underline">Lihat semua →</Link>
+              <Link to="/admin/audit" className="text-xs font-medium text-primary hover:underline">Lihat semua →</Link>
             </div>
-            <div className="divide-y divide-surface/50">
+            <div className="divide-y divide-surface/40">
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="flex items-center gap-3 px-5 py-3">
-                    <div className="h-8 w-8 rounded-full animate-pulse bg-surface/70 flex-shrink-0" />
+                    <div className="h-9 w-9 rounded-full animate-pulse bg-surface/70 flex-shrink-0" />
                     <div className="flex-1 space-y-1.5">
                       <div className="h-3 animate-pulse bg-surface/70 rounded w-3/4" />
                       <div className="h-3 animate-pulse bg-surface/70 rounded w-1/2" />
@@ -356,13 +372,13 @@ export default function AdminDashboard() {
                 />
               ) : (
                 recentLogs.map((log) => (
-                  <div key={log.id} className="flex items-center gap-3 px-5 py-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+                  <div key={log.id} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface/10">
+                    <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 text-primary text-xs font-bold">
                       {(log.user?.nama ?? '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-text-primary">
-                        <span className="font-medium">{log.user?.nama ?? '—'}</span>
+                        <span className="font-semibold">{log.user?.nama ?? '—'}</span>
                         {' '}
                         <span className="text-text-muted">{actionLabels[log.action] ?? log.action}</span>
                         {log.resource && <span className="text-text-muted"> · {log.resource}</span>}
@@ -387,17 +403,22 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="app-card p-5">
-            <h3 className="text-lg font-bold text-text-primary">Metrik Sistem</h3>
-            <p className="text-sm text-text-muted">Ringkasan cepat untuk status operasional saat ini.</p>
-            <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="grid h-7 w-7 place-items-center rounded-lg bg-success/10 text-success">
+                <ICONS.BarChart2 className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <h3 className="text-base font-bold text-text-primary">Metrik Sistem</h3>
+            </div>
+            <p className="text-sm text-text-muted">Ringkasan status operasional saat ini.</p>
+            <div className="mt-4 space-y-2.5">
               {[
-                { label: 'Kepatuhan absensi', value: `${attendanceRate}%` },
-                { label: 'Task throughput', value: `${stats?.tugasAktif ?? 0}/${stats?.totalTugas ?? 0}` },
-                { label: 'Online coverage', value: `${stats?.totalOnline ?? 0}/${stats?.totalPersonel ?? 0}` },
+                { label: 'Kepatuhan absensi', value: `${attendanceRate}%`, accent: attendanceRate >= 80 ? 'text-success' : attendanceRate >= 50 ? 'text-accent-gold' : 'text-accent-red' },
+                { label: 'Task throughput', value: `${stats?.tugasAktif ?? 0}/${stats?.totalTugas ?? 0}`, accent: 'text-primary' },
+                { label: 'Online coverage', value: `${stats?.totalOnline ?? 0}/${stats?.totalPersonel ?? 0}`, accent: 'text-primary' },
               ].map((metric) => (
-                <div key={metric.label} className="rounded-xl border border-surface/80 bg-slate-50 px-4 py-3 dark:bg-surface/20">
-                  <p className="text-xs text-text-muted">{metric.label}</p>
-                  <p className="text-xl font-semibold text-text-primary">{metric.value}</p>
+                <div key={metric.label} className="flex items-center justify-between rounded-2xl border border-surface/70 bg-surface/15 px-4 py-3 transition-colors hover:border-surface/90 hover:bg-surface/20">
+                  <p className="text-sm text-text-muted">{metric.label}</p>
+                  <p className={`text-xl font-bold ${metric.accent}`}>{metric.value}</p>
                 </div>
               ))}
             </div>
