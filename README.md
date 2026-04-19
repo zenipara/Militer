@@ -276,9 +276,10 @@ Untuk deploy ulang frontend, push ke branch `main` atau jalankan workflow GitHub
 Migration dijalankan otomatis via `bash scripts/setup.sh`. Untuk menjalankan manual:
 
 ```bash
-supabase link --project-ref <PROJECT_ID>
-supabase db push
+npm run sync:supabase
 ```
+
+Perintah di atas membaca `SUPABASE_ACCESS_TOKEN` dan `SUPABASE_PROJECT_REF` (atau menurunkan project ref dari `VITE_SUPABASE_URL`) lalu menjalankan link + `db push` secara non-interaktif.
 
 File migration tersedia di `supabase/migrations/` dengan urutan:
 - `001_initial_schema.sql` — Tabel, RPC, trigger, RLS dev
@@ -298,6 +299,10 @@ File `.env.local` dibuat otomatis oleh `bash scripts/setup.sh`. Format:
 # Supabase
 VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Supabase CLI Sync (opsional)
+SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxxxxxxxxxx
+SUPABASE_PROJECT_REF=xxxxxxxxxxxx
 
 # App Config
 VITE_APP_NAME=Karyo OS

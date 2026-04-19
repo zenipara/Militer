@@ -7,6 +7,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import { supabase } from '../../lib/supabase';
 import { clearAuditLogs } from '../../lib/api/auditLogs';
 import { handleError } from '../../lib/handleError';
+import { notifyDataChanged } from '../../lib/dataSync';
 import { useAuthStore } from '../../store/authStore';
 import { DEFAULT_FEATURE_FLAGS, FEATURE_DEFINITIONS, type FeatureKey } from '../../lib/featureFlags';
 import { useFeatureStore } from '../../store/featureStore';
@@ -263,6 +264,7 @@ export default function Settings() {
       const olderThanDays = auditClearRange === 'all' ? null : Number(auditClearRange.replace('d', ''));
       const deletedCount = await clearAuditLogs(user.id, user.role, olderThanDays);
       clearAuditLogsCache();
+      notifyDataChanged('audit_logs');
       setShowClearHistoryModal(false);
       const scopeLabel = auditClearRange === 'all' ? 'semua riwayat' : `riwayat lebih dari ${olderThanDays} hari`;
       showNotification(`Berhasil menghapus ${scopeLabel} (${deletedCount} catatan)`, 'success');
