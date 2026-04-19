@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
@@ -20,9 +20,8 @@ export function useGatePassRealtime() {
   const fetchGatePasses = useGatePassStore((s) => s.fetchGatePasses);
   const channelRef = useRef<RealtimeChannel | null>(null);
   
-  // Create debounced fetch with useCallback to avoid recreating on each render
-  const debouncedFetch = useCallback(
-    debounce(() => {
+  const debouncedFetch = useMemo(
+    () => debounce(() => {
       void fetchGatePasses();
     }, 500),
     [fetchGatePasses],
