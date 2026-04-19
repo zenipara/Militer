@@ -459,6 +459,7 @@ export default function GatePassMonitorPage() {
               className="w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as GatePassStatus | 'all')}
+              data-testid="gatepass-monitor-status-filter"
             >
               <option value="all">{getStatusLabel('all')}</option>
               <option value="approved">{getStatusLabel('approved')}</option>

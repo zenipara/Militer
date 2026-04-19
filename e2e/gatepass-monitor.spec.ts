@@ -38,7 +38,7 @@ test.describe('Gate Pass Monitor', () => {
     await page.goto('./#/admin/gatepass-monitor');
 
     const searchInput = page.getByPlaceholder('Cari nama, NRP, tujuan, atau keperluan');
-    const statusFilter = page.getByRole('combobox');
+    const statusFilter = page.getByTestId('gatepass-monitor-status-filter');
     const startDate = page.getByLabel('Tanggal keluar dari');
     const endDate = page.getByLabel('Tanggal keluar sampai');
 
@@ -60,7 +60,7 @@ test.describe('Gate Pass Monitor', () => {
 
     await page.goto('./#/admin/gatepass-monitor');
 
-    const statusFilter = page.getByRole('combobox');
+    const statusFilter = page.getByTestId('gatepass-monitor-status-filter');
     await statusFilter.selectOption('checked_in');
     await expect(statusFilter).toHaveValue('checked_in');
 
