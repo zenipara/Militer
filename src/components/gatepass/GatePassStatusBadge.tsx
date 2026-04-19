@@ -32,7 +32,7 @@ const GatePassStatusBadge: React.FC<Props> = ({ gatePass }) => {
   const label = STATUS_LABEL[gatePass.status] ?? gatePass.status;
   const cls = STATUS_CLASS[gatePass.status] ?? 'bg-surface text-text-muted border-surface';
   return (
-    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.04em] ${cls}`}>
+    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.04em] shadow-sm ${cls}`}>
       {label}
     </span>
   );

@@ -22,7 +22,7 @@ export default function Badge({ variant = 'neutral', children, size = 'sm' }: Ba
   const sizes = { sm: 'px-2.5 py-1 text-[11px]', md: 'px-3 py-1 text-sm' };
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border font-semibold tracking-[0.02em] ${variants[variant]} ${sizes[size]}`}
+      className={`inline-flex items-center gap-1 rounded-full border font-semibold tracking-[0.03em] shadow-sm ${variants[variant]} ${sizes[size]}`}
     >
       {children}
     </span>
@@ -39,7 +39,7 @@ export function TaskStatusBadge({ status }: { status: TaskStatus; guard?: string
     rejected: { label: 'Ditolak', variant: 'error', icon: '✕' },
   };
   const { label, variant, icon } = map[status];
-  return <Badge variant={variant}><span aria-hidden="true">{icon}</span>{label}</Badge>;
+  return <Badge variant={variant}><span aria-hidden="true" className="text-[10px] leading-none">{icon}</span>{label}</Badge>;
 }
 
 export function AttendanceBadge({ status }: { status: AttendanceStatus; guard?: string }) {
@@ -51,7 +51,7 @@ export function AttendanceBadge({ status }: { status: AttendanceStatus; guard?: 
     dinas_luar: { label: 'Dinas Luar', variant: 'neutral', icon: '↗' },
   };
   const { label, variant, icon } = map[status];
-  return <Badge variant={variant}><span aria-hidden="true">{icon}</span>{label}</Badge>;
+  return <Badge variant={variant}><span aria-hidden="true" className="text-[10px] leading-none">{icon}</span>{label}</Badge>;
 }
 
 export function LeaveStatusBadge({ status }: { status: LeaveStatus; guard?: string }) {
@@ -61,7 +61,7 @@ export function LeaveStatusBadge({ status }: { status: LeaveStatus; guard?: stri
     rejected: { label: 'Ditolak', variant: 'error', icon: '✕' },
   };
   const { label, variant, icon } = map[status];
-  return <Badge variant={variant}><span aria-hidden="true">{icon}</span>{label}</Badge>;
+  return <Badge variant={variant}><span aria-hidden="true" className="text-[10px] leading-none">{icon}</span>{label}</Badge>;
 }
 
 export function RoleBadge({ role }: { role: Role }) {

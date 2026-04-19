@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, ReactNode } from 'react';
+import { useUIStore } from '../../store/uiStore';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -18,6 +19,8 @@ export default function Input({
   className = '',
   ...props
 }: InputProps) {
+  const { displayDensity } = useUIStore();
+  const isCompact = displayDensity === 'compact';
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
 
   return (
@@ -37,9 +40,8 @@ export default function Input({
         <input
           id={inputId}
           className={`
-            w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5
-            text-base sm:text-sm text-text-primary shadow-sm shadow-slate-900/[0.03]
-            min-h-[44px]
+            w-full rounded-xl border border-surface bg-bg-card text-text-primary shadow-sm shadow-slate-900/[0.03]
+            ${isCompact ? 'px-3 py-2 text-base sm:text-sm min-h-[40px]' : 'px-3 py-2.5 text-base sm:text-sm min-h-[44px]'}
             placeholder:text-text-muted
             transition-all duration-200 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15
             disabled:cursor-not-allowed disabled:opacity-50

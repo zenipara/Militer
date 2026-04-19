@@ -22,10 +22,11 @@ export default function TaskCard({ task, onAction, actionLabel = 'Lihat', showAs
 
   return (
     <div
-      className={`app-panel border-l-4 ${priorityColors[task.prioritas]} flex flex-col gap-3 rounded-2xl p-4 sm:p-5`}
+      className={`app-panel group border-l-4 ${priorityColors[task.prioritas]} flex flex-col gap-3 rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
+          <div className="mb-2 h-1.5 w-14 rounded-full bg-gradient-to-r from-primary/50 via-primary to-accent-gold/70 opacity-80 transition-opacity group-hover:opacity-100" />
           <h3 className="truncate text-base font-bold tracking-tight text-text-primary">{task.judul}</h3>
           {task.deskripsi && (
             <p className="mt-0.5 line-clamp-2 text-sm text-text-muted">{task.deskripsi}</p>
@@ -45,7 +46,7 @@ export default function TaskCard({ task, onAction, actionLabel = 'Lihat', showAs
       </div>
 
       {onAction && (
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-1">
           <Button size="sm" variant="outline" onClick={onAction}>
             {actionLabel}
           </Button>

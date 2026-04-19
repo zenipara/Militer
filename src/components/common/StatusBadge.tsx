@@ -74,7 +74,7 @@ export function StatusBadge({
   return (
     <div
       className={`
-        inline-flex items-center gap-1 rounded-full border font-semibold
+        inline-flex items-center gap-1 rounded-full border font-semibold shadow-sm
         ${colors.bg} ${colors.text} ${colors.border}
         ${sizeClass} ${animated ? 'transition-all duration-300' : ''}
         ${pulse ? 'relative' : ''}
@@ -83,9 +83,9 @@ export function StatusBadge({
       title={status}
     >
       {pulse && (
-        <span className={`absolute inset-0 rounded-full animate-pulse ${colors.pulse} -z-10`} />
+        <span className={`absolute inset-0 rounded-full animate-pulse ${colors.pulse} -z-10 opacity-40`} />
       )}
-      {icon && <span className="font-semibold">{icon}</span>}
+      {icon && <span className="text-[10px] leading-none">{icon}</span>}
       <span>{label}</span>
     </div>
   );
@@ -101,7 +101,7 @@ export function StatusBadgeWithLoading({
   if (isLoading) {
     return (
       <div className={`inline-flex items-center gap-2 ${sizeConfig[props.size ?? 'md']}`}>
-        <div className="animate-spin rounded-full border-2 border-gray-300 border-t-current w-4 h-4" />
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-current" />
         <span className="text-sm text-text-muted">Memperbarui...</span>
       </div>
     );
@@ -135,7 +135,7 @@ export function MultiStatusIndicator({ statuses, layout = 'horizontal', size = '
             icon={status.icon}
             size={size}
           />
-          <span className="font-bold text-text-primary ml-1">{status.count}</span>
+          <span className="ml-1 font-bold text-text-primary tabular-nums">{status.count}</span>
         </div>
       ))}
     </div>

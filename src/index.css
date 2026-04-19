@@ -121,6 +121,15 @@ code,
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+[data-density="compact"] .form-control {
+  padding: 0.5rem 0.72rem;
+  min-height: 40px;
+}
+
+[data-density="compact"] textarea.form-control {
+  min-height: 120px;
+}
+
 @media (min-width: 640px) {
   .form-control {
     font-size: 0.875rem;

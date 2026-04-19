@@ -288,46 +288,40 @@ export default function UserManagement() {
         )}
 
         {/* Header actions */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col gap-3 rounded-2xl border border-surface/70 bg-bg-card p-4 shadow-sm sm:flex-row sm:items-center">
           <input
             type="text"
             placeholder="Cari nama atau NRP..."
             value={searchRaw}
             onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
-            className="form-control flex-1"
+            className="form-control flex-1 bg-bg-card"
           />
           <select
             value={filterRole}
             onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
-            className="form-control sm:w-44"
+            className="form-control sm:w-44 bg-bg-card"
           >
             <option value="">Semua Role</option>
             <option value="admin">Admin</option>
             <option value="komandan">Komandan</option>
             <option value="prajurit">Prajurit</option>
           </select>
-          <Button variant="secondary" onClick={() => setShowImport(true)}>⬆ Import CSV</Button>
+          <Button variant="secondary" onClick={() => setShowImport(true)} leftIcon={<span aria-hidden="true">⬆</span>}>Import CSV</Button>
           <Button onClick={() => setShowCreate(true)}>+ Tambah Personel</Button>
         </div>
 
         {/* Bulk selection toolbar */}
         {selectedUserIds.size > 0 && (
-          <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5">
+          <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm font-medium text-primary">{selectedUserIds.size} personel dipilih</span>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setShowBulkReset(true)}
-            >
-              Reset PIN Massal
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setSelectedUserIds(new Set())}
-            >
-              Batal Pilih
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="secondary" onClick={() => setShowBulkReset(true)}>
+                Reset PIN Massal
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelectedUserIds(new Set())}>
+                Batal Pilih
+              </Button>
+            </div>
           </div>
         )}
 

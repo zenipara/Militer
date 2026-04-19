@@ -17,8 +17,12 @@ function formatDateTime(value?: string) {
 const GatePassList: React.FC<Props> = ({ gatePasses, guard }) => {
   if (gatePasses.length === 0) {
     return (
-      <div className="rounded-2xl border border-surface bg-bg-card px-4 py-10 text-center text-sm text-text-muted">
-        Belum ada riwayat Gate Pass
+      <div className="rounded-2xl border border-dashed border-surface/80 bg-bg-card px-4 py-10 text-center text-sm text-text-muted shadow-sm">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+          •
+        </div>
+        <div className="font-semibold text-text-primary">Belum ada riwayat Gate Pass</div>
+        <div className="mt-1 text-xs text-text-muted">Data gate pass akan muncul setelah ada pengajuan atau scan keluar/kembali.</div>
       </div>
     );
   }
@@ -28,7 +32,7 @@ const GatePassList: React.FC<Props> = ({ gatePasses, guard }) => {
       {gatePasses.map((gp) => (
         <div
           key={gp.id}
-          className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+          className="app-card group flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
         >
           <div className="min-w-0 flex-1 space-y-1">
             <p className="truncate text-sm font-semibold text-text-primary">{gp.tujuan}</p>

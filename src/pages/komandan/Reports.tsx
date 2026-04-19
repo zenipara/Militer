@@ -340,7 +340,7 @@ export default function Reports() {
           </div>
           <div className="divide-y divide-surface/50 max-h-64 overflow-y-auto">
             {attendances.length === 0 ? (
-              <p className="text-center text-text-muted py-6">Belum ada absensi hari ini</p>
+              <EmptyState title="Belum ada absensi hari ini" description="Absensi akan muncul otomatis begitu ada data check-in untuk tanggal yang dipilih." className="border-0 bg-transparent px-0 py-8" />
             ) : (
               attendances.map((a) => (
                 <div key={a.id} className="flex items-center justify-between px-5 py-3">
@@ -367,11 +367,7 @@ export default function Reports() {
           </div>
           <div className="divide-y divide-surface/50 max-h-64 overflow-y-auto">
             {tasks.length === 0 ? (
-                <EmptyState
-                  title="Belum ada tugas"
-                  description="Belum ada tugas yang terdaftar untuk unit ini pada rentang data yang dipilih."
-                  className="border-0 bg-transparent px-0 py-8"
-                />
+              <EmptyState title="Belum ada tugas" description="Belum ada tugas yang terdaftar untuk unit ini pada rentang data yang dipilih." className="border-0 bg-transparent px-0 py-8" />
             ) : (
               tasks.slice(0, 20).map((t) => (
                 <div key={t.id} className="flex items-center justify-between px-5 py-3">
@@ -393,11 +389,7 @@ export default function Reports() {
           </div>
           <div className="divide-y divide-surface/50 max-h-64 overflow-y-auto">
             {leaveRequests.length === 0 ? (
-                <EmptyState
-                  title="Belum ada permohonan izin"
-                  description="Permohonan izin belum masuk untuk unit ini. Data akan tampil otomatis saat ada pengajuan baru."
-                  className="border-0 bg-transparent px-0 py-8"
-                />
+              <EmptyState title="Belum ada permohonan izin" description="Permohonan izin belum masuk untuk unit ini. Data akan tampil otomatis saat ada pengajuan baru." className="border-0 bg-transparent px-0 py-8" />
             ) : (
               leaveRequests.map((req) => (
                 <div key={req.id} className="flex items-center justify-between px-5 py-3">

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import EmptyState from '../common/EmptyState';
+import { useUIStore } from '../../store/uiStore';
 
 /** Definisi satu kolom tabel */
 interface Column<T> {
@@ -53,10 +54,19 @@ export default function Table<T>({
   emptyMessage = 'Tidak ada data',
   caption,
 }: TableProps<T>) {
+  const { displayDensity } = useUIStore();
+  const isCompact = displayDensity === 'compact';
+  const headerCellClass = isCompact
+    ? 'px-3 py-2 text-[10px] sm:px-4'
+    : 'px-3 py-3 text-[11px] sm:px-5';
+  const bodyCellClass = isCompact
+    ? 'px-3 py-2 text-xs sm:px-4 sm:py-3 sm:text-sm'
+    : 'px-3 py-3 text-xs sm:px-5 sm:py-4 sm:text-sm';
+
   if (isLoading) {
     return (
-      <div className="app-panel overflow-hidden rounded-2xl border border-surface/70">
-        <div className="border-b border-surface/70 px-4 py-3 text-xs text-text-muted sm:px-5">Memuat data tabel...</div>
+      <div className="app-panel overflow-hidden rounded-2xl border border-surface/70 shadow-sm">
+        <div className="border-b border-surface/70 px-4 py-3 text-xs font-medium text-text-muted sm:px-5">Memuat data tabel...</div>
         <div className="space-y-3 p-4 sm:p-5">
           {Array.from({ length: 5 }).map((_, idx) => (
             <div key={idx} className="grid gap-3 rounded-xl border border-surface/60 bg-bg-card px-4 py-3 sm:grid-cols-[1.2fr_1fr_0.8fr_1fr]">
@@ -72,7 +82,7 @@ export default function Table<T>({
   }
 
   return (
-    <div className="app-panel overflow-hidden rounded-2xl">
+    <div className="app-panel overflow-hidden rounded-2xl border border-surface/70 shadow-sm">
       <div className="border-b border-surface/70 px-4 py-2 text-[11px] text-text-muted sm:hidden">
         Geser tabel ke samping untuk melihat semua kolom
       </div>
@@ -84,7 +94,7 @@ export default function Table<T>({
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
-                  className={`px-3 py-3 text-left text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted sm:px-5 ${col.className ?? ''}`}
+                  className={`${headerCellClass} text-left font-bold uppercase tracking-[0.08em] text-text-muted ${col.className ?? ''}`}
                   scope="col"
                 >
                   {col.header}
@@ -105,9 +115,9 @@ export default function Table<T>({
               </tr>
             ) : (
               data.map((row) => (
-                <tr key={keyExtractor(row)} className="transition-colors hover:bg-slate-50 dark:hover:bg-surface/25">
+                <tr key={keyExtractor(row)} className="transition-colors hover:bg-slate-50/80 dark:hover:bg-surface/25">
                   {columns.map((col) => (
-                    <td key={String(col.key)} className={`px-3 py-3 text-xs text-text-primary sm:px-5 sm:py-4 sm:text-sm ${col.className ?? ''}`}>
+                    <td key={String(col.key)} className={`${bodyCellClass} text-text-primary ${col.className ?? ''}`}>
                       {col.render
                         ? col.render(row)
                         : String((row as Record<string, unknown>)[String(col.key)] ?? '—')}
