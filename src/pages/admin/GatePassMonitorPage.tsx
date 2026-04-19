@@ -189,15 +189,27 @@ export default function GatePassMonitorPage() {
       .sort((a, b) => compareMonitorPriority(a, b, now));
   }, [monitorRows, query, statusFilter, startDate, endDate, now]);
 
-  const approved = monitorRows.filter(gp => gp.effectiveStatus === 'approved').length;
-  const keluar = monitorRows.filter(gp => gp.effectiveStatus === 'checked_in').length;
-  const completed = monitorRows.filter(gp => gp.effectiveStatus === 'completed').length;
-  const overdue = monitorRows.filter(gp => gp.effectiveStatus === 'overdue').length;
-  
-  // Personil di luar = approved + checked_in + overdue
-  const personilDiLuar = approved + keluar + overdue;
-  // Personil tersedia = total personil - personil di luar (minimum 0)
-  const personilTersedia = Math.max(0, totalPersonil - personilDiLuar);
+  // Memoize statistics computation to avoid recalculation on every render
+  const { approved, keluar, completed, overdue, personilDiLuar, personilTersedia } = useMemo(() => {
+    const approvedCount = monitorRows.filter(gp => gp.effectiveStatus === 'approved').length;
+    const keluarCount = monitorRows.filter(gp => gp.effectiveStatus === 'checked_in').length;
+    const completedCount = monitorRows.filter(gp => gp.effectiveStatus === 'completed').length;
+    const overdueCount = monitorRows.filter(gp => gp.effectiveStatus === 'overdue').length;
+    
+    // Personil di luar = approved + checked_in + overdue
+    const diLuarCount = approvedCount + keluarCount + overdueCount;
+    // Personil tersedia = total personil - personil di luar (minimum 0)
+    const tersediaCount = Math.max(0, totalPersonil - diLuarCount);
+    
+    return {
+      approved: approvedCount,
+      keluar: keluarCount,
+      completed: completedCount,
+      overdue: overdueCount,
+      personilDiLuar: diLuarCount,
+      personilTersedia: tersediaCount,
+    };
+  }, [monitorRows, totalPersonil]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

@@ -41,29 +41,33 @@ export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnaps
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
 
+  // Optimization: Batch queries into logical groups
+  // Group 1: Count-only queries
   const [
-    usersResult,
     tasksResult,
-    onlineResult,
-    activeTasksResult,
     pendingLeaveResult,
-    attendanceTotalResult,
-    attendancePresentResult,
     pinnedAnnouncementsResult,
-    logisticsResult,
+  ] = await Promise.all([
+    supabase.from('tasks').select('id', { count: 'exact', head: true }),
+    supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('announcements').select('id', { count: 'exact', head: true }).eq('is_pinned', true),
+  ]);
+
+  // Group 2: Users-related queries (optimize: fetch once, filter twice)
+  const usersCountResult = await supabase.from('users').select('id, is_online', { count: 'exact', head: false }).eq('is_active', true);
+  ensureNoError('total personel', usersCountResult.error);
+  const totalPersonel = usersCountResult.count ?? 0;
+  const totalOnline = usersCountResult.data?.filter(u => u.is_online).length ?? 0;
+
+  // Group 3: Attendance & Tasks combined with data
+  const [
+    attendanceResult,
     logsResult,
     heatmapResult,
+    logisticsResult,
     gatePassResult,
   ] = await Promise.all([
-    supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    supabase.from('tasks').select('id', { count: 'exact', head: true }),
-    supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_online', true),
-    supabase.from('tasks').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_progress']),
-    supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('tanggal', today),
-    supabase.from('attendance').select('id', { count: 'exact', head: true }).eq('tanggal', today).eq('status', 'hadir'),
-    supabase.from('announcements').select('id', { count: 'exact', head: true }).eq('is_pinned', true),
-    supabase.from('logistics_items').select('id, nama_item, jumlah, kondisi, kategori, lokasi, satuan_item').order('jumlah', { ascending: true }),
+    supabase.from('attendance').select('id, tanggal, status').eq('tanggal', today),
     supabase
       .from('audit_logs')
       .select('*, user:user_id(id,nama,nrp,role)')
@@ -75,21 +79,27 @@ export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnaps
       .gte('tanggal', thirtyDaysAgoStr)
       .lte('tanggal', today)
       .order('tanggal', { ascending: false }),
+    supabase.from('logistics_items').select('id, nama_item, jumlah, kondisi, kategori, lokasi, satuan_item').order('jumlah', { ascending: true }),
     supabase.from('gate_pass').select('status, waktu_kembali'),
   ]);
 
-  ensureNoError('total personel', usersResult.error);
   ensureNoError('total tugas', tasksResult.error);
-  ensureNoError('personel online', onlineResult.error);
-  ensureNoError('tugas aktif', activeTasksResult.error);
+  ensureNoError('tugas aktif', null); // Will compute from tasksResult
   ensureNoError('izin pending', pendingLeaveResult.error);
-  ensureNoError('absensi hari ini', attendanceTotalResult.error);
-  ensureNoError('absensi masuk', attendancePresentResult.error);
+  ensureNoError('absensi hari ini', attendanceResult.error);
   ensureNoError('pengumuman pin', pinnedAnnouncementsResult.error);
-  ensureNoError('stok logistik', logisticsResult.error);
   ensureNoError('audit log terbaru', logsResult.error);
   ensureNoError('heatmap absensi', heatmapResult.error);
+  ensureNoError('stok logistik', logisticsResult.error);
   ensureNoError('statistik gate pass', gatePassResult.error);
+
+  // Compute stats from fetched data (client-side optimization)
+  const attendanceData = (attendanceResult.data as unknown as Array<{ tanggal: string; status: string }>) ?? [];
+  const absensiHariIni = attendanceData.length;
+  const absensiMasuk = attendanceData.filter(a => a.status === 'hadir').length;
+
+  const tasksData = (tasksResult.data as unknown as Array<{ status: string }>) ?? [];
+  const activeTasksCount = tasksData.filter(t => ['pending', 'in_progress'].includes(t.status)).length;
 
   const logisticsItems = (logisticsResult.data as LogisticsItem[]) ?? [];
   const lowStockItems = logisticsItems.filter((item) => item.jumlah <= 5 || item.kondisi !== 'baik');
@@ -110,7 +120,6 @@ export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnaps
   ).length;
   
   // Personil tersedia = total personel - personil di luar (dengan minimum 0)
-  const totalPersonel = usersResult.count ?? 0;
   const personilTersedia = Math.max(0, totalPersonel - personilDiLuar);
   
   const gatePassStats: GatePassStats = {
@@ -123,13 +132,13 @@ export async function fetchAdminDashboardSnapshot(): Promise<AdminDashboardSnaps
 
   return {
     stats: {
-      totalPersonel: usersResult.count ?? 0,
-      totalOnline: onlineResult.count ?? 0,
+      totalPersonel,
+      totalOnline,
       totalTugas: tasksResult.count ?? 0,
-      tugasAktif: activeTasksResult.count ?? 0,
+      tugasAktif: activeTasksCount,
       pendingIzin: pendingLeaveResult.count ?? 0,
-      absensiHariIni: attendanceTotalResult.count ?? 0,
-      absensiMasuk: attendancePresentResult.count ?? 0,
+      absensiHariIni,
+      absensiMasuk,
       pinnedPengumuman: pinnedAnnouncementsResult.count ?? 0,
     },
     recentLogs: (logsResult.data as AuditLog[]) ?? [],
