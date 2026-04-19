@@ -46,6 +46,13 @@ import {
   ClipboardEdit,
   MapPin,
   QrCode,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Inbox,
+  ChevronRight,
+  ChevronDown,
+  Search,
 } from 'lucide-react';
 
 
@@ -97,6 +104,13 @@ export const ICONS = {
   ClipboardEdit,
   MapPin,
   QrCode,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Inbox,
+  ChevronRight,
+  ChevronDown,
+  Search,
 } as const;
 
 export type IconName = keyof typeof ICONS;

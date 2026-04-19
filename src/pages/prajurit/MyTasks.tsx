@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { CheckSquare } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import TaskCard from '../../components/ui/TaskCard';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import PageHeader from '../../components/ui/PageHeader';
+import EmptyState from '../../components/common/EmptyState';
 import { useTasks } from '../../hooks/useTasks';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
@@ -132,9 +134,13 @@ export default function MyTasks() {
         {isLoading ? (
           <CardListSkeleton count={3} />
         ) : filtered.length === 0 ? (
-          <div className="app-card p-8 text-center text-text-muted">
-            Tidak ada tugas
-          </div>
+          <EmptyState
+            icon={<CheckSquare className="h-6 w-6" aria-hidden="true" />}
+            title="Tidak ada tugas"
+            description={filterStatus
+              ? 'Tidak ada tugas dengan status yang dipilih. Coba filter lain.'
+              : 'Tugas baru akan muncul saat komandan menugaskan Anda.'}
+          />
         ) : (
           <div className="grid grid-cols-1 gap-3">
             {filtered.map((task) => (
@@ -161,7 +167,7 @@ export default function MyTasks() {
                     <span className="rounded-lg bg-surface px-3 py-1.5 text-xs text-text-muted">Menunggu persetujuan</span>
                   )}
                   {task.status === 'approved' && (
-                    <span className="rounded-lg bg-success/10 px-3 py-1.5 text-xs text-success">✓ Disetujui</span>
+                    <span className="inline-flex items-center gap-1 rounded-lg bg-success/10 px-3 py-1.5 text-xs font-semibold text-success">Disetujui</span>
                   )}
                 </div>
               </div>

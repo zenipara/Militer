@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
+import { Pencil, Inbox, Send } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
+import EmptyState from '../../components/common/EmptyState';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageHeader from '../../components/ui/PageHeader';
 import { useMessages } from '../../hooks/useMessages';
 import { useUsers } from '../../hooks/useUsers';
@@ -87,7 +90,7 @@ export default function Messages() {
                   Tandai semua dibaca
                 </Button>
               )}
-              <Button onClick={() => setShowCompose(true)}>✎ Tulis Pesan</Button>
+              <Button onClick={() => setShowCompose(true)} leftIcon={<Pencil className="h-4 w-4" />}>Tulis Pesan</Button>
             </>
           }
         />
@@ -125,15 +128,19 @@ export default function Messages() {
 
         {/* Message list */}
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface border-t-primary" />
-          </div>
+          <LoadingSpinner message="Memuat pesan..." />
         ) : filteredMessages.length === 0 ? (
-          <div className="app-card p-10 text-center text-text-muted">
-            {searchRaw.trim()
-              ? 'Tidak ada pesan yang cocok dengan pencarian'
+          <EmptyState
+            icon={tab === 'inbox'
+              ? <Inbox className="h-6 w-6" aria-hidden="true" />
+              : <Send className="h-6 w-6" aria-hidden="true" />}
+            title={searchRaw.trim()
+              ? 'Tidak ada pesan yang cocok'
               : tab === 'inbox' ? 'Kotak masuk kosong' : 'Belum ada pesan terkirim'}
-          </div>
+            description={searchRaw.trim()
+              ? 'Coba kata kunci lain'
+              : tab === 'inbox' ? 'Pesan masuk dari anggota satuan akan muncul di sini.' : 'Pesan yang Anda kirim akan tampil di sini.'}
+          />
         ) : (
           <div className="space-y-2">
             {filteredMessages.map((msg) => {

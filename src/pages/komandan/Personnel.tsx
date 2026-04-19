@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Search } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
@@ -77,23 +79,30 @@ export default function Personnel() {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <input
+          <Input
             type="text"
             placeholder="Cari nama, NRP, pangkat..."
             value={searchRaw}
             onChange={(e) => setSearchRaw(e.target.value)}
-            className="form-control flex-1"
+            leftIcon={<Search className="h-4 w-4" aria-hidden="true" />}
+            className="flex-1"
           />
           <div className="flex gap-1 bg-surface/40 rounded-lg p-1">
             {(['all', 'online', 'offline'] as const).map((opt) => (
               <button
                 key={opt}
                 onClick={() => setFilterOnline(opt)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                aria-pressed={filterOnline === opt}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   filterOnline === opt ? 'bg-primary text-white' : 'text-text-muted hover:text-text-primary'
                 }`}
               >
-                {opt === 'all' ? 'Semua' : opt === 'online' ? '🟢 Online' : '⚫ Offline'}
+                {opt !== 'all' && (
+                  <span className={`h-2 w-2 rounded-full flex-shrink-0 ${
+                    opt === 'online' ? 'bg-success' : 'bg-text-muted/60'
+                  }`} aria-hidden="true" />
+                )}
+                {opt === 'all' ? 'Semua' : opt === 'online' ? 'Online' : 'Offline'}
               </button>
             ))}
           </div>

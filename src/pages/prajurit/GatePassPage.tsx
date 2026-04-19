@@ -33,6 +33,10 @@ export default function GatePassPage() {
         <PageHeader
           title="Gate Pass"
           subtitle="Ajukan izin keluar batalion dan pantau status persetujuan serta riwayat perjalanan Anda."
+          breadcrumbs={[
+            { label: 'Beranda', href: '/prajurit/dashboard' },
+            { label: 'Gate Pass' },
+          ]}
           meta={
             <>
               {pending > 0 && <span>{pending} pengajuan aktif</span>}

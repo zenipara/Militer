@@ -1,5 +1,5 @@
 # 📋 SPESIFIKASI TEKNIS — KARYO OS
-### Versi 1.0.0 | April 2026
+### Versi 1.0.1 | April 2026
 
 ---
 

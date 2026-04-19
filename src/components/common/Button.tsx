@@ -5,6 +5,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
   children: ReactNode;
 }
 
@@ -27,6 +28,7 @@ export default function Button({
   size = 'md',
   isLoading,
   leftIcon,
+  rightIcon,
   children,
   className = '',
   disabled,
@@ -47,11 +49,14 @@ export default function Button({
       {...props}
     >
       {isLoading ? (
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
       ) : leftIcon ? (
-        <span className="flex-shrink-0">{leftIcon}</span>
+        <span className="flex-shrink-0" aria-hidden="true">{leftIcon}</span>
       ) : null}
       {children}
+      {!isLoading && rightIcon && (
+        <span className="flex-shrink-0" aria-hidden="true">{rightIcon}</span>
+      )}
     </button>
   );
 }

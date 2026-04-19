@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
+import { ClipboardList, Check, FileText, Paperclip, X } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import TaskCard from '../../components/ui/TaskCard';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import EmptyState from '../../components/common/EmptyState';
 import { TaskStatusBadge } from '../../components/common/Badge';
 import { useTasks } from '../../hooks/useTasks';
 import { useUsers } from '../../hooks/useUsers';
@@ -103,7 +105,7 @@ export default function TaskManagement() {
     setIsSaving(true);
     try {
       await approveTask(selectedTask.id);
-      showNotification('Tugas disetujui ✓', 'success');
+      showNotification('Tugas disetujui', 'success');
       setShowDetail(false);
     } catch {
       showNotification('Gagal menyetujui tugas', 'error');
@@ -214,9 +216,11 @@ export default function TaskManagement() {
         {isLoading ? (
           <CardListSkeleton count={4} />
         ) : filtered.length === 0 ? (
-          <div className="bg-bg-card border border-surface rounded-xl p-8 text-center text-text-muted">
-            Tidak ada tugas
-          </div>
+          <EmptyState
+            icon={<ClipboardList className="h-6 w-6" aria-hidden="true" />}
+            title="Tidak ada tugas"
+            description={filterStatus ? 'Tidak ada tugas dengan status yang dipilih. Coba filter lain.' : 'Buat tugas baru untuk personel menggunakan tombol di atas.'}
+          />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {filtered.map((task) => (
@@ -224,7 +228,7 @@ export default function TaskManagement() {
                 key={task.id}
                 task={task}
                 showAssignee
-                actionLabel={task.status === 'done' ? '📋 Tinjau Laporan' : 'Detail'}
+                actionLabel={task.status === 'done' ? 'Tinjau Laporan' : 'Detail'}
                 onAction={() => openDetail(task)}
               />
             ))}
@@ -295,7 +299,7 @@ export default function TaskManagement() {
         <Modal
           isOpen={showDetail}
           onClose={() => { setShowDetail(false); setShowRejectForm(false); }}
-          title={selectedTask.status === 'done' ? '📋 Tinjau Laporan Tugas' : 'Detail Tugas'}
+          title={selectedTask.status === 'done' ? 'Tinjau Laporan Tugas' : 'Detail Tugas'}
           size="lg"
           footer={
             selectedTask.status === 'done' && !showRejectForm ? (
@@ -304,7 +308,7 @@ export default function TaskManagement() {
                 <Button variant="danger" onClick={() => setShowRejectForm(true)}>
                   Tolak & Minta Revisi
                 </Button>
-                <Button onClick={handleApprove} isLoading={isSaving}>✓ Setujui</Button>
+                <Button onClick={handleApprove} isLoading={isSaving} leftIcon={<Check className="h-4 w-4" aria-hidden="true" />}>Setujui</Button>
               </>
             ) : selectedTask.status === 'done' && showRejectForm ? (
               <>
@@ -330,14 +334,16 @@ export default function TaskManagement() {
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div><span className="text-text-muted">Assignee:</span> <span className="text-text-primary">{selectedTask.assignee?.nama ?? '—'}</span></div>
               <div><span className="text-text-muted">NRP:</span> <span className="font-mono text-text-primary">{selectedTask.assignee?.nrp ?? '—'}</span></div>
-              <div><span className="text-text-muted">Prioritas:</span> <span className="text-text-primary">{selectedTask.prioritas === 1 ? '🔴 Tinggi' : selectedTask.prioritas === 2 ? '🟡 Sedang' : '🟢 Rendah'}</span></div>
+              <div><span className="text-text-muted">Prioritas:</span> <span className={`font-medium ${selectedTask.prioritas === 1 ? 'text-accent-red' : selectedTask.prioritas === 2 ? 'text-accent-gold' : 'text-success'}`}>{selectedTask.prioritas === 1 ? 'Tinggi' : selectedTask.prioritas === 2 ? 'Sedang' : 'Rendah'}</span></div>
               <div><span className="text-text-muted">Deadline:</span> <span className="text-text-primary">{selectedTask.deadline ? new Date(selectedTask.deadline).toLocaleDateString('id-ID') : '—'}</span></div>
             </div>
 
             {/* Task Report (only for 'done' tasks) */}
             {selectedTask.status === 'done' && (
               <div className="border-t border-surface pt-4">
-                <h4 className="text-sm font-semibold text-text-primary mb-2">📄 Laporan Prajurit</h4>
+                <h4 className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-primary mb-2">
+                  <FileText className="h-4 w-4" aria-hidden="true" /> Laporan Prajurit
+                </h4>
                 {loadingReport ? (
                   <div className="space-y-2">
                     <div className="h-4 animate-pulse bg-surface/70 rounded w-full" />
@@ -351,9 +357,9 @@ export default function TaskManagement() {
                         href={taskReport.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-2 flex items-center gap-1 text-primary text-xs hover:underline"
+                        className="mt-2 inline-flex items-center gap-1 text-primary text-xs hover:underline"
                       >
-                        📎 Lihat lampiran
+                        <Paperclip className="h-3 w-3" aria-hidden="true" /> Lihat lampiran
                       </a>
                     )}
                   </div>
@@ -366,7 +372,9 @@ export default function TaskManagement() {
             {/* Rejection form */}
             {showRejectForm && (
               <div className="border-t border-surface pt-4">
-                <h4 className="text-sm font-semibold text-accent-red mb-2">✗ Catatan Penolakan</h4>
+                <h4 className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-red mb-2">
+                  <X className="h-4 w-4" aria-hidden="true" /> Catatan Penolakan
+                </h4>
                 <p className="text-xs text-text-muted mb-2">
                   Jelaskan alasan penolakan. Tugas akan dikembalikan ke status "Dikerjakan" agar prajurit dapat merevisi.
                 </p>

@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Package, ClipboardList, Search, Plus } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
+import EmptyState from '../../components/common/EmptyState';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
 import { useLogisticsRequests } from '../../hooks/useLogisticsRequests';
@@ -91,14 +93,14 @@ export default function Logistics() {
           title="Manajemen Logistik"
           subtitle="Inventaris perlengkapan dan permintaan dari Komandan dikelola di sini."
           meta={<span>Total item: {filtered.length}</span>}
-          actions={<Button onClick={() => setShowCreate(true)}>+ Tambah Item</Button>}
+          actions={<Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Tambah Item</Button>}
         />
 
         {/* Tab bar */}
         <div className="app-card flex items-center gap-1 p-1.5 sm:w-fit">
           {([
-            { key: 'inventory', label: 'Inventaris', icon: '📦' },
-            { key: 'requests',  label: `Permintaan${pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}`, icon: '📋' },
+            { key: 'inventory', label: 'Inventaris', icon: <Package className="h-4 w-4" aria-hidden="true" /> },
+            { key: 'requests',  label: `Permintaan${pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}`, icon: <ClipboardList className="h-4 w-4" aria-hidden="true" /> },
           ] as const).map((tab) => (
             <button
               key={tab.key}
@@ -123,12 +125,13 @@ export default function Logistics() {
         {activeTab === 'inventory' && (
           <>
             <div className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:p-5">
-              <input
+              <Input
                 type="text"
                 placeholder="Cari item..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="form-control flex-1"
+                leftIcon={<Search className="h-4 w-4" aria-hidden="true" />}
+                className="flex-1"
               />
             </div>
 
@@ -159,9 +162,11 @@ export default function Logistics() {
         {activeTab === 'requests' && (
           <div className="space-y-3">
             {requests.length === 0 ? (
-              <div className="app-card p-10 text-center text-text-muted">
-                Belum ada permintaan logistik dari Komandan
-              </div>
+              <EmptyState
+                icon={<ClipboardList className="h-6 w-6" aria-hidden="true" />}
+                title="Belum ada permintaan logistik"
+                description="Permintaan dari Komandan akan muncul di sini untuk ditinjau."
+              />
             ) : (
               requests.map((req) => {
                 const statusMap = {
@@ -175,7 +180,10 @@ export default function Logistics() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-text-primary">📦 {req.nama_item}</span>
+                          <span className="inline-flex items-center gap-1.5 font-medium text-text-primary">
+                            <Package className="h-4 w-4 text-text-muted" aria-hidden="true" />
+                            {req.nama_item}
+                          </span>
                           <Badge variant={s.variant}>{s.label}</Badge>
                         </div>
                         <p className="text-sm text-text-muted">

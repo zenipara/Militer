@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { Package, Plus } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
+import EmptyState from '../../components/common/EmptyState';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageHeader from '../../components/ui/PageHeader';
 import { useLogisticsRequests } from '../../hooks/useLogisticsRequests';
 import { useAuthStore } from '../../store/authStore';
@@ -88,7 +91,7 @@ export default function LogisticsRequest() {
               <span>Disetujui: {approved}</span>
             </>
           }
-          actions={<Button onClick={() => setShowCreate(true)}>+ Ajukan Permintaan</Button>}
+          actions={<Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Ajukan Permintaan</Button>}
         />
 
         {/* Summary stats */}
@@ -125,13 +128,13 @@ export default function LogisticsRequest() {
 
         {/* Request list */}
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface border-t-primary" />
-          </div>
+          <LoadingSpinner message="Memuat permintaan..." />
         ) : filtered.length === 0 ? (
-          <div className="app-card p-10 text-center text-text-muted">
-            {filterStatus === 'all' ? 'Belum ada permintaan logistik' : 'Tidak ada permintaan dengan status ini'}
-          </div>
+          <EmptyState
+            icon={<Package className="h-6 w-6" aria-hidden="true" />}
+            title={filterStatus === 'all' ? 'Belum ada permintaan logistik' : 'Tidak ada permintaan dengan status ini'}
+            description={filterStatus === 'all' ? 'Ajukan kebutuhan perlengkapan kepada Admin menggunakan tombol di atas.' : 'Coba pilih filter status lain.'}
+          />
         ) : (
           <div className="space-y-3">
             {filtered.map((req) => (
@@ -143,8 +146,9 @@ export default function LogisticsRequest() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-text-primary">
-                        📦 {req.nama_item}
+                      <span className="inline-flex items-center gap-1.5 font-medium text-text-primary">
+                        <Package className="h-4 w-4 text-text-muted" aria-hidden="true" />
+                        {req.nama_item}
                       </span>
                       <StatusBadge status={req.status} />
                     </div>

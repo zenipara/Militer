@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { Calendar, Plus } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
+import EmptyState from '../../components/common/EmptyState';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageHeader from '../../components/ui/PageHeader';
 import { useLeaveRequests } from '../../hooks/useLeaveRequests';
 import { useAuthStore } from '../../store/authStore';
@@ -68,9 +71,9 @@ export default function LeaveRequest() {
   };
 
   const jenisLabel: Record<string, string> = {
-    cuti: '🏖 Cuti',
-    sakit: '🤒 Sakit',
-    dinas_luar: '📋 Dinas Luar',
+    cuti: 'Cuti',
+    sakit: 'Sakit',
+    dinas_luar: 'Dinas Luar',
   };
 
   const pending = requests.filter((r) => r.status === 'pending').length;
@@ -91,7 +94,7 @@ export default function LeaveRequest() {
               <span>Ditolak: {rejected}</span>
             </>
           }
-          actions={<Button onClick={() => setShowCreate(true)}>+ Ajukan Izin</Button>}
+          actions={<Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Ajukan Izin</Button>}
         />
 
         {/* Summary stats */}
@@ -127,17 +130,19 @@ export default function LeaveRequest() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface border-t-primary" />
-          </div>
+          <LoadingSpinner message="Memuat permohonan..." />
         ) : requests.length === 0 ? (
-          <div className="app-card p-10 text-center text-text-muted">
-            Belum ada permohonan izin
-          </div>
+          <EmptyState
+            icon={<Calendar className="h-6 w-6" aria-hidden="true" />}
+            title="Belum ada permohonan izin"
+            description="Ajukan permohonan izin menggunakan tombol di atas."
+          />
         ) : filteredRequests.length === 0 ? (
-          <div className="app-card p-10 text-center text-text-muted">
-            Tidak ada permohonan dengan status ini
-          </div>
+          <EmptyState
+            icon={<Calendar className="h-6 w-6" aria-hidden="true" />}
+            title="Tidak ada permohonan dengan status ini"
+            description="Coba pilih filter status lain."
+          />
         ) : (
           <div className="space-y-3">
             {filteredRequests.map((req) => (
@@ -238,9 +243,9 @@ export default function LeaveRequest() {
               value={form.jenis_izin}
               onChange={(e) => setForm({ ...form, jenis_izin: e.target.value as typeof form.jenis_izin })}
             >
-              <option value="cuti">🏖 Cuti</option>
-              <option value="sakit">🤒 Sakit</option>
-              <option value="dinas_luar">📋 Dinas Luar</option>
+              <option value="cuti">Cuti</option>
+              <option value="sakit">Sakit</option>
+              <option value="dinas_luar">Dinas Luar</option>
             </select>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

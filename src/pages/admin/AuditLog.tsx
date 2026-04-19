@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Search } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
+import Input from '../../components/common/Input';
 import Pagination from '../../components/ui/Pagination';
 import PageHeader from '../../components/ui/PageHeader';
 import { useAuditLogs } from '../../hooks/useAuditLogs';
@@ -44,12 +46,13 @@ export default function AuditLogPage() {
 
         {/* Filters */}
         <div className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:p-5">
-          <input
+          <Input
             type="text"
             placeholder="Cari aksi, nama, atau NRP..."
             value={searchRaw}
             onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
-            className="form-control flex-1"
+            leftIcon={<Search className="h-4 w-4" aria-hidden="true" />}
+            className="flex-1"
           />
           <select
             value={filterAction}

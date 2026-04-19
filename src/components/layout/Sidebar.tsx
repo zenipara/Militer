@@ -188,7 +188,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Logout */}
-        <div className="border-t border-surface/80 px-3 py-4">
+        <div className="border-t border-surface/80 px-3 py-4 space-y-1">
           <button
             onClick={handleLogout}
             className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-accent-red transition-colors hover:bg-accent-red/10"
@@ -198,6 +198,9 @@ export default function Sidebar() {
             </span>
             Keluar
           </button>
+          <p className="px-3 text-[10px] text-text-muted/60 select-none">
+            v{import.meta.env.VITE_APP_VERSION ?? '1.0.1'}
+          </p>
         </div>
       </aside>
     </>

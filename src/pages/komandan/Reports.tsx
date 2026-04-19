@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { CheckCircle, XCircle, CheckSquare, Clock, Calendar, RefreshCw, Download } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import BarChart from '../../components/ui/BarChart';
@@ -167,8 +168,8 @@ export default function Reports() {
           }
           actions={
             <>
-              <Button variant="outline" onClick={() => void refresh()} isLoading={isRefreshing}>Muat Ulang</Button>
-              <Button variant="secondary" onClick={handleExportCSV}>Export CSV</Button>
+              <Button variant="outline" onClick={() => void refresh()} isLoading={isRefreshing} leftIcon={<RefreshCw className="h-4 w-4" aria-hidden="true" />}>Muat Ulang</Button>
+              <Button variant="secondary" onClick={handleExportCSV} leftIcon={<Download className="h-4 w-4" aria-hidden="true" />}>Export CSV</Button>
             </>
           }
         />
@@ -193,16 +194,16 @@ export default function Reports() {
         {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {[
-            { icon: '✅', label: 'Hadir', value: presentCount, color: 'text-success' },
-            { icon: '❌', label: 'Alpa', value: absenCount, color: 'text-accent-red' },
-            { icon: '✓', label: 'Tugas Selesai', value: approvedTasks, color: 'text-primary' },
-            { icon: '⏳', label: 'Tugas Aktif', value: pendingTasks, color: 'text-accent-gold' },
-            { icon: '📋', label: 'Izin Menunggu', value: pendingLeave, color: 'text-blue-400' },
+            { icon: <CheckCircle className="h-5 w-5 text-success" aria-hidden="true" />, label: 'Hadir', value: presentCount, color: 'text-success' },
+            { icon: <XCircle className="h-5 w-5 text-accent-red" aria-hidden="true" />, label: 'Alpa', value: absenCount, color: 'text-accent-red' },
+            { icon: <CheckSquare className="h-5 w-5 text-primary" aria-hidden="true" />, label: 'Tugas Selesai', value: approvedTasks, color: 'text-primary' },
+            { icon: <Clock className="h-5 w-5 text-accent-gold" aria-hidden="true" />, label: 'Tugas Aktif', value: pendingTasks, color: 'text-accent-gold' },
+            { icon: <Calendar className="h-5 w-5 text-blue-400" aria-hidden="true" />, label: 'Izin Menunggu', value: pendingLeave, color: 'text-blue-400' },
           ].map((s) => (
             <div key={s.label} className="app-card p-4">
               <div className="flex items-center justify-between">
                 <span className="text-text-muted text-sm">{s.label}</span>
-                <span className="text-xl">{s.icon}</span>
+                {s.icon}
               </div>
               <div className={`text-3xl font-bold mt-1 ${s.color}`}>{s.value}</div>
             </div>
@@ -289,9 +290,9 @@ export default function Reports() {
                 .filter((r) => r.status === 'pending')
                 .map((req) => {
                   const jenisLabel: Record<string, string> = {
-                    cuti: '🏖 Cuti',
-                    sakit: '🤒 Sakit',
-                    dinas_luar: '📋 Dinas Luar',
+                    cuti: 'Cuti',
+                    sakit: 'Sakit',
+                    dinas_luar: 'Dinas Luar',
                   };
                   return (
                     <div key={req.id} className="flex items-center justify-between px-5 py-3 gap-3">

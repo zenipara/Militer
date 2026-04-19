@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, CalendarDays, Megaphone,
-  UserCheck, Users, Package, Settings, BarChart2, ScanLine,
+  UserCheck, Users, Package, Settings, ScanLine,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
+import { useMessages } from '../../hooks/useMessages';
 import { isPathEnabled } from '../../lib/featureFlags';
 import type { Role } from '../../types';
 
@@ -12,6 +13,7 @@ interface BottomTabItem {
   path: string;
   label: string;
   icon: React.ReactNode;
+  hasMessageBadge?: boolean;
 }
 
 /** Mobile bottom tab: show max 5 primary nav items per role (spec §10.2) */
@@ -28,7 +30,7 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
     { path: '/komandan/tasks',      label: 'Tugas',     icon: <CheckSquare size={20} aria-hidden="true" /> },
     { path: '/komandan/personnel',  label: 'Personel',  icon: <Users size={20} aria-hidden="true" /> },
     { path: '/komandan/attendance', label: 'Hadir',     icon: <CalendarDays size={20} aria-hidden="true" /> },
-    { path: '/komandan/reports',    label: 'Laporan',   icon: <BarChart2 size={20} aria-hidden="true" /> },
+    { path: '/komandan/messages',   label: 'Pesan',     icon: <Megaphone size={20} aria-hidden="true" />, hasMessageBadge: true },
   ],
   prajurit: [
     { path: '/prajurit/dashboard',  label: 'Beranda',   icon: <LayoutDashboard size={20} aria-hidden="true" /> },
@@ -51,6 +53,8 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
 export default function BottomTabBar() {
   const { user } = useAuthStore();
   const { flags } = useFeatureStore();
+  const { unreadCount } = useMessages();
+
   if (!user) return null;
 
   const tabs = BOTTOM_TABS[user.role].filter((tab) => isPathEnabled(tab.path, flags));
@@ -68,24 +72,38 @@ export default function BottomTabBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-30 border-t border-surface/80 bg-bg-card/90 backdrop-blur-xl lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-30 border-t border-surface/80 bg-bg-card/92 backdrop-blur-xl lg:hidden"
       aria-label="Bottom navigation"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className={`mx-auto grid max-w-xl ${colsClass} gap-0 px-1 pt-1 pb-2`}>
-        {tabs.map((tab) => (
-          <NavLink
-            key={tab.path}
-            to={tab.path}
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center gap-0.5 rounded-xl min-h-[52px] py-1 px-1 text-xs font-medium transition-colors
-              ${isActive ? 'bg-primary/15 text-primary' : 'text-text-muted hover:bg-surface/60 hover:text-text-primary'}`
-            }
-          >
-            <span className="text-[22px] leading-none">{tab.icon}</span>
-            <span className="text-[10px] leading-none mt-0.5">{tab.label}</span>
-          </NavLink>
-        ))}
+      <div className={`mx-auto grid max-w-xl ${colsClass} gap-0 px-1 pt-1 pb-1.5`}>
+        {tabs.map((tab) => {
+          const showBadge = tab.hasMessageBadge && unreadCount > 0;
+          return (
+            <NavLink
+              key={tab.path}
+              to={tab.path}
+              className={({ isActive }) =>
+                `relative flex flex-col items-center justify-center gap-0.5 rounded-xl min-h-[52px] py-1 px-1 text-xs font-medium transition-colors
+                ${isActive ? 'bg-primary/12 text-primary' : 'text-text-muted hover:bg-surface/60 hover:text-text-primary'}`
+              }
+              aria-label={showBadge ? `${tab.label} — ${unreadCount} belum dibaca` : tab.label}
+            >
+              <span className="relative text-[22px] leading-none">
+                {tab.icon}
+                {showBadge && (
+                  <span
+                    className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-accent-red px-0.5 text-[9px] font-bold text-white leading-none"
+                    aria-hidden="true"
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </span>
+              <span className="text-[10px] leading-none mt-0.5">{tab.label}</span>
+            </NavLink>
+          );
+        })}
       </div>
     </nav>
   );

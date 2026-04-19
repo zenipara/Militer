@@ -1,4 +1,5 @@
 import type { Task } from '../../types';
+import { CalendarDays, User } from 'lucide-react';
 import { TaskStatusBadge } from '../common/Badge';
 import Button from '../common/Button';
 
@@ -37,11 +38,17 @@ export default function TaskCard({ task, onAction, actionLabel = 'Lihat', showAs
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
         <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${isOverdue ? 'border-accent-red/30 bg-accent-red/10 text-accent-red' : 'border-surface bg-slate-50 dark:bg-surface/40'}`}>
-          📅 {task.deadline ? new Date(task.deadline).toLocaleDateString('id-ID') : 'Tidak ada deadline'}
+          <CalendarDays className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+          {task.deadline ? new Date(task.deadline).toLocaleDateString('id-ID') : 'Tidak ada deadline'}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-surface bg-slate-50 px-2 py-1 dark:bg-surface/40">🎯 {priorityLabels[task.prioritas]}</span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-surface bg-slate-50 px-2 py-1 dark:bg-surface/40">
+          {priorityLabels[task.prioritas]}
+        </span>
         {showAssignee && task.assignee && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-surface bg-slate-50 px-2 py-1 dark:bg-surface/40">👤 {task.assignee.nama}</span>
+          <span className="inline-flex items-center gap-1 rounded-full border border-surface bg-slate-50 px-2 py-1 dark:bg-surface/40">
+            <User className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+            {task.assignee.nama}
+          </span>
         )}
       </div>
 

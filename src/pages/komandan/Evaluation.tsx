@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { AlertTriangle, Award, FileText, Plus } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -95,7 +96,11 @@ export default function Evaluation() {
     catatan: 'neutral' as const,
   };
 
-  const jenisIcon = { peringatan: '⚠', penghargaan: '🏅', catatan: '📝' };
+  const jenisIcon = {
+    peringatan: <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />,
+    penghargaan: <Award className="h-3.5 w-3.5" aria-hidden="true" />,
+    catatan: <FileText className="h-3.5 w-3.5" aria-hidden="true" />,
+  };
 
   return (
     <DashboardLayout title="Evaluasi & Catatan Disiplin">
@@ -118,7 +123,7 @@ export default function Evaluation() {
               </option>
             ))}
           </select>
-          <Button onClick={() => setShowCreate(true)}>+ Tambah Catatan</Button>
+          <Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Tambah Catatan</Button>
         </div>
 
         <Table<DisciplineNote>
@@ -143,7 +148,9 @@ export default function Evaluation() {
               header: 'Jenis',
               render: (n) => n.jenis ? (
                 <Badge variant={jenisBadge[n.jenis]}>
-                  {jenisIcon[n.jenis]} {n.jenis}
+                  <span className="inline-flex items-center gap-1">
+                    {jenisIcon[n.jenis]} {n.jenis}
+                  </span>
                 </Badge>
               ) : '—',
             },
@@ -210,9 +217,9 @@ export default function Evaluation() {
               value={form.jenis}
               onChange={(e) => setForm({ ...form, jenis: e.target.value as typeof form.jenis })}
             >
-              <option value="catatan">📝 Catatan</option>
-              <option value="peringatan">⚠ Peringatan</option>
-              <option value="penghargaan">🏅 Penghargaan</option>
+              <option value="catatan">Catatan</option>
+              <option value="peringatan">Peringatan</option>
+              <option value="penghargaan">Penghargaan</option>
             </select>
           </div>
           <div>

@@ -8,6 +8,8 @@
  * Tab yang ditampilkan dikontrol oleh prop `viewerRole`.
  */
 import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { Pencil, Pin, ClipboardList, CheckCircle, CalendarDays, TrendingUp, AlertTriangle, Award, FileText } from 'lucide-react';
 import Modal from './Modal';
 import Button from './Button';
 import Input from './Input';
@@ -161,7 +163,7 @@ export default function UserDetailModal({
           ) : (
             <>
               <Button variant="ghost" onClick={onClose}>Tutup</Button>
-              <Button variant="secondary" onClick={() => setIsEditing(true)}>✏ Edit Data</Button>
+              <Button variant="secondary" onClick={() => setIsEditing(true)} leftIcon={<Pencil className="h-3.5 w-3.5" aria-hidden="true" />}>Edit Data</Button>
             </>
           )
         ) : (
@@ -353,7 +355,9 @@ export default function UserDetailModal({
                     <InfoRow label="Nomor KTP" value={user.nomor_ktp} mono />
                     {user.catatan_khusus && (
                       <div className="mt-3 rounded-xl border border-accent-gold/30 bg-accent-gold/10 p-3">
-                        <p className="text-xs font-semibold text-accent-gold mb-1">📌 Catatan Internal (Admin)</p>
+                        <p className="inline-flex items-center gap-1 text-xs font-semibold text-accent-gold mb-1">
+                          <Pin className="h-3 w-3" aria-hidden="true" /> Catatan Internal (Admin)
+                        </p>
                         <p className="text-sm text-text-primary">{user.catatan_khusus}</p>
                       </div>
                     )}
@@ -369,20 +373,20 @@ export default function UserDetailModal({
           <div>
             {isLoadingStats ? (
               <div className="flex items-center justify-center py-8">
-                <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
               </div>
             ) : stats ? (
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Total Tugas', value: stats.totalTasks, icon: '📋', color: 'text-text-primary' },
-                  { label: 'Tugas Disetujui', value: stats.approvedTasks, icon: '✅', color: 'text-success' },
-                  { label: 'Kehadiran (30 hr)', value: `${stats.hadirCount}/${stats.totalAttendance}`, icon: '📅', color: 'text-primary' },
+                  { label: 'Total Tugas', value: stats.totalTasks, icon: <ClipboardList className="h-4 w-4" aria-hidden="true" />, color: 'text-text-primary' },
+                  { label: 'Tugas Disetujui', value: stats.approvedTasks, icon: <CheckCircle className="h-4 w-4 text-success" aria-hidden="true" />, color: 'text-success' },
+                  { label: 'Kehadiran (30 hr)', value: `${stats.hadirCount}/${stats.totalAttendance}`, icon: <CalendarDays className="h-4 w-4 text-primary" aria-hidden="true" />, color: 'text-primary' },
                   {
                     label: 'Tingkat Hadir',
                     value: stats.totalAttendance > 0
                       ? `${Math.round((stats.hadirCount / stats.totalAttendance) * 100)}%`
                       : '—',
-                    icon: '📈',
+                    icon: <TrendingUp className="h-4 w-4" aria-hidden="true" />,
                     color: stats.totalAttendance > 0 && (stats.hadirCount / stats.totalAttendance) >= 0.8
                       ? 'text-success'
                       : 'text-accent-gold',
@@ -390,7 +394,7 @@ export default function UserDetailModal({
                 ].map((s) => (
                   <div key={s.label} className="rounded-xl bg-surface/30 p-4">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-base">{s.icon}</span>
+                      <span className="text-text-muted">{s.icon}</span>
                       <p className="text-xs text-text-muted">{s.label}</p>
                     </div>
                     <p className={`text-xl font-bold ${s.color}`}>{String(s.value)}</p>
@@ -408,7 +412,7 @@ export default function UserDetailModal({
           <div>
             {isLoadingDisiplin ? (
               <div className="flex items-center justify-center py-8">
-                <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
               </div>
             ) : disciplineNotes.length === 0 ? (
               <p className="text-sm text-text-muted text-center py-8">Belum ada catatan disiplin</p>
@@ -420,16 +424,23 @@ export default function UserDetailModal({
                     penghargaan: 'border-success/30 bg-success/10 text-success',
                     catatan: 'border-primary/30 bg-primary/10 text-primary',
                   };
+                  const jenisIconMap: Record<string, ReactNode> = {
+                    peringatan: <AlertTriangle className="h-3 w-3" aria-hidden="true" />,
+                    penghargaan: <Award className="h-3 w-3" aria-hidden="true" />,
+                    catatan: <FileText className="h-3 w-3" aria-hidden="true" />,
+                  };
                   const labelMap: Record<string, string> = {
-                    peringatan: '⚠ Peringatan',
-                    penghargaan: '🏅 Penghargaan',
-                    catatan: '📝 Catatan',
+                    peringatan: 'Peringatan',
+                    penghargaan: 'Penghargaan',
+                    catatan: 'Catatan',
                   };
                   const jenis = note.jenis ?? 'catatan';
                   return (
                     <div key={note.id} className={`rounded-xl border p-3 ${variantMap[jenis] ?? variantMap['catatan']}`}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold">{labelMap[jenis] ?? jenis}</span>
+                        <span className="inline-flex items-center gap-1 text-xs font-bold">
+                          {jenisIconMap[jenis]} {labelMap[jenis] ?? jenis}
+                        </span>
                         <span className="text-xs opacity-70">
                           {new Date(note.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>

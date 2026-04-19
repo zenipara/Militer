@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import { CheckCircle, XCircle } from 'lucide-react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { usePosJagaStore } from '../../store/posJagaStore';
 import { useGatePassStore } from '../../store/gatePassStore';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageHeader from '../../components/ui/PageHeader';
 import type { ScanPosJagaResult } from '../../types';
 
@@ -193,9 +195,8 @@ export default function ScanPosJagaPage() {
 
         {/* Loading setelah scan */}
         {state === 'processing' && (
-          <div className="rounded-2xl border border-surface bg-bg-card p-6 flex flex-col items-center gap-3">
-            <span className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-            <p className="text-sm text-text-muted">Memproses izin keluar/kembali...</p>
+          <div className="rounded-2xl border border-surface bg-bg-card p-6">
+            <LoadingSpinner message="Memproses izin keluar/kembali..." />
           </div>
         )}
 
@@ -203,7 +204,7 @@ export default function ScanPosJagaPage() {
         {state === 'success' && result && (
           <div className="rounded-2xl border border-success/30 bg-success/5 p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">✅</span>
+              <CheckCircle className="h-8 w-8 flex-shrink-0 text-success" aria-hidden="true" />
               <div>
                 <div className="font-bold text-success text-lg">{result.message}</div>
                 <div className="text-sm text-text-muted">Pos: {result.pos_nama}</div>
@@ -222,7 +223,7 @@ export default function ScanPosJagaPage() {
         {state === 'error' && (
           <div className="rounded-2xl border border-accent-red/30 bg-accent-red/5 p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">❌</span>
+              <XCircle className="h-8 w-8 flex-shrink-0 text-accent-red" aria-hidden="true" />
               <div>
                 <div className="font-bold text-accent-red">Scan Gagal</div>
                 <div className="text-sm text-text-muted">{errorMsg}</div>

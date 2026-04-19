@@ -3,6 +3,7 @@
  * Renders all active toasts
  */
 
+import { CheckCircle2, XCircle, Info, AlertCircle, X } from 'lucide-react';
 import { useToastStore } from '../../lib/toastNotification';
 import Button from './Button';
 
@@ -15,53 +16,54 @@ interface ToastItemProps {
   onClose: (id: string) => void;
 }
 
+const TYPE_CONFIG = {
+  success: {
+    bg: 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800',
+    text: 'text-green-900 dark:text-green-100',
+    iconBg: 'bg-green-100 text-green-600 dark:bg-green-800 dark:text-green-200',
+    Icon: CheckCircle2,
+  },
+  error: {
+    bg: 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800',
+    text: 'text-red-900 dark:text-red-100',
+    iconBg: 'bg-red-100 text-red-600 dark:bg-red-800 dark:text-red-200',
+    Icon: XCircle,
+  },
+  info: {
+    bg: 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800',
+    text: 'text-blue-900 dark:text-blue-100',
+    iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-200',
+    Icon: Info,
+  },
+  warning: {
+    bg: 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800',
+    text: 'text-yellow-900 dark:text-yellow-100',
+    iconBg: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-800 dark:text-yellow-200',
+    Icon: AlertCircle,
+  },
+} as const;
+
 function ToastItem({ id, type, message, description, action, onClose }: ToastItemProps) {
-  const bgClass = {
-    success: 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800',
-    error: 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800',
-    info: 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800',
-    warning: 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800',
-  }[type];
-
-  const textClass = {
-    success: 'text-green-900 dark:text-green-100',
-    error: 'text-red-900 dark:text-red-100',
-    info: 'text-blue-900 dark:text-blue-100',
-    warning: 'text-yellow-900 dark:text-yellow-100',
-  }[type];
-
-  const iconClass = {
-    success: '✓',
-    error: '✕',
-    info: 'ℹ',
-    warning: '⚠',
-  }[type];
-
-  const iconBgClass = {
-    success: 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100',
-    error: 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-100',
-    info: 'bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-100',
-    warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-800 dark:text-yellow-100',
-  }[type];
+  const { bg, text, iconBg, Icon } = TYPE_CONFIG[type];
 
   return (
     <div
-      className={`animate-in slide-in-from-right border rounded-lg p-4 shadow-lg ${bgClass} ${textClass} flex gap-3 items-start`}
+      className={`animate-slide-in border rounded-xl p-3.5 shadow-lg ${bg} ${text} flex gap-3 items-start`}
       role="alert"
     >
       {/* Icon */}
-      <div className={`flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full font-bold text-sm ${iconBgClass}`}>
-        {iconClass}
+      <div className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-lg ${iconBg}`}>
+        <Icon className="w-4 h-4" aria-hidden="true" />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm">{message}</p>
-        {description && <p className="text-xs mt-1 opacity-80">{description}</p>}
+        <p className="font-semibold text-sm leading-snug">{message}</p>
+        {description && <p className="text-xs mt-0.5 opacity-80 leading-snug">{description}</p>}
       </div>
 
       {/* Action or Close */}
-      <div className="flex gap-2 flex-shrink-0 items-center">
+      <div className="flex gap-1.5 flex-shrink-0 items-center">
         {action && (
           <Button
             variant="ghost"
@@ -70,17 +72,17 @@ function ToastItem({ id, type, message, description, action, onClose }: ToastIte
               action.onClick();
               onClose(id);
             }}
-            className="text-xs"
+            className="text-xs px-2 min-h-[32px]"
           >
             {action.label}
           </Button>
         )}
         <button
           onClick={() => onClose(id)}
-          className="opacity-50 hover:opacity-100 transition p-1"
-          aria-label="Close"
+          className="flex h-7 w-7 items-center justify-center rounded-lg opacity-50 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 transition"
+          aria-label="Tutup"
         >
-          ✕
+          <X className="w-3.5 h-3.5" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -91,7 +93,7 @@ export function ToastContainer() {
   const { toasts, removeToast } = useToastStore();
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 pointer-events-none sm:bottom-4">
+    <div className="fixed bottom-20 right-4 z-50 flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2.5 pointer-events-none sm:bottom-4">
       {toasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">
           <ToastItem

@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useGatePassStore } from '../../store/gatePassStore';
 import { useUIStore } from '../../store/uiStore';
 import Input from '../common/Input';
 import Button from '../common/Button';
+
+/** Return current datetime in the format required by datetime-local inputs (yyyy-MM-ddTHH:mm) */
+function nowLocal(): string {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  return d.toISOString().slice(0, 16);
+}
 
 export default function GatePassForm() {
   const [keperluan, setKeperluan] = useState('');
@@ -13,6 +20,8 @@ export default function GatePassForm() {
   const [error, setError] = useState<string | null>(null);
   const createGatePass = useGatePassStore(s => s.createGatePass);
   const { showNotification } = useUIStore();
+
+  const minNow = useMemo(() => nowLocal(), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,15 +78,25 @@ export default function GatePassForm() {
       <Input
         label="Waktu Keluar"
         type="datetime-local"
+        min={minNow}
         value={waktuKeluar}
-        onChange={(e) => setWaktuKeluar(e.target.value)}
+        onChange={(e) => {
+          setWaktuKeluar(e.target.value);
+          // Reset waktu kembali if it's before the new keluar time
+          if (waktuKembali && e.target.value && waktuKembali <= e.target.value) {
+            setWaktuKembali('');
+          }
+        }}
+        helpText="Tidak boleh mengisi waktu yang sudah lewat"
         required
       />
       <Input
         label="Waktu Kembali"
         type="datetime-local"
+        min={waktuKeluar || minNow}
         value={waktuKembali}
         onChange={(e) => setWaktuKembali(e.target.value)}
+        helpText="Harus setelah waktu keluar"
         required
       />
       <Button type="submit" variant="primary" size="lg" isLoading={loading} className="w-full">

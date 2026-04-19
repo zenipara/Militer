@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
+import { ClipboardCheck } from 'lucide-react';
 import { useGatePassStore } from '../../store/gatePassStore';
 import { useGatePassRealtime } from '../../hooks/useGatePassRealtime';
 import GatePassStatusBadge from '../../components/gatepass/GatePassStatusBadge';
+import EmptyState from '../../components/common/EmptyState';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import PageHeader from '../../components/ui/PageHeader';
 
@@ -25,6 +27,10 @@ export default function GatePassApprovalPage() {
         <PageHeader
           title="Status Operasional Gate Pass"
           subtitle="Pengajuan Gate Pass disetujui otomatis. Verifikasi keluar/kembali melalui scan QR Pos Jaga."
+          breadcrumbs={[
+            { label: 'Pusat Operasi', href: '/komandan/dashboard' },
+            { label: 'Monitoring Gate Pass' },
+          ]}
           meta={
             <>
               {checkInCount > 0 && <span>{checkInCount} personel di luar</span>}
@@ -35,9 +41,12 @@ export default function GatePassApprovalPage() {
 
         <div className="app-card overflow-hidden">
           {activeGatePasses.length === 0 ? (
-            <div className="p-10 text-center text-text-muted text-sm">
-              Belum ada data Gate Pass operasional.
-            </div>
+            <EmptyState
+              icon={<ClipboardCheck className="h-6 w-6" aria-hidden="true" />}
+              title="Belum ada data Gate Pass operasional"
+              description="Gate Pass yang disetujui dan sedang aktif akan muncul di sini."
+              className="border-0 bg-transparent py-12"
+            />
           ) : (
             <div className="divide-y divide-surface/50">
               {activeGatePasses.map(gp => (

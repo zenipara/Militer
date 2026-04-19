@@ -10,6 +10,7 @@ import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
 import Button from '../../components/common/Button';
 import EmptyState from '../../components/common/EmptyState';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { AttendanceBadge } from '../../components/common/Badge';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useState } from 'react';
@@ -90,7 +91,7 @@ export default function PrajuritDashboard() {
             <>
               {canViewAttendanceModules && (
                 attnLoading ? (
-                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-surface border-t-primary" />
+                  <LoadingSpinner size="sm" />
                 ) : todayAttendance ? (
                   <div className="flex items-center gap-3">
                     <AttendanceBadge status={todayAttendance.status} />
@@ -198,7 +199,7 @@ export default function PrajuritDashboard() {
               <StatCard
                 icon={<ICONS.CalendarDays className="h-5 w-5 text-primary" aria-hidden="true" />}
                 label="Status Hari Ini"
-                value={todayAttendance ? '✓' : '—'}
+                value={todayAttendance ? 'Hadir' : '—'}
               />
             )}
           </StatsGrid>

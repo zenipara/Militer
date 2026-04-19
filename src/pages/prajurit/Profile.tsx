@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Pencil, BarChart2, ClipboardList, CheckCircle, CalendarDays, TrendingUp } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -250,8 +251,8 @@ export default function Profile() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-text-primary">Informasi Pribadi</h3>
             {!editingProfile && (
-              <Button size="sm" variant="outline" onClick={() => setEditingProfile(true)}>
-                ✏ Edit
+              <Button size="sm" variant="outline" onClick={() => setEditingProfile(true)} leftIcon={<Pencil className="h-3.5 w-3.5" aria-hidden="true" />}>
+                Edit
               </Button>
             )}
           </div>
@@ -424,25 +425,27 @@ export default function Profile() {
 
         {/* Personal Stats */}
         <div className="app-card p-6">
-          <h3 className="font-semibold text-text-primary mb-4">📊 Statistik Pribadi</h3>
+          <h3 className="inline-flex items-center gap-2 font-semibold text-text-primary mb-4">
+            <BarChart2 className="h-4 w-4" aria-hidden="true" /> Statistik Pribadi
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             {[
               {
                 label: 'Total Tugas',
                 value: stats?.totalTasks ?? '—',
-                icon: '📋',
+                icon: <ClipboardList className="h-4 w-4" aria-hidden="true" />,
                 color: 'text-text-primary',
               },
               {
                 label: 'Tugas Disetujui',
                 value: stats?.approvedTasks ?? '—',
-                icon: '✓',
+                icon: <CheckCircle className="h-4 w-4" aria-hidden="true" />,
                 color: 'text-success',
               },
               {
                 label: 'Kehadiran (30 hr)',
                 value: stats ? `${stats.hadirCount}/${stats.totalAttendance}` : '—',
-                icon: '📅',
+                icon: <CalendarDays className="h-4 w-4" aria-hidden="true" />,
                 color: 'text-primary',
               },
               {
@@ -450,7 +453,7 @@ export default function Profile() {
                 value: stats && stats.totalAttendance > 0
                   ? `${Math.round((stats.hadirCount / stats.totalAttendance) * 100)}%`
                   : '—',
-                icon: '📈',
+                icon: <TrendingUp className="h-4 w-4" aria-hidden="true" />,
                 color: stats && stats.totalAttendance > 0 && (stats.hadirCount / stats.totalAttendance) >= 0.8
                   ? 'text-success'
                   : 'text-accent-gold',
@@ -458,7 +461,7 @@ export default function Profile() {
             ].map((s) => (
               <div key={s.label} className="rounded-xl bg-surface/30 p-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-base">{s.icon}</span>
+                  <span className="text-text-muted">{s.icon}</span>
                   <p className="text-xs text-text-muted">{s.label}</p>
                 </div>
                 <p className={`text-xl font-bold ${s.color}`}>{String(s.value)}</p>

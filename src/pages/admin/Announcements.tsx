@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { Megaphone, Pin, PinOff, Plus } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Input from '../../components/common/Input';
 import Badge from '../../components/common/Badge';
+import EmptyState from '../../components/common/EmptyState';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageHeader from '../../components/ui/PageHeader';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useUIStore } from '../../store/uiStore';
@@ -92,17 +95,17 @@ export default function Announcements() {
           title="Manajemen Pengumuman"
           subtitle="Publikasikan informasi resmi berdasarkan role dan satuan dengan prioritas pin."
           meta={<span>Total pengumuman: {announcements.length}</span>}
-          actions={<Button onClick={() => setShowCreate(true)}>+ Buat Pengumuman</Button>}
+          actions={<Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Buat Pengumuman</Button>}
         />
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-surface border-t-primary" />
-          </div>
+          <LoadingSpinner message="Memuat pengumuman..." />
         ) : announcements.length === 0 ? (
-          <div className="app-card p-10 text-center text-text-muted">
-            Belum ada pengumuman
-          </div>
+          <EmptyState
+            icon={<Megaphone className="h-6 w-6" aria-hidden="true" />}
+            title="Belum ada pengumuman"
+            description="Buat pengumuman untuk menginformasikan hal penting kepada personel."
+          />
         ) : (
           <div className="space-y-3">
             {announcements.map((ann) => (
@@ -114,7 +117,9 @@ export default function Announcements() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       {ann.is_pinned && (
-                        <span className="text-xs text-accent-gold font-medium">📌 Disematkan</span>
+                        <span className="inline-flex items-center gap-1 text-xs text-accent-gold font-medium">
+                          <Pin className="h-3 w-3" aria-hidden="true" /> Disematkan
+                        </span>
                       )}
                       <h3 className="font-semibold text-text-primary">{ann.judul}</h3>
                     </div>
@@ -144,8 +149,11 @@ export default function Announcements() {
                       variant="ghost"
                       onClick={() => handleTogglePin(ann)}
                       title={ann.is_pinned ? 'Lepas Pin' : 'Sematkan'}
+                      aria-label={ann.is_pinned ? 'Lepas pin pengumuman' : 'Sematkan pengumuman'}
                     >
-                      {ann.is_pinned ? '📌' : '📍'}
+                      {ann.is_pinned
+                        ? <PinOff className="h-4 w-4" aria-hidden="true" />
+                        : <Pin className="h-4 w-4" aria-hidden="true" />}
                     </Button>
                     <Button size="sm" variant="danger" onClick={() => handleDelete(ann.id)}>
                       Hapus
@@ -222,7 +230,9 @@ export default function Announcements() {
               onChange={(e) => setForm({ ...form, is_pinned: e.target.checked })}
               className="rounded border-surface text-primary"
             />
-            <span className="text-sm text-text-muted">📌 Sematkan pengumuman ini</span>
+            <span className="inline-flex items-center gap-1.5 text-sm text-text-muted">
+              <Pin className="h-3.5 w-3.5" aria-hidden="true" /> Sematkan pengumuman ini
+            </span>
           </label>
         </div>
       </Modal>

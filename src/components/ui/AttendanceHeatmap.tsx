@@ -3,6 +3,7 @@
  * Each cell represents one day; colour indicates attendance status.
  */
 
+import { CalendarDays } from 'lucide-react';
 import type { Attendance } from '../../types';
 
 interface Props {
@@ -41,7 +42,9 @@ export default function AttendanceHeatmap({ attendances }: Props) {
 
   return (
     <div>
-      <h3 className="font-semibold text-text-primary mb-3">📅 Kalender Kehadiran (30 Hari)</h3>
+      <h3 className="inline-flex items-center gap-2 font-semibold text-text-primary mb-3">
+        <CalendarDays className="h-4 w-4" aria-hidden="true" /> Kalender Kehadiran (30 Hari)
+      </h3>
 
       {/* Grid */}
       <div className="grid grid-cols-10 gap-1">

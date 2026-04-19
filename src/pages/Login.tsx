@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -160,14 +161,17 @@ export default function Login() {
                 }}
                 autoComplete="current-password"
                 required
+                helpText={pin.length > 0 && pin.length < 6 ? `${pin.length}/6 digit` : undefined}
                 rightIcon={
                   <button
                     type="button"
                     onClick={() => setShowPin(!showPin)}
-                    className="text-xs text-text-muted transition-colors hover:text-text-primary"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-text-muted transition-colors hover:text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                     aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
                   >
-                    {showPin ? '🙈' : '👁'}
+                    {showPin
+                      ? <EyeOff className="h-4 w-4" aria-hidden="true" />
+                      : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </button>
                 }
               />

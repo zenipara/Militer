@@ -1,9 +1,11 @@
+import { CalendarDays } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { useAttendance } from '../../hooks/useAttendance';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { AttendanceBadge } from '../../components/common/Badge';
 import Button from '../../components/common/Button';
+import EmptyState from '../../components/common/EmptyState';
 import { Skeleton, CardListSkeleton } from '../../components/common/Skeleton';
 import PageHeader from '../../components/ui/PageHeader';
 import { useState } from 'react';
@@ -114,7 +116,12 @@ export default function Attendance() {
             <div className="app-card overflow-hidden">
               <div className="divide-y divide-surface/50">
                 {attendances.length === 0 ? (
-                  <p className="text-center text-text-muted py-6">Belum ada data absensi</p>
+                  <EmptyState
+                    icon={<CalendarDays className="h-6 w-6" aria-hidden="true" />}
+                    title="Belum ada data absensi"
+                    description="Riwayat absensi 30 hari terakhir akan muncul di sini."
+                    className="border-0 bg-transparent"
+                  />
                 ) : (
                   attendances.map((a) => (
                     <div key={a.id} className="flex items-center justify-between px-5 py-3">
