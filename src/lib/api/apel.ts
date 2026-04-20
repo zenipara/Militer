@@ -26,7 +26,8 @@ export async function createApelSession(params: CreateApelSessionParams): Promis
     p_satuan: params.satuan ?? null,
   });
   if (error) throw error;
-  return String(data);
+  if (!data || typeof data !== 'string') throw new Error('Sesi apel gagal dibuat');
+  return data;
 }
 
 export async function laporHadirApel(sessionId: string, keterangan?: string): Promise<ApelAttendance> {

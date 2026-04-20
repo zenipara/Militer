@@ -213,8 +213,8 @@ BEGIN
   )
   VALUES (
     CASE WHEN v_role = 'admin'
-      THEN COALESCE(NULLIF(BTRIM(p_satuan), ''), v_scope_satuan, '')
-      ELSE COALESCE(v_scope_satuan, '')
+      THEN COALESCE(NULLIF(BTRIM(p_satuan), ''), v_scope_satuan)
+      ELSE v_scope_satuan
     END,
     p_jenis,
     p_tanggal,

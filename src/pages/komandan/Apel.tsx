@@ -3,11 +3,13 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
 import { useApel } from '../../hooks/useApel';
 import type { ApelAttendance } from '../../types';
 
 export default function KomandanApelPage() {
   const { user } = useAuthStore();
+  const { showNotification } = useUIStore();
   const { sessions, isLoading, error, getSessionAttendance } = useApel();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [attendance, setAttendance] = useState<ApelAttendance[]>([]);
@@ -36,12 +38,13 @@ export default function KomandanApelPage() {
         setAttendance(rows);
       } catch {
         setAttendance([]);
+        showNotification('Gagal memuat kehadiran apel', 'error');
       } finally {
         setLoadingAttendance(false);
       }
     };
     void run();
-  }, [selectedSessionId, getSessionAttendance]);
+  }, [selectedSessionId, getSessionAttendance, showNotification]);
 
   const hadir = attendance.filter((a) => a.status === 'hadir').length;
   const terlambat = attendance.filter((a) => a.status === 'terlambat').length;
