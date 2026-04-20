@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -77,6 +77,19 @@ export default function UserManagement() {
   const [importRows, setImportRows] = useState<Record<string, string>[]>([]);
   const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: { nrp: string; error: string }[] } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+
+  const pageStats = useMemo(() => {
+    const active = users.filter((u) => u.is_active).length;
+    const inactive = users.length - active;
+    const online = users.filter((u) => u.is_online).length;
+    return {
+      pageCount: users.length,
+      active,
+      inactive,
+      online,
+    };
+  }, [users]);
+  const hasFilters = searchRaw.trim().length > 0 || filterRole !== '' || filterStatus !== '';
 
   useEffect(() => {
     setSelectedUserIds(new Set());
@@ -329,17 +342,45 @@ export default function UserManagement() {
 
   return (
     <DashboardLayout title="Manajemen Personel">
-      <div className="space-y-5">
+      <div className="space-y-5 animate-fade-up">
         <PageHeader
           title="Manajemen Personel"
           subtitle="Kelola akun, role, status aktif, reset PIN personel, dan impor data massal."
+          breadcrumbs={[
+            { label: 'Admin', href: '#/admin' },
+            { label: 'Manajemen Personel' },
+          ]}
           meta={
             <>
               <span>{totalItems} personel terdaftar</span>
               <span>Halaman {currentPage} dari {totalPages}</span>
+              <span>{pageStats.pageCount} data tampil</span>
             </>
           }
         />
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Total Terdaftar</p>
+            <p className="mt-2 text-2xl font-bold text-text-primary">{totalItems}</p>
+            <p className="mt-1 text-xs text-text-muted">Total personel di sistem</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Aktif (Halaman)</p>
+            <p className="mt-2 text-2xl font-bold text-success">{pageStats.active}</p>
+            <p className="mt-1 text-xs text-text-muted">Akun siap digunakan</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Nonaktif (Halaman)</p>
+            <p className="mt-2 text-2xl font-bold text-accent-red">{pageStats.inactive}</p>
+            <p className="mt-1 text-xs text-text-muted">Perlu review status</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Online (Realtime)</p>
+            <p className="mt-2 text-2xl font-bold text-primary">{pageStats.online}</p>
+            <p className="mt-1 text-xs text-text-muted">Terlihat sedang aktif</p>
+          </div>
+        </div>
 
         {error && (
           <div className="flex items-center gap-2.5 rounded-2xl border border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5 p-4 text-sm text-accent-red">
@@ -401,6 +442,31 @@ export default function UserManagement() {
               </span>
             </Button>
             <Button size="sm" onClick={() => setShowCreate(true)}>+ Tambah</Button>
+            {hasFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchRaw('');
+                  setFilterRole('');
+                  setFilterStatus('');
+                  setPage(1);
+                }}
+              >
+                Reset Filter
+              </Button>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
+            <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+              Filter role: {filterRole || 'Semua'}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+              Filter status: {filterStatus === 'active' ? 'Aktif' : filterStatus === 'inactive' ? 'Nonaktif' : 'Semua'}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+              Query: {searchRaw.trim() || 'Tidak ada'}
+            </span>
           </div>
         </div>
 
@@ -533,6 +599,7 @@ export default function UserManagement() {
             data={users}
             keyExtractor={(u) => u.id}
             isLoading={false}
+            caption="Tabel manajemen personel berdasarkan filter role, status, dan pencarian"
             emptyMessage="Tidak ada personel ditemukan"
           />
           <Pagination

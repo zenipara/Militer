@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Package, ClipboardList, Search, Plus } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Package, ClipboardList, Search, Plus, Layers3, RotateCcw } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -28,8 +28,23 @@ export default function Logistics() {
   const [adminNote, setAdminNote] = useState('');
   const [form, setForm] = useState<Partial<LogisticsItem>>({ nama_item: '', jumlah: 0, kondisi: 'baik' });
   const [activeTab, setActiveTab] = useState<'inventory' | 'requests'>('inventory');
+  const [kondisiFilter, setKondisiFilter] = useState<'all' | LogisticsItem['kondisi']>('all');
 
   const pendingRequests = requests.filter((r) => r.status === 'pending');
+
+  const summary = useMemo(() => {
+    const total = items.length;
+    const baik = items.filter((item) => item.kondisi === 'baik').length;
+    const perluPerhatian = items.filter((item) => item.kondisi !== 'baik').length;
+    const approvedRequests = requests.filter((r) => r.status === 'approved').length;
+    return {
+      total,
+      baik,
+      perluPerhatian,
+      pending: pendingRequests.length,
+      approvedRequests,
+    };
+  }, [items, pendingRequests.length, requests]);
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
@@ -40,9 +55,12 @@ export default function Logistics() {
 
   useEffect(() => { void fetchItems(); }, [fetchItems]);
 
-  const filtered = items.filter(
-    (i) => !search || i.nama_item.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = items.filter((i) => {
+    const bySearch = !search || i.nama_item.toLowerCase().includes(search.toLowerCase());
+    const byKondisi = kondisiFilter === 'all' || i.kondisi === kondisiFilter;
+    return bySearch && byKondisi;
+  });
+  const hasInventoryFilters = search.trim().length > 0 || kondisiFilter !== 'all';
 
   const handleCreate = async () => {
     if (!form.nama_item) { showNotification('Nama item wajib diisi', 'error'); return; }
@@ -72,12 +90,6 @@ export default function Logistics() {
     }
   };
 
-  const kondisiColors = {
-    baik: 'text-success',
-    rusak_ringan: 'text-accent-gold',
-    rusak_berat: 'text-accent-red',
-  };
-
   const handleReview = async (
     id: string,
     status: 'approved' | 'rejected',
@@ -101,13 +113,51 @@ export default function Logistics() {
 
   return (
     <DashboardLayout title="Manajemen Logistik">
-      <div className="space-y-5">
+      <div className="space-y-5 animate-fade-up">
         <PageHeader
           title="Manajemen Logistik"
           subtitle="Inventaris perlengkapan dan permintaan dari Komandan dikelola di sini."
-          meta={<span>Total item: {filtered.length}</span>}
+          breadcrumbs={[
+            { label: 'Admin', href: '#/admin' },
+            { label: 'Manajemen Logistik' },
+          ]}
+          meta={
+            <>
+              <span>Total item: {summary.total}</span>
+              <span>Pending request: {summary.pending}</span>
+              <span>{filtered.length} data terlihat</span>
+            </>
+          }
           actions={<Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Tambah Item</Button>}
         />
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Total Inventaris</p>
+            <p className="mt-2 text-2xl font-bold text-text-primary">{summary.total}</p>
+            <p className="mt-1 text-xs text-text-muted">Semua item logistik</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Kondisi Baik</p>
+            <p className="mt-2 text-2xl font-bold text-success">{summary.baik}</p>
+            <p className="mt-1 text-xs text-text-muted">Siap operasional</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Perlu Perhatian</p>
+            <p className="mt-2 text-2xl font-bold text-accent-gold">{summary.perluPerhatian}</p>
+            <p className="mt-1 text-xs text-text-muted">Rusak ringan/berat</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Pending Request</p>
+            <p className="mt-2 text-2xl font-bold text-accent-red">{summary.pending}</p>
+            <p className="mt-1 text-xs text-text-muted">Menunggu review admin</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Request Approved</p>
+            <p className="mt-2 text-2xl font-bold text-primary">{summary.approvedRequests}</p>
+            <p className="mt-1 text-xs text-text-muted">Sudah diproses</p>
+          </div>
+        </div>
 
         {/* Tab bar */}
         <div className="app-card flex items-center gap-1 p-1.5 sm:w-fit">
@@ -146,20 +196,78 @@ export default function Logistics() {
                 leftIcon={<Search className="h-4 w-4" aria-hidden="true" />}
                 className="flex-1"
               />
+              <div className="inline-flex rounded-xl border border-surface/70 bg-surface/20 p-1">
+                <button
+                  type="button"
+                  onClick={() => setKondisiFilter('all')}
+                  className={`rounded-lg px-2.5 py-1.5 text-xs transition ${kondisiFilter === 'all' ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+                >
+                  Semua
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKondisiFilter('baik')}
+                  className={`rounded-lg px-2.5 py-1.5 text-xs transition ${kondisiFilter === 'baik' ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+                >
+                  Baik
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKondisiFilter('rusak_ringan')}
+                  className={`rounded-lg px-2.5 py-1.5 text-xs transition ${kondisiFilter === 'rusak_ringan' ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+                >
+                  Rusak Ringan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKondisiFilter('rusak_berat')}
+                  className={`rounded-lg px-2.5 py-1.5 text-xs transition ${kondisiFilter === 'rusak_berat' ? 'bg-bg-card text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+                >
+                  Rusak Berat
+                </button>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1 text-xs text-text-muted">
+                <Layers3 className="h-3.5 w-3.5" />
+                {filtered.length} terlihat
+              </span>
+              {hasInventoryFilters && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSearch('');
+                    setKondisiFilter('all');
+                  }}
+                  leftIcon={<RotateCcw className="h-3.5 w-3.5" />}
+                >
+                  Reset
+                </Button>
+              )}
             </div>
 
             <Table<LogisticsItem>
               columns={[
-                { key: 'nama_item', header: 'Nama Item' },
+                {
+                  key: 'nama_item',
+                  header: 'Nama Item',
+                  render: (i) => (
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-surface/70 bg-surface/20 text-xs font-bold text-text-primary">
+                        {i.nama_item.slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="font-medium text-text-primary">{i.nama_item}</span>
+                    </div>
+                  ),
+                },
                 { key: 'kategori', header: 'Kategori', render: (i) => i.kategori ?? '—' },
                 { key: 'jumlah', header: 'Jumlah', render: (i) => `${i.jumlah} ${i.satuan_item ?? ''}` },
                 {
                   key: 'kondisi',
                   header: 'Kondisi',
                   render: (i) => i.kondisi ? (
-                    <span className={`font-medium capitalize ${kondisiColors[i.kondisi]}`}>
+                    <Badge variant={i.kondisi === 'baik' ? 'success' : i.kondisi === 'rusak_ringan' ? 'warning' : 'error'}>
                       {i.kondisi.replace('_', ' ')}
-                    </span>
+                    </Badge>
                   ) : '—',
                 },
                 { key: 'lokasi', header: 'Lokasi', render: (i) => i.lokasi ?? '—' },
@@ -167,8 +275,15 @@ export default function Logistics() {
               data={filtered}
               keyExtractor={(i) => i.id}
               isLoading={isLoading}
+              caption="Tabel inventaris logistik berdasarkan pencarian dan kondisi item"
               emptyMessage="Tidak ada item logistik"
             />
+
+            {!isLoading && filtered.length === 0 && items.length > 0 && (
+              <div className="app-card p-4 text-sm text-text-muted">
+                Tidak ada item yang cocok dengan filter saat ini. Coba reset filter untuk melihat semua inventaris.
+              </div>
+            )}
           </>
         )}
 

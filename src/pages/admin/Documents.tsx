@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Layers3, Search, FolderOpen, Download, Upload, FileText, RotateCcw } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -57,6 +58,14 @@ export default function Documents() {
     const matchKat = !filterKategori || d.kategori === filterKategori;
     return matchSearch && matchKat;
   });
+
+  const summary = {
+    total: docs.length,
+    visible: filtered.length,
+    categorized: docs.filter((d) => Boolean(d.kategori)).length,
+    scopedToSatuan: docs.filter((d) => Boolean(d.satuan)).length,
+  };
+  const hasFilters = search.trim().length > 0 || filterKategori !== '';
 
   const handleCreate = async () => {
     if (!form.nama || !form.file_url) {
@@ -119,33 +128,91 @@ export default function Documents() {
 
   return (
     <DashboardLayout title="Arsip Dokumen">
-      <div className="space-y-5">
+      <div className="space-y-5 animate-fade-up">
         <PageHeader
           title="Arsip Dokumen"
           subtitle="Kelola dokumen satuan, kategori, dan metadata unggahan dalam satu panel terpusat."
-          meta={<span>Total dokumen: {filtered.length}</span>}
-          actions={<Button onClick={() => setShowCreate(true)}>+ Tambah Dokumen</Button>}
+          breadcrumbs={[
+            { label: 'Admin', href: '#/admin' },
+            { label: 'Arsip Dokumen' },
+          ]}
+          meta={
+            <>
+              <span>Total dokumen: {summary.total}</span>
+              <span>{summary.visible} data terlihat</span>
+            </>
+          }
+          actions={<Button onClick={() => setShowCreate(true)} leftIcon={<Upload className="h-4 w-4" />}>Tambah Dokumen</Button>}
         />
 
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Total Dokumen</p>
+            <p className="mt-2 text-2xl font-bold text-text-primary">{summary.total}</p>
+            <p className="mt-1 text-xs text-text-muted">Seluruh arsip tersimpan</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Berkategori</p>
+            <p className="mt-2 text-2xl font-bold text-primary">{summary.categorized}</p>
+            <p className="mt-1 text-xs text-text-muted">Sudah tertata per kategori</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Per Satuan</p>
+            <p className="mt-2 text-2xl font-bold text-success">{summary.scopedToSatuan}</p>
+            <p className="mt-1 text-xs text-text-muted">Dokumen dengan scope unit</p>
+          </div>
+          <div className="app-card p-4">
+            <p className="text-xs uppercase tracking-wide text-text-muted">Hasil Filter</p>
+            <p className="mt-2 text-2xl font-bold text-accent-gold">{summary.visible}</p>
+            <p className="mt-1 text-xs text-text-muted">Data aktif pada tampilan</p>
+          </div>
+        </div>
+
         {/* Toolbar */}
-        <div className="app-card flex flex-col gap-3 p-4 sm:flex-row sm:p-5">
-          <input
-            type="text"
-            placeholder="Cari nama dokumen..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="form-control flex-1"
-          />
-          <select
-            value={filterKategori}
-            onChange={(e) => setFilterKategori(e.target.value)}
-            className="form-control sm:w-56"
-          >
-            <option value="">Semua Kategori</option>
-            {categories.map((k) => (
-              <option key={k} value={k}>{k}</option>
-            ))}
-          </select>
+        <div className="app-card flex flex-col gap-3 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
+            <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+              <Layers3 className="h-3.5 w-3.5" />
+              {summary.visible} terlihat
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+              <FolderOpen className="h-3.5 w-3.5" />
+              Kategori: {filterKategori || 'Semua'}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              type="text"
+              placeholder="Cari nama dokumen..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              leftIcon={<Search className="h-4 w-4" />}
+              className="flex-1"
+            />
+            <select
+              value={filterKategori}
+              onChange={(e) => setFilterKategori(e.target.value)}
+              className="form-control sm:w-64"
+            >
+              <option value="">Semua Kategori</option>
+              {categories.map((k) => (
+                <option key={k} value={k}>{k}</option>
+              ))}
+            </select>
+            {hasFilters && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch('');
+                  setFilterKategori('');
+                }}
+                leftIcon={<RotateCcw className="h-4 w-4" />}
+              >
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
 
         <Table<Document>
@@ -154,9 +221,14 @@ export default function Documents() {
               key: 'nama',
               header: 'Nama Dokumen',
               render: (d) => (
-                <div>
-                  <p className="font-medium text-text-primary">{d.nama}</p>
-                  {d.kategori && <p className="text-xs text-text-muted">{d.kategori}</p>}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-surface/70 bg-surface/20 text-primary">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-text-primary">{d.nama}</p>
+                    {d.kategori && <p className="text-xs text-text-muted">{d.kategori}</p>}
+                  </div>
                 </div>
               ),
             },
@@ -177,14 +249,14 @@ export default function Documents() {
               header: 'Aksi',
               render: (d) => (
                 <div className="flex items-center gap-2">
-                  <a
-                    href={d.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary text-sm hover:underline"
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.open(d.file_url, '_blank', 'noopener,noreferrer')}
+                    leftIcon={<Download className="h-3.5 w-3.5" />}
                   >
                     Unduh
-                  </a>
+                  </Button>
                   <Button size="sm" variant="danger" onClick={() => handleDelete(d.id)}>
                     Hapus
                   </Button>
@@ -195,8 +267,15 @@ export default function Documents() {
           data={filtered}
           keyExtractor={(d) => d.id}
           isLoading={isLoading}
+          caption="Tabel arsip dokumen berdasarkan filter nama dan kategori"
           emptyMessage="Belum ada dokumen"
         />
+
+        {!isLoading && filtered.length === 0 && docs.length > 0 && (
+          <div className="app-card p-4 text-sm text-text-muted">
+            Tidak ada dokumen yang cocok dengan filter aktif. Coba reset pencarian atau pilih kategori lain.
+          </div>
+        )}
       </div>
 
       {/* Add Document Modal */}
