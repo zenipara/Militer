@@ -15,18 +15,25 @@ import type { Message } from '../../types';
 import Input from '../../components/common/Input';
 
 type Tab = 'inbox' | 'sent';
+type ComposeMode = 'personal' | 'group';
+type GroupTargetRole = 'all' | 'prajurit' | 'guard' | 'staf' | 'komandan';
 
 export default function Messages() {
   const { user } = useAuthStore();
   const { showNotification } = useUIStore();
-  const { inbox, sent, unreadCount, isLoading, sendMessage, markAsRead, markAllAsRead } = useMessages();
+  const { inbox, sent, unreadCount, isLoading, sendMessage, sendGroupMessage, markAsRead, markAllAsRead } = useMessages();
 
   const [tab, setTab] = useState<Tab>('inbox');
   const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
   const [showCompose, setShowCompose] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [searchRaw, setSearchRaw] = useState('');
-  const [composeForm, setComposeForm] = useState({ to_user: '', isi: '' });
+  const [composeForm, setComposeForm] = useState({
+    mode: 'personal' as ComposeMode,
+    to_user: '',
+    isi: '',
+    target_role: 'all' as GroupTargetRole,
+  });
 
   const handleOpenMessage = async (msg: Message) => {
     setSelectedMsg(msg);
@@ -36,16 +43,28 @@ export default function Messages() {
   };
 
   const handleSend = async () => {
-    if (!composeForm.to_user || !composeForm.isi.trim()) {
-      showNotification('Pilih penerima dan tulis pesan', 'error');
+    if (!composeForm.isi.trim()) {
+      showNotification('Tulis isi pesan terlebih dahulu', 'error');
+      return;
+    }
+    if (composeForm.mode === 'personal' && !composeForm.to_user) {
+      showNotification('Pilih penerima untuk pesan pribadi', 'error');
       return;
     }
     setIsSending(true);
     try {
-      await sendMessage(composeForm.to_user, composeForm.isi);
-      showNotification('Pesan terkirim', 'success');
+      if (composeForm.mode === 'group') {
+        const inserted = await sendGroupMessage(
+          composeForm.isi,
+          composeForm.target_role === 'all' ? undefined : composeForm.target_role,
+        );
+        showNotification(`Pesan grup terkirim ke ${inserted} personel`, 'success');
+      } else {
+        await sendMessage(composeForm.to_user, composeForm.isi);
+        showNotification('Pesan pribadi terkirim', 'success');
+      }
       setShowCompose(false);
-      setComposeForm({ to_user: '', isi: '' });
+      setComposeForm({ mode: 'personal', to_user: '', isi: '', target_role: 'all' });
       setTab('sent');
     } catch {
       showNotification('Gagal mengirim pesan', 'error');
@@ -203,7 +222,12 @@ export default function Messages() {
               <Button
                 onClick={() => {
                   setSelectedMsg(null);
-                  setComposeForm({ to_user: selectedMsg.from_user ?? '', isi: '' });
+                  setComposeForm({
+                    mode: 'personal',
+                    to_user: selectedMsg.from_user ?? '',
+                    isi: '',
+                    target_role: 'all',
+                  });
                   setShowCompose(true);
                 }}
               >
@@ -228,19 +252,66 @@ export default function Messages() {
         }
       >
         <div className="space-y-4">
-          <div>
-            <label htmlFor="compose-to" className="text-sm font-semibold text-text-primary">Kepada *</label>
-            <UserSearchSelect
-              className="mt-1 space-y-2"
-              value={composeForm.to_user}
-              onChange={(toUser) => setComposeForm({ ...composeForm, to_user: toUser })}
-              isActive
-              excludeUserId={user?.id}
-              emptyLabel="Pilih penerima..."
-              placeholder="Cari nama/NRP penerima..."
-              showRole
-            />
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Jenis Pesan</p>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setComposeForm((prev) => ({ ...prev, mode: 'personal' }))}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                  composeForm.mode === 'personal' ? 'bg-primary text-white' : 'bg-surface text-text-muted'
+                }`}
+              >
+                Pribadi
+              </button>
+              <button
+                type="button"
+                onClick={() => setComposeForm((prev) => ({ ...prev, mode: 'group' }))}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+                  composeForm.mode === 'group' ? 'bg-primary text-white' : 'bg-surface text-text-muted'
+                }`}
+              >
+                Grup Satuan
+              </button>
+            </div>
           </div>
+
+          {composeForm.mode === 'personal' ? (
+            <div>
+              <label htmlFor="compose-to" className="text-sm font-semibold text-text-primary">Kepada *</label>
+              <UserSearchSelect
+                className="mt-1 space-y-2"
+                value={composeForm.to_user}
+                onChange={(toUser) => setComposeForm({ ...composeForm, to_user: toUser })}
+                isActive
+                excludeUserId={user?.id}
+                emptyLabel="Pilih penerima..."
+                placeholder="Cari nama/NRP penerima..."
+                showRole
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-text-muted">
+                Pesan akan dikirim ke personel aktif dalam satuan Anda.
+              </p>
+              <label htmlFor="compose-target-role" className="text-sm font-semibold text-text-primary">
+                Target Role
+              </label>
+              <select
+                id="compose-target-role"
+                className="form-control"
+                value={composeForm.target_role}
+                onChange={(e) => setComposeForm({ ...composeForm, target_role: e.target.value as GroupTargetRole })}
+              >
+                <option value="all">Semua role</option>
+                <option value="prajurit">Prajurit</option>
+                <option value="guard">Guard</option>
+                <option value="staf">Staf</option>
+                <option value="komandan">Komandan</option>
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="compose-isi" className="text-sm font-semibold text-text-primary">Pesan *</label>
             <textarea

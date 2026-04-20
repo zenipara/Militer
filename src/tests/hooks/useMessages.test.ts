@@ -54,6 +54,26 @@ describe('useMessages', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('sends group message and returns recipient count', async () => {
+    mockSupabase.rpc.mockImplementation((rpcName: string) => {
+      if (rpcName === 'api_get_inbox') return Promise.resolve({ data: inboxMessages, error: null });
+      if (rpcName === 'api_get_sent') return Promise.resolve({ data: sentMessages, error: null });
+      if (rpcName === 'api_insert_group_message') return Promise.resolve({ data: 3, error: null });
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    const { result } = renderHook(() => useMessages());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let inserted = 0;
+    await act(async () => {
+      inserted = await result.current.sendGroupMessage('Siaga sore ini pukul 17.00', 'prajurit');
+    });
+
+    expect(inserted).toBe(3);
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('api_insert_group_message', expect.objectContaining({ p_target_role: 'prajurit' }));
+  });
+
   it('marks a message as read and decrements unread count', async () => {
     const { result } = renderHook(() => useMessages());
     await waitFor(() => expect(result.current.isLoading).toBe(false));

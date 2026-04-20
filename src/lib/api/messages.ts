@@ -30,6 +30,23 @@ export async function insertMessage(callerId: string, callerRole: string, fromUs
   if (error) throw error;
 }
 
+export async function insertGroupMessage(
+  callerId: string,
+  callerRole: string,
+  isi: string,
+  targetRole?: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc('api_insert_group_message', {
+    p_caller_id: callerId,
+    p_caller_role: callerRole,
+    p_isi: isi,
+    p_target_role: targetRole ?? null,
+    p_target_satuan: null,
+  });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
 export async function markMessageRead(callerId: string, callerRole: string, messageId: string): Promise<void> {
   const { error } = await supabase.rpc('api_mark_message_read', {
     p_caller_id: callerId,

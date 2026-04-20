@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { fetchInbox, fetchSent, insertMessage, markMessageRead as apiMarkRead, markAllMessagesRead as apiMarkAllRead } from '../lib/api/messages';
+import {
+  fetchInbox,
+  fetchSent,
+  insertMessage,
+  insertGroupMessage,
+  markMessageRead as apiMarkRead,
+  markAllMessagesRead as apiMarkAllRead,
+} from '../lib/api/messages';
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import type { Message } from '../types';
@@ -112,6 +119,14 @@ export function useMessages() {
     await fetchMessages();
   };
 
+  const sendGroupMessage = async (isi: string, targetRole?: string) => {
+    if (!user) throw new Error('Not authenticated');
+    const insertedCount = await insertGroupMessage(user.id, user.role, isi, targetRole);
+    notifyDataChanged('messages');
+    await fetchMessages();
+    return insertedCount;
+  };
+
   const markAsRead = async (messageId: string) => {
     if (!user) return;
     await apiMarkRead(user.id, user.role, messageId);
@@ -136,6 +151,7 @@ export function useMessages() {
     error,
     refetch: fetchMessages,
     sendMessage,
+    sendGroupMessage,
     markAsRead,
     markAllAsRead,
   };
