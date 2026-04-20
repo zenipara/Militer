@@ -210,143 +210,42 @@ karyo-os/
 
 ---
 
-## Setup & Deploy via Terminal (Codespace)
+## Setup & Deploy
 
-> **Cara tercepat** — jalankan dari terminal GitHub Codespaces atau Linux.
+> **Panduan lengkap** tersedia di [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-### Prasyarat
-
-- Node.js >= 20.x
-- Akun [Supabase](https://supabase.com) + project yang sudah dibuat
-- Akun GitHub dengan GitHub Pages aktif
-
-### 1. Clone & Setup Pertama Kali
+### Quick Start
 
 ```bash
-git clone https://github.com/username/karyo-os.git
-cd karyo-os
+# Clone repo
+git clone https://github.com/KARYO-OS/v.git
+cd v
 
-# Satu perintah untuk semua: install CLI, setup env, migrasi DB, build
+# Setup otomatis: install, env, migrasi DB, build
 bash scripts/setup.sh
-```
 
-Script `setup.sh` akan secara interaktif:
-- Install Supabase CLI
-- Membuat `.env.local` (prompt masukkan URL + anon key Supabase)
-- Login & link ke project Supabase
-- Menjalankan semua migration database
-- Build production
-
-### 2. Jalankan Dev Server
-
-```bash
+# Dev server
 npm run dev
 ```
 
 Akses di `http://localhost:5173`
 
-### 3. Deploy ke Supabase + GitHub Pages
-
 ```bash
-bash scripts/deploy.sh
+# Deploy ke GitHub Pages
+git push origin main
 ```
-
-Script `deploy.sh` akan otomatis:
-- Menerapkan migration terbaru ke Supabase
-- Build production (`npm run build`)
-- Menyiapkan artefak frontend untuk GitHub Pages
-- GitHub Actions yang mendorong deployment production
-
-Untuk deploy ulang frontend, push ke branch `main` atau jalankan workflow GitHub Actions deploy production.
 
 ---
 
 ## Konfigurasi Supabase
 
-### Cara Mendapatkan Credentials
-
-1. Buka [supabase.com](https://supabase.com) → pilih project
-2. **Settings** → **API** → catat:
-   - **Project URL** → `VITE_SUPABASE_URL`
-   - **anon public** key → `VITE_SUPABASE_ANON_KEY`
-3. **Settings** → **General** → catat **Reference ID** (digunakan saat `supabase link`)
-
-### Migration Database
-
-Migration dijalankan otomatis via `bash scripts/setup.sh`. Untuk menjalankan manual:
-
-```bash
-npm run sync:supabase
-```
-
-Perintah di atas membaca `SUPABASE_ACCESS_TOKEN` dan `SUPABASE_PROJECT_REF` (atau menurunkan project ref dari `VITE_SUPABASE_URL`) lalu menjalankan link + `db push` secara non-interaktif.
-Script juga otomatis mendukung nama secret alternatif: `SUPABASE_TOKEN` dan `SUPABASE_PROJECT_ID`.
-
-File migration tersedia di `supabase/migrations/` dengan urutan:
-- `001_initial_schema.sql` — Tabel, RPC, trigger, RLS dev
-- `002_seed_data.sql` — Data sample (opsional, development)
-- `003_server_functions.sql` — Fungsi server-side tambahan
-- `004_production_rls.sql` — Policy RLS production (wajib sebelum go-live)
-
-> RLS diaktifkan pada semua tabel. Policy sudah termasuk dalam migration file.
+Lihat [DEPLOYMENT.md](./DEPLOYMENT.md) untuk panduan lengkap mendapatkan credentials dan menjalankan migrasi database.
 
 ---
 
 ## Environment Variables
 
-File `.env.local` dibuat otomatis oleh `bash scripts/setup.sh`. Format:
-
-```env
-# Supabase
-VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-# Supabase CLI Sync (opsional)
-SUPABASE_ACCESS_TOKEN=sbp_xxxxxxxxxxxxxxxxxxxx
-SUPABASE_PROJECT_REF=xxxxxxxxxxxx
-# Alternatif naming secret juga didukung:
-SUPABASE_TOKEN=sbp_xxxxxxxxxxxxxxxxxxxx
-SUPABASE_PROJECT_ID=xxxxxxxxxxxx
-
-# App Config
-VITE_APP_NAME=Karyo OS
-VITE_APP_VERSION=1.2.1
-```
-
-> **Penting:** Semua env variable frontend React **wajib** diawali `VITE_`. File `.env.local` tidak boleh di-commit ke Git (sudah ada di `.gitignore`).
-
-Untuk production, simpan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` di GitHub repository secrets atau variables yang dipakai workflow. Secara lokal, `.env.local` tetap dipakai oleh `bash scripts/deploy.sh`. Contoh format:
-
-```bash
-VITE_SUPABASE_URL="https://xxxx.supabase.co"
-VITE_SUPABASE_ANON_KEY="eyJhbGci..."
-```
-
-Jika ingin workflow GitHub Actions juga menjalankan migration database saat deploy, tambahkan secrets atau variables berikut:
-
-```bash
-SUPABASE_ACCESS_TOKEN="<personal access token>"
-SUPABASE_PROJECT_REF="<reference id project>"
-SUPABASE_DB_PASSWORD="<password database postgres>"
-```
-
-Workflow deploy produksi sekarang hanya membangun frontend dan mengirim artefak ke GitHub Pages. Migrasi Supabase dijalankan terpisah lewat CLI sebelum deploy jika memang diperlukan.
-> Penting: pastikan migration `019_request_context_from_headers.sql` ikut terpasang di Supabase production. Tanpa migration ini, login bisa sukses tetapi fungsi dashboard akan gagal karena konteks RLS tidak dikirim di setiap request.
-
-### Rekomendasi Migrasi Hosting (disarankan)
-
-Karena aplikasi memakai Supabase + sinkronisasi realtime lintas dashboard, GitHub Pages sering menjadi bottleneck saat membutuhkan endpoint server-side tambahan (webhook, cron, signed operation, fallback auth flow). Disarankan migrasi ke:
-
-- **Cloudflare Pages + Functions** (latensi global rendah, edge runtime, mudah untuk webhook ringan), atau
-- **Railway** (runtime Node penuh, mudah untuk worker/background jobs dan API internal).
-
-Arsitektur target yang direkomendasikan:
-
-1. Frontend tetap build Vite, deploy ke Cloudflare Pages / Railway static output.
-2. Tambahkan layer function server-side untuk operasi yang tidak ideal dijalankan di client.
-3. Simpan semua secret hanya di environment platform deploy (bukan di browser).
-4. Pertahankan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` untuk frontend, dan gunakan key server-side terpisah hanya di functions.
-5. Aktifkan health check + log terpusat agar issue sinkronisasi realtime lebih cepat didiagnosis.
+Lihat [DEPLOYMENT.md](./DEPLOYMENT.md) untuk format lengkap dan cara setup secrets GitHub Actions.
 
 ---
 

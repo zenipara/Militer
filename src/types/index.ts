@@ -34,6 +34,7 @@ export interface GatePass {
 }
 
 export type Role = 'admin' | 'komandan' | 'prajurit' | 'guard' | 'staf';
+export type CommandLevel = 'BATALION' | 'KOMPI' | 'PELETON';
 
 export interface Satuan {
   id: string;
@@ -60,6 +61,7 @@ export interface User {
   nrp: string;
   nama: string;
   role: Role;
+  level_komando?: CommandLevel;
   pangkat?: string;
   jabatan?: string;
   satuan: string;
