@@ -179,29 +179,44 @@ interface AuthState {
 
 ### 3.3 Role-Based Access Control (RBAC)
 
-#### Tabel Akses Halaman
+#### Struktur Role (v2)
 
-| Halaman | Admin | Komandan | Staf | Guard | Prajurit |
+| Role Asli (DB) | Label Operasional | Cakupan Akses |
+|---|---|---|
+| `admin` | **Super Admin** | Konfigurasi sistem: branding, backup, audit log, reset PIN, feature flag. |
+| `komandan` | **Komandan Tier 1–3** | Approval & pelaporan sesuai `level_komando` (BATALION/KOMPI/PELETON). |
+| `staf` | **Staf Bidang (S-1/S-3/S-4)** | Input data sesuai bidang operasional yang ditetapkan dari `jabatan`. |
+| `guard` | **Petugas Jaga / Provost** | Validasi gate pass + baca `discipline_notes` untuk pemantauan disiplin. |
+| `prajurit` | **Prajurit** | Akses mandiri: tugas, absensi, profil, izin pribadi. |
+
+#### Aturan Akses Inti
+
+- **Komandan bertingkat (berdasarkan `users.level_komando`):**
+  - `BATALION`: dapat melihat data seluruh satuan batalion.
+  - `KOMPI`: hanya data kompi dan peleton di bawah kompinya.
+  - `PELETON`: hanya data peleton sendiri.
+- **Staf berbasis bidang (berdasarkan mapping `jabatan` → S-1/S-3/S-4):**
+  - **S-1 (Pers)**: write `attendance`, `leave_requests`.
+  - **S-3 (Ops)**: write `tasks`, `shift_schedules`, data monitoring `pos_jaga`.
+  - **S-4 (Log)**: write eksklusif `logistics`.
+- **Admin/Super Admin tidak menangani data operasional harian** (absensi/logistik/tugas), kecuali fungsi audit dan administrasi sistem.
+
+#### Tabel Akses Halaman (Ringkas)
+
+| Halaman | Super Admin (`admin`) | Komandan (`komandan`) | Staf (`staf`) | Petugas Jaga/Provost (`guard`) | Prajurit |
 |---|:---:|:---:|:---:|:---:|:---:|
 | `/login` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `/admin/dashboard` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | `/admin/settings` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | `/admin/audit` | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `/admin/users` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `/admin/logistics` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `/admin/attendance` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `/admin/schedule` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `/admin/documents` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `/admin/announcements` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `/admin/gatepass-monitor` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `/admin/pos-jaga` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| `/komandan/*` | ✅ | ✅ | ✅* | ❌ | ❌ |
-| `/guard/*` | ✅ | ❌ | ❌ | ✅ | ❌ |
+| `/admin/backup` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `/komandan/*` | ❌ | ✅ | ✅* | ❌ | ❌ |
+| `/guard/*` | ❌ | ❌ | ❌ | ✅ | ❌ |
 | `/staf/dashboard` | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `/staf/messages` | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `/prajurit/*` | ❌ | ❌ | ❌ | ❌ | ✅ |
 
-*Staf mendapat akses ke `/komandan/tasks`, `/komandan/personnel`, `/komandan/reports`, dll.
+*Akses staf ke modul komandan dibatasi ketat oleh kebijakan bidang (S-1/S-3/S-4) pada level database.
 
 #### ProtectedRoute Component
 
@@ -270,6 +285,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Enum types
 CREATE TYPE user_role AS ENUM ('admin', 'komandan', 'staf', 'guard', 'prajurit');
+CREATE TYPE command_level AS ENUM ('BATALION', 'KOMPI', 'PELETON');
 CREATE TYPE task_status AS ENUM ('pending', 'in_progress', 'done', 'approved', 'rejected');
 CREATE TYPE attendance_status AS ENUM ('hadir', 'izin', 'sakit', 'alpa', 'dinas_luar');
 CREATE TYPE leave_status AS ENUM ('pending', 'approved', 'rejected');
@@ -283,6 +299,7 @@ CREATE TABLE users (
   pin_hash      text NOT NULL,
   nama          varchar(100) NOT NULL,
   role          user_role NOT NULL DEFAULT 'prajurit',
+  level_komando command_level,
   pangkat       varchar(50),
   jabatan       varchar(100),
   satuan        varchar(100) NOT NULL,
@@ -293,12 +310,18 @@ CREATE TABLE users (
   locked_until  timestamptz,
   last_login    timestamptz,
   created_at    timestamptz NOT NULL DEFAULT now(),
-  updated_at    timestamptz NOT NULL DEFAULT now()
+  updated_at    timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT chk_komandan_level
+    CHECK (
+      (role = 'komandan' AND level_komando IS NOT NULL)
+      OR (role <> 'komandan' AND level_komando IS NULL)
+    )
 );
 
 -- Index
 CREATE INDEX idx_users_nrp ON users(nrp);
 CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_level_komando ON users(level_komando);
 CREATE INDEX idx_users_satuan ON users(satuan);
 
 -- ============================================================
@@ -471,6 +494,118 @@ CREATE TABLE discipline_notes (
   created_by    uuid REFERENCES users(id),
   created_at    timestamptz NOT NULL DEFAULT now()
 );
+
+-- ============================================================
+-- Contoh policy akses operasional berbasis bidang staf & komando
+-- ============================================================
+-- S-1 (Pers): write attendance + leave_requests
+CREATE POLICY "staf_s1_write_attendance" ON attendance
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-1%' OR u.jabatan ILIKE '%PERS%')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-1%' OR u.jabatan ILIKE '%PERS%')
+    )
+  );
+
+CREATE POLICY "staf_s1_write_leave_requests" ON leave_requests
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-1%' OR u.jabatan ILIKE '%PERS%')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-1%' OR u.jabatan ILIKE '%PERS%')
+    )
+  );
+
+-- S-3 (Ops): write tasks + shift_schedules
+CREATE POLICY "staf_s3_write_tasks" ON tasks
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-3%' OR u.jabatan ILIKE '%OPS%')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-3%' OR u.jabatan ILIKE '%OPS%')
+    )
+  );
+
+CREATE POLICY "staf_s3_write_shift_schedules" ON shift_schedules
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-3%' OR u.jabatan ILIKE '%OPS%')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-3%' OR u.jabatan ILIKE '%OPS%')
+    )
+  );
+
+-- S-4 (Log): write logistics (eksklusif operasional logistik)
+CREATE POLICY "staf_s4_write_logistics" ON logistics
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-4%' OR u.jabatan ILIKE '%LOG%')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'staf'
+        AND (u.jabatan ILIKE 'S-4%' OR u.jabatan ILIKE '%LOG%')
+    )
+  );
+
+-- Petugas Jaga / Provost: read discipline_notes
+CREATE POLICY "guard_read_discipline_notes" ON discipline_notes
+  FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM users u
+      WHERE u.id = current_user_id()
+        AND u.role = 'guard'
+    )
+  );
 ```
 
 ### 4.3 Fungsi Database (Helper)
