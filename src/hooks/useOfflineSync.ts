@@ -99,6 +99,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
     return () => {
       if (cleanup) cleanup();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoSync, onOnlineStatusChange, onSyncComplete]);
 
   useEffect(() => {
@@ -250,7 +251,7 @@ export function useOfflineQueue() {
   const queueOperation = async (
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    _data?: any,
+    _data?: Record<string, unknown>,
   ): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!swRef.current?.controller) {

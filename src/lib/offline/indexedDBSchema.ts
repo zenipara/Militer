@@ -8,7 +8,7 @@
  * Schema Version: 1
  */
 
-import { DBSchema, IDBPDatabase, openDB } from 'idb';
+import { DBSchema, IDBPDatabase, openDB, StoreNames } from 'idb';
 
 /**
  * ==============================================================
@@ -363,7 +363,7 @@ export async function clearOfflineDB(): Promise<void> {
   ];
 
   for (const storeName of stores) {
-    await db.clear(storeName as any);
+    await db.clear(storeName as StoreNames<KaryoOfflineDB>);
   }
 
   console.log('[OfflineDB] Database cleared');

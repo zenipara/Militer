@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Plus, Search, Edit2, Trash2, Shield, MapPin, UsersRound, Layers3, ImageIcon, ExternalLink, CircleDot, RotateCcw } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import PageHeader from '../../components/ui/PageHeader';
@@ -52,7 +52,7 @@ export default function SatuanManagement() {
   const [selected, setSelected] = useState<Satuan | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const loadSatuans = async () => {
+  const loadSatuans = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await fetchSatuans(true);
@@ -62,11 +62,11 @@ export default function SatuanManagement() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showNotification]);
 
   useEffect(() => {
     void loadSatuans();
-  }, []);
+  }, [loadSatuans]);
 
   const summary = useMemo(() => {
     const active = satuans.filter((item) => item.is_active).length;
