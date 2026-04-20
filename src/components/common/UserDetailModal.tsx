@@ -233,7 +233,7 @@ export default function UserDetailModal({
                     <option value="komandan">Komandan</option>
                     <option value="staf">Staf Operasional</option>
                     <option value="admin">Super Admin</option>
-                    <option value="guard">Petugas Jaga</option>
+                    <option value="guard">Petugas Jaga / Provost</option>
                   </select>
                 </div>
                 {editForm.role === 'komandan' && (

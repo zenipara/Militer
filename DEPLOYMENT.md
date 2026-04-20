@@ -190,6 +190,8 @@ Data sample (PIN default: **123456**):
 |---|---|---|---|
 | `1000001` | Admin Karyo | `admin` | Batalyon 1 |
 | `2000001` | Budi Santoso | `komandan` | Batalyon 1 |
+| `2100001` | Rudi Hartono | `staf` (S-3) | Batalyon 1 |
+| `2200001` | Deni Saputra | `guard` (Petugas Jaga/Provost) | Batalyon 1 |
 | `3000001` | Agus Pratama | `prajurit` | Batalyon 1 |
 
 > ⚠️ **Production:** Ganti PIN default segera setelah login pertama.
@@ -209,11 +211,12 @@ Data sample (PIN default: **123456**):
 
 ### Checklist alur utama
 
-- [ ] Login sebagai admin, komandan, prajurit, guard — semua berhasil
-- [ ] Dashboard Admin: data tampil, statistik muat, realtime sync berjalan
+- [ ] Login sebagai admin, komandan, staf, guard, prajurit — semua berhasil
+- [ ] Dashboard Super Admin: konfigurasi sistem & audit log berjalan
 - [ ] Dashboard Komandan: data anggota, tugas, laporan tampil
+- [ ] Dashboard Staf: modul S-1/S-3/S-4 tampil sesuai jabatan
 - [ ] Dashboard Prajurit: tugas harian, absensi, pesan tampil
-- [ ] Gate Pass: prajurit bisa mengajukan; guard bisa scan
+- [ ] Gate Pass: prajurit bisa mengajukan; petugas jaga/provost bisa scan
 - [ ] Feature Flags: admin bisa toggle fitur on/off dari Pengaturan
 
 ### Smoke test production (Playwright)

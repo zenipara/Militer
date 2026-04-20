@@ -656,7 +656,7 @@ export default function UserManagement() {
               <option value="prajurit">Prajurit</option>
               <option value="staf">Staf Operasional</option>
               <option value="komandan">Komandan</option>
-              <option value="guard">Petugas Jaga</option>
+              <option value="guard">Petugas Jaga / Provost</option>
               <option value="admin">Super Admin</option>
             </select>
           </div>

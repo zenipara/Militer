@@ -80,7 +80,7 @@ export function RoleBadge({ role }: { role: Role }) {
     admin:    { label: 'Super Admin',  variant: 'gold' },
     komandan: { label: 'Komandan',     variant: 'info' },
     prajurit: { label: 'Prajurit',     variant: 'neutral' },
-    guard:    { label: 'Petugas Jaga', variant: 'info' },
+    guard:    { label: 'Petugas Jaga / Provost', variant: 'info' },
     staf:     { label: 'Staf',         variant: 'warning' },
   };
   const { label, variant } = map[role];

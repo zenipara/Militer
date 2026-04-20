@@ -5,6 +5,18 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 
 ---
 
+## [Unreleased]
+
+### Diubah
+- Dokumentasi role diperbarui agar konsisten dengan struktur terbaru: **Super Admin**, **Komandan Tier (BATALION/KOMPI/PELETON)**, **Staf Bidang (S-1/S-3/S-4)**, **Petugas Jaga/Provost**, dan **Prajurit**.
+- Terminologi `guard` pada dokumentasi diselaraskan menjadi **Petugas Jaga / Provost**.
+- Penjelasan akses admin diperjelas: fokus pada konfigurasi sistem dan audit, bukan input operasional harian.
+
+### Ditambahkan
+- Fondasi implementasi database untuk penajaman akses per bidang staf (S-1/S-3/S-4), akses discipline notes untuk guard/provost, dan pembatasan akses operasional admin.
+
+---
+
 ## [1.5.0] — 2026-04-20
 
 ### Ditambahkan

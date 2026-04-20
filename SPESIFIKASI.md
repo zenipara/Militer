@@ -775,19 +775,19 @@ const routes = [
   { path: '/admin/dashboard',        element: <AdminDashboard />,     roles: ['admin'] },
   { path: '/admin/users',            element: <UserManagement />,     roles: ['admin', 'staf'] },
   { path: '/admin/audit',            element: <AuditLog />,           roles: ['admin'] },
-  { path: '/admin/logistics',        element: <Logistics />,          roles: ['admin', 'staf'] },
-  { path: '/admin/attendance',       element: <AttendanceReport />,   roles: ['admin', 'staf'] },
-  { path: '/admin/schedule',         element: <ShiftSchedule />,      roles: ['admin', 'staf'] },
-  { path: '/admin/documents',        element: <Documents />,          roles: ['admin', 'staf'] },
-  { path: '/admin/announcements',    element: <Announcements />,      roles: ['admin', 'staf'] },
-  { path: '/admin/gatepass-monitor', element: <GatePassMonitor />,    roles: ['admin', 'staf'] },
-  { path: '/admin/pos-jaga',         element: <PosJaga />,            roles: ['admin', 'staf'] },
+  { path: '/admin/logistics',        element: <Logistics />,          roles: ['staf'] },
+  { path: '/admin/attendance',       element: <AttendanceReport />,   roles: ['staf'] },
+  { path: '/admin/schedule',         element: <ShiftSchedule />,      roles: ['staf'] },
+  { path: '/admin/documents',        element: <Documents />,          roles: ['admin', 'staf', 'komandan'] },
+  { path: '/admin/announcements',    element: <Announcements />,      roles: ['admin', 'staf', 'komandan'] },
+  { path: '/admin/gatepass-monitor', element: <GatePassMonitor />,    roles: ['staf', 'komandan'] },
+  { path: '/admin/pos-jaga',         element: <PosJaga />,            roles: ['staf'] },
   { path: '/admin/settings',         element: <Settings />,           roles: ['admin'] },
-  { path: '/komandan/dashboard',     element: <KomandanDashboard />,  roles: ['komandan', 'admin', 'staf'] },
-  { path: '/komandan/tasks',         element: <TaskManagement />,     roles: ['komandan', 'admin', 'staf'] },
-  { path: '/komandan/personnel',     element: <Personnel />,          roles: ['komandan', 'admin', 'staf'] },
-  { path: '/komandan/reports',       element: <Reports />,            roles: ['komandan', 'admin', 'staf'] },
-  { path: '/guard/gatepass-scan',    element: <GuardDashboard />,     roles: ['guard', 'admin'] },
+  { path: '/komandan/dashboard',     element: <KomandanDashboard />,  roles: ['komandan'] },
+  { path: '/komandan/tasks',         element: <TaskManagement />,     roles: ['komandan'] },
+  { path: '/komandan/personnel',     element: <Personnel />,          roles: ['komandan'] },
+  { path: '/komandan/reports',       element: <Reports />,            roles: ['komandan'] },
+  { path: '/guard/gatepass-scan',    element: <GuardDashboard />,     roles: ['guard'] },
   { path: '/staf/dashboard',         element: <StafDashboard />,      roles: ['staf'] },
   { path: '/staf/messages',          element: <Messages />,           roles: ['staf'] },
   { path: '/prajurit/dashboard',     element: <PrajuritDashboard />,  roles: ['prajurit'] },
@@ -844,17 +844,11 @@ interface UIStore {
 
 | Halaman | Path | Fitur Utama |
 |---|---|---|
-| Control Center | `/admin/dashboard` | Stats global, online users, aktivitas terbaru |
-| User Management | `/admin/users` | CRUD users, filter role, reset PIN massal |
+| Control Center | `/admin/dashboard` | Status sistem, ringkasan kesehatan platform |
+| User Management | `/admin/users` | Manajemen akun, reset PIN, aktivasi/nonaktif akun |
 | Audit Log | `/admin/audit` | Timeline aktivitas, filter by user/action/date |
-| Logistics | `/admin/logistics` | CRUD item logistik, status kondisi |
-| Documents | `/admin/documents` | Upload, download, kategorisasi arsip |
-| Announcements | `/admin/announcements` | Buat & kelola broadcast |
-| Shift Schedule | `/admin/schedule` | Pengaturan jadwal shift satuan |
-| Attendance Report | `/admin/attendance` | Rekap kehadiran global, export CSV |
-| Gate Pass Monitor | `/admin/gatepass-monitor` | Monitoring checked_in, completed, overdue |
-| Pos Jaga | `/admin/pos-jaga` | Kelola pos jaga & QR statis |
-| Settings | `/admin/settings` | Logo, tema sistem, konfigurasi |
+| Settings | `/admin/settings` | Branding, feature flag, konfigurasi platform |
+| Backup | `/admin/backup` | Backup/restore data sistem |
 
 ### 7.2 Fitur Kritis
 
@@ -984,12 +978,11 @@ Aturan bisnis:
 | Pusat Staf | `/staf/dashboard` | Statistik satuan, modul akses cepat per bidang, pengumuman terpinit |
 | Pesan | `/staf/messages` | Inbox & kirim pesan antar personel |
 | Personel | `/admin/users` | Lihat & kelola data personel satuan |
-| Rekap Absensi | `/admin/attendance` | Rekap & export data kehadiran |
-| Jadwal Shift | `/admin/schedule` | Lihat & atur jadwal shift |
-| Logistik | `/admin/logistics` | Inventaris perlengkapan satuan |
-| Tugas | `/komandan/tasks` | Monitor & kelola tugas (S-3) |
-| Pos Jaga | `/admin/pos-jaga` | Kelola pos jaga & QR (S-3) |
-| Gate Pass Monitor | `/admin/gatepass-monitor` | Monitoring gate pass aktif |
+| Rekap Absensi | `/admin/attendance` | Rekap & export data kehadiran (S-1) |
+| Jadwal Shift | `/admin/schedule` | Lihat & atur jadwal shift (S-3) |
+| Logistik | `/admin/logistics` | Inventaris perlengkapan satuan (S-4) |
+| Pos Jaga | `/admin/pos-jaga` | Monitoring pos jaga & QR (S-3) |
+| Gate Pass Monitor | `/admin/gatepass-monitor` | Monitoring gate pass aktif (S-3) |
 
 ### 10.2 Deteksi Bidang Otomatis
 
@@ -1006,10 +999,10 @@ Dashboard staf mendeteksi bidang penugasan secara otomatis dari field `jabatan` 
 
 Modul yang ditampilkan di Quick Access disesuaikan per bidang:
 
-- **S-1 (Pers):** Manajemen Personel, Rekap Absensi, Jadwal Shift, Pesan
-- **S-4 (Log):** Inventaris Logistik, Data Personel, Pesan, Rekap Absensi
-- **S-3 (Ops):** Manajemen Tugas, Pos Jaga, Data Personel, Pesan
-- **Umum:** Data Personel, Rekap Absensi, Logistik, Pesan
+- **S-1 (Pers):** Manajemen Personel, Rekap Absensi, Izin, Pesan
+- **S-4 (Log):** Inventaris Logistik, Data Personel, Pesan
+- **S-3 (Ops):** Jadwal Shift, Pos Jaga, Gate Pass Monitor, Data Personel, Pesan
+- **Umum:** Data Personel, Pesan
 
 ### 10.4 Statistik Dashboard
 

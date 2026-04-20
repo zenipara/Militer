@@ -149,10 +149,10 @@ export default function Sidebar() {
   };
 
   const roleLabelMap: Record<Role, string> = {
-    admin: 'Administrator',
+    admin: 'Super Admin',
     komandan: 'Komandan',
     prajurit: 'Prajurit',
-    guard: 'Guard',
+    guard: 'Petugas Jaga / Provost',
     staf: 'Staf Operasional',
   };
 

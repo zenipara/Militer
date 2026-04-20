@@ -94,18 +94,12 @@ Hasil cakupan dibuat di folder `coverage/`, dan konfigurasi pengujian sudah meng
 - Session management dengan Supabase
 - Proteksi route berbasis role (RBAC)
 
-### 🖥️ Dashboard Admin
-- Manajemen user (CRUD, reset PIN massal)
+### 🖥️ Dashboard Super Admin (`admin`)
+- Konfigurasi sistem (branding, feature flags, pengaturan platform)
+- Manajemen akun & reset PIN
 - Audit log seluruh aktivitas sistem
-- Monitoring status online/offline user
-- Import & export data personel (CSV)
-- Manajemen logistik & arsip dokumen
-- Broadcast pengumuman ke semua user
-- Pengaturan shift & jadwal global
-- Rekap kehadiran global
-- Monitoring Gate Pass keluar, kembali, dan overdue
 - Backup & restore database
-- Kalender global satuan
+- Monitoring kesehatan sistem
 
 ### 👨‍✈️ Dashboard Komandan
 - Monitoring anggota unit secara real-time
@@ -114,9 +108,20 @@ Hasil cakupan dibuat di folder `coverage/`, dan konfigurasi pengujian sudah meng
 - Tracking kehadiran per anggota
 - Grafik kinerja & perbandingan performa
 - Catatan evaluasi & disiplin personel
-- Permintaan logistik ke admin
+- Permintaan logistik ke Staf S-4
 - Broadcast instruksi ke unit
 - Ringkasan status Gate Pass operasional unit
+
+### 🧭 Dashboard Staf (`staf`)
+- **S-1 (Pers):** input/kelola absensi & permohonan izin
+- **S-3 (Ops):** input/kelola tugas, jadwal shift, dan monitoring pos jaga
+- **S-4 (Log):** input/kelola data logistik
+- Dashboard otomatis memetakan bidang dari `jabatan` (`S-1`/`S-3`/`S-4`)
+
+### 🚧 Petugas Jaga / Provost (`guard`)
+- Validasi Gate Pass di pos jaga
+- Pemindaian QR keluar/masuk
+- Akses baca catatan disiplin (`discipline_notes`) untuk pemantauan personel
 
 ### 🪖 Dashboard Prajurit
 - Lihat & kerjakan tugas harian
@@ -134,25 +139,30 @@ Hasil cakupan dibuat di folder `coverage/`, dan konfigurasi pengujian sudah meng
 ## Hierarki & Role
 
 ```
-┌─────────────────┐
-│      ADMIN      │  → Pengatur sistem & pengambil keputusan tertinggi
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│   KOMANDAN      │  → Pengatur operasional & pemimpin unit
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│    PRAJURIT     │  → Pelaksana tugas & pengguna utama sistem
-└─────────────────┘
+┌────────────────────────────┐
+│ SUPER ADMIN (`admin`)      │ → Konfigurasi sistem & audit
+└───────────────┬────────────┘
+                │
+┌───────────────▼────────────┐
+│ KOMANDAN (`komandan`)      │ → Tier: BATALION/KOMPI/PELETON
+└───────────────┬────────────┘
+                │
+┌───────────────▼────────────┐
+│ STAF (`staf`)              │ → Bidang: S-1 / S-3 / S-4
+└───────────────┬────────────┘
+                │
+┌───────────────▼────────────┐
+│ PRAJURIT (`prajurit`)      │ → Operasional personal
+└────────────────────────────┘
 ```
 
 | Role | Kode | Akses |
 |---|---|---|
-| `admin` | AD | Full system control |
-| `komandan` | KMD | Unit management |
+| `admin` | SAD | Super Admin: konfigurasi sistem & audit |
+| `komandan` | KMD | Komando bertingkat (BATALION/KOMPI/PELETON) |
+| `staf` | STF | Input operasional sesuai bidang (S-1/S-3/S-4) |
 | `prajurit` | PRJ | Personal tasks & attendance |
-| `guard` | GRD | Gate pass scanning & verification |
+| `guard` | PJP | Petugas Jaga / Provost: scan gate pass + cek disiplin |
 
 ---
 
@@ -173,10 +183,9 @@ Validasi ke Supabase DB
    ▼        ▼
 Error   Baca role dari DB
         │
-   ┌────┴─────────┐
-   │              │              │
-   ▼              ▼              ▼
-/admin       /komandan      /prajurit
+   ┌─────────┬─────────┬─────────┬─────────┐
+   ▼         ▼         ▼         ▼         ▼
+/admin   /komandan  /staf   /guard   /prajurit
 ```
 
 > Satu halaman login (`/login`) — redirect otomatis berdasarkan field `role` di tabel `users`.
@@ -195,7 +204,7 @@ karyo-os/
 │   ├── components/          # Komponen UI, layout, guard, gatepass
 │   ├── hooks/               # Custom hooks domain aplikasi
 │   ├── lib/                 # API client, cache, metrics, Supabase helper
-│   ├── pages/               # Halaman per role: admin, komandan, prajurit, guard
+│   ├── pages/               # Halaman per role: admin, komandan, staf, guard, prajurit
 │   ├── router/              # Definisi route + proteksi role
 │   ├── store/               # Zustand store global
 │   ├── tests/               # Unit/integration tests (Vitest)
@@ -260,7 +269,8 @@ Berikut ringkasan tabel utama. Migration lengkap ada di `supabase/migrations/001
 | `nrp` | varchar(20) | Nomor Registrasi Pokok (unique) |
 | `pin_hash` | text | PIN 6 digit (bcrypt hash) |
 | `nama` | varchar(100) | Nama lengkap |
-| `role` | enum | `admin` / `komandan` / `prajurit` |
+| `role` | enum | `admin` / `komandan` / `staf` / `guard` / `prajurit` |
+| `level_komando` | enum | `BATALION` / `KOMPI` / `PELETON` (khusus `komandan`) |
 | `satuan` | varchar(100) | Satuan/unit militer |
 | `pangkat` | varchar(50) | Pangkat militer |
 | `is_active` | boolean | Status aktif akun |

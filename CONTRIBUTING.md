@@ -56,7 +56,7 @@ Terima kasih telah berkontribusi pada KARYO OS! Dokumen ini berisi konvensi dan 
 ### Pengecualian yang Diperbolehkan
 - Nama proper (KARYO OS, Supabase, NRP)
 - Istilah teknis tanpa padanan umum (URL, ID, PIN, CSV)
-- Label role singkat: `admin`, `komandan`, `prajurit` (huruf kecil dalam kode)
+- Label role singkat: `admin`, `komandan`, `staf`, `guard`, `prajurit` (huruf kecil dalam kode)
 
 ---
 
@@ -70,8 +70,10 @@ src/
 │   └── ui/           # StatCard, Table, PageHeader, Pagination, BarChart, GlobalSearch, AttendanceHeatmap
 ├── hooks/            # Custom hooks: useUsers, useTasks, useAttendance, useMessages, ...
 ├── pages/
-│   ├── admin/        # Halaman khusus Admin
+│   ├── admin/        # Halaman khusus Super Admin
 │   ├── komandan/     # Halaman khusus Komandan
+│   ├── staf/         # Halaman khusus Staf Bidang (S-1/S-3/S-4)
+│   ├── guard/        # Halaman khusus Petugas Jaga / Provost
 │   └── prajurit/     # Halaman khusus Prajurit
 ├── router/           # Definisi route dan ProtectedRoute
 ├── store/            # Zustand stores: authStore, uiStore

@@ -199,6 +199,9 @@ export function useUsers(options: UseUsersOptions = {}) {
       pangkat: rest.pangkat,
       jabatan: rest.jabatan,
     });
+    if (rest.role === 'komandan' && rest.level_komando && callerId && callerRole && typeof data === 'string') {
+      await patchUser(callerId, callerRole, data, { level_komando: rest.level_komando });
+    }
     void fetchUsers();
     notifyDataChanged('users');
     return data;
