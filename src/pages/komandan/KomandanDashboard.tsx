@@ -15,6 +15,7 @@ import { ICONS } from '../../icons';
 import { useKomandanDashboardStore } from '../../store/komandanDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
 import { isPathEnabled } from '../../lib/featureFlags';
+import { getKomandanScopeLabel } from '../../lib/rolePermissions';
 
 export default function KomandanDashboard() {
   const navigate = useNavigate();
@@ -66,7 +67,7 @@ export default function KomandanDashboard() {
       <div className="space-y-6">
         <PageHeader
           title={`${user?.pangkat ? `${user.pangkat} ` : ''}${user?.nama ?? 'Komandan'}`}
-          subtitle={`Satuan: ${user?.satuan ?? '—'} · ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
+          subtitle={`${getKomandanScopeLabel(user?.level_komando)} · Satuan: ${user?.satuan ?? '—'} · ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
           meta={
             <>
               <span>Aktif: {onlineCount}/{totalPersonel}</span>

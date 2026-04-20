@@ -12,6 +12,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
 import { supabase } from '../../lib/supabase';
 import type { ShiftSchedule } from '../../types';
+import { canWrite } from '../../lib/rolePermissions';
 
 const SHIFT_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   pagi:  { bg: 'bg-accent-gold/20',  text: 'text-accent-gold',  label: 'Pagi'   },
@@ -32,6 +33,7 @@ const DAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 export default function ShiftSchedule() {
   const { showNotification } = useUIStore();
   const { user } = useAuthStore();
+  const canWriteShifts = canWrite(user, 'shifts');
 
   // View mode: 'list' (day list) | 'calendar' (monthly grid)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
@@ -220,9 +222,11 @@ export default function ShiftSchedule() {
                   className="form-control"
                 />
               </div>
-              <Button onClick={() => { setForm({ ...form, tanggal: selectedDate }); setShowCreate(true); }}>
-                + Tambah Shift
-              </Button>
+              {canWriteShifts && (
+                <Button onClick={() => { setForm({ ...form, tanggal: selectedDate }); setShowCreate(true); }}>
+                  + Tambah Shift
+                </Button>
+              )}
             </>
           )}
 
@@ -291,11 +295,11 @@ export default function ShiftSchedule() {
               {
                 key: 'actions',
                 header: 'Aksi',
-                render: (s) => (
+                render: (s) => canWriteShifts ? (
                   <Button size="sm" variant="danger" onClick={() => handleDelete(s.id)}>
                     Hapus
                   </Button>
-                ),
+                ) : null,
               },
             ]}
             data={schedules}

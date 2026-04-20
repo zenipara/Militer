@@ -11,6 +11,7 @@ import UserDetailModal from '../../components/common/UserDetailModal';
 import { useUsers } from '../../hooks/useUsers';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useAuthStore } from '../../store/authStore';
+import { getKomandanScopeLabel, getKomandanScopeDescription } from '../../lib/rolePermissions';
 import type { User } from '../../types';
 
 export default function Personnel() {
@@ -49,6 +50,9 @@ export default function Personnel() {
     setShowDetail(true);
   };
 
+  const scopeLabel = user?.role === 'komandan' ? getKomandanScopeLabel(user.level_komando) : null;
+  const scopeDescription = user?.role === 'komandan' ? getKomandanScopeDescription(user.level_komando) : null;
+
   return (
     <DashboardLayout title="Data Personel">
       <div className="space-y-5">
@@ -56,6 +60,17 @@ export default function Personnel() {
           title="Data Personel"
           subtitle="Pantau status online, cari personel, dan lihat data keaktifan satuan secara cepat."
         />
+
+        {/* Komandan scope info banner */}
+        {scopeLabel && (
+          <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/8 px-4 py-3">
+            <span className="mt-0.5 text-base" aria-hidden="true">🎖️</span>
+            <div>
+              <p className="text-sm font-semibold text-primary">{scopeLabel}</p>
+              <p className="mt-0.5 text-xs text-text-muted">{scopeDescription}</p>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="rounded-xl border border-accent-red/40 bg-accent-red/10 p-4 text-sm text-accent-red">

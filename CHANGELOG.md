@@ -18,6 +18,12 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 - **Halaman Analytics** (`/admin/analytics`): dashboard analitik lanjutan dengan chart distribusi status tugas, tingkat kehadiran harian, aktivitas tugas mingguan, distribusi role personel, gate pass bulan ini, dan leaderboard top-5 personel paling aktif.
 - **Backup Otomatis Terjadwal**: pengaturan baru di Settings untuk mengaktifkan pencadangan data otomatis dengan interval yang dapat dikonfigurasi (1/3/7/14/30 hari) dan indikator kapan backup terakhir/berikutnya.
 - Ikon baru ditambahkan: `TrendingUp`, `PieChart`, `Activity`, `Clock`.
+- **`src/lib/rolePermissions.ts`**: utility RBAC lengkap — `canWrite(user, module)`, `getBidangFromJabatan`, `getKomandanScope`, `getKomandanScopeLabel`, `getKomandanScopeDescription`, `getOperationalRoleLabel`, `canReadDisciplineNotes`.
+- **Hierarki Komandan** ditampilkan di dashboard & halaman personel: level BATALION/KOMPI/PELETON tampil di subtitle dan banner informasi cakupan akses data.
+- **Guard: Catatan Disiplin** (`/guard/discipline`): halaman baru read-only untuk Petugas Jaga / Provost membaca catatan disiplin personel satuan, sesuai SPESIFIKASI §3.3.
+- **Staf bidang write-guard** di TaskManagement dan ShiftSchedule: tombol buat/hapus hanya tampil jika staf memiliki bidang yang sesuai (S-3 untuk tugas & shift; S-1 untuk absensi; S-4 untuk logistik).
+- Navigasi guard diperluas dengan tab **Catatan Disiplin** di Sidebar dan BottomTabBar.
+- Feature flag `reports` mencakup path `/guard/discipline`.
 
 ---
 

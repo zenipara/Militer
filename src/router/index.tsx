@@ -41,6 +41,7 @@ const PosJagaPage = lazy(() => import('../pages/admin/PosJagaPage'));
 const StafDashboard = lazy(() => import('../pages/staf/StafDashboard'));
 const StafMessages = lazy(() => import('../pages/staf/StafMessages'));
 const Analytics = lazy(() => import('../pages/admin/Analytics'));
+const GuardDisciplineNotes = lazy(() => import('../pages/guard/DisciplineNotes'));
 const ErrorPage = lazy(() => import('../pages/ErrorPage'));
 
 const wrap = (element: React.ReactNode) => (
@@ -111,11 +112,12 @@ export const router = createHashRouter([
       { path: '/prajurit/scan-pos', element: wrap(<ScanPosJagaPage />) },
     ],
   },
-  // Guard route
+  // Guard routes
   {
     element: <ProtectedRoute allowedRoles={['guard', 'admin']} />,
     children: [
       { path: '/guard/gatepass-scan', element: wrap(<GuardDashboard />) },
+      { path: '/guard/discipline',    element: wrap(<GuardDisciplineNotes />) },
     ],
   },
   // Staf routes

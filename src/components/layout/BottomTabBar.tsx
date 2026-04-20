@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, CalendarDays, Megaphone,
-  UserCheck, Users, Package, Settings, ScanLine,
+  UserCheck, Users, Package, Settings, ScanLine, ScrollText,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
@@ -39,9 +39,9 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
     { path: '/prajurit/attendance', label: 'Absensi',   icon: <CalendarDays size={20} aria-hidden="true" /> },
     { path: '/prajurit/profile',    label: 'Profil',    icon: <UserCheck size={20} aria-hidden="true" /> },
   ],
-  // Guard hanya memiliki satu rute aktif: /guard/gatepass-scan
   guard: [
-    { path: '/guard/gatepass-scan', label: 'Scan', icon: <CheckSquare size={20} aria-hidden="true" /> },
+    { path: '/guard/gatepass-scan', label: 'Scan',     icon: <CheckSquare size={20} aria-hidden="true" /> },
+    { path: '/guard/discipline',    label: 'Disiplin', icon: <ScrollText  size={20} aria-hidden="true" /> },
   ],
   // Staf Operasional
   staf: [

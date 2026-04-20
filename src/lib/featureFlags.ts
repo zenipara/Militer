@@ -99,7 +99,7 @@ export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
     key: 'reports',
     label: 'Laporan & Evaluasi',
     description: 'Halaman laporan dan evaluasi untuk peran komandan.',
-    paths: ['/komandan/reports', '/komandan/evaluation'],
+    paths: ['/komandan/reports', '/komandan/evaluation', '/guard/discipline'],
   },
 ];
 

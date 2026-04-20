@@ -114,6 +114,7 @@ describe('ProtectedRoute', () => {
       flags: {
         ...state.flags,
         gate_pass: false,
+        reports: false,   // also disable /guard/discipline
       },
     }));
 
@@ -121,6 +122,7 @@ describe('ProtectedRoute', () => {
       <MemoryRouter initialEntries={['/guard/gatepass-scan']}>
         <Routes>
           <Route path="/error" element={<div>ErrorPage</div>} />
+          <Route path="/guard/discipline" element={<div>DisciplinePage</div>} />
           <Route path="/guard/gatepass-scan" element={<ProtectedRoute allowedRoles={['guard']} />}>
             <Route index element={<div>GuardAllowed</div>} />
           </Route>

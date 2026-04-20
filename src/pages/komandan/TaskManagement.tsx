@@ -17,6 +17,7 @@ import type { Task, TaskReport, TaskStatus } from '../../types';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { Link } from 'react-router-dom';
 import { isPathEnabled } from '../../lib/featureFlags';
+import { canWrite, getOperationalRoleLabel } from '../../lib/rolePermissions';
 
 export default function TaskManagement() {
   const { user } = useAuthStore();
@@ -24,6 +25,7 @@ export default function TaskManagement() {
   const { showNotification } = useUIStore();
   const { tasks, isLoading, createTask, approveTask, rejectTask, getTaskReport } = useTasks({ assignedBy: user?.id });
   const canOpenReports = isPathEnabled('/komandan/reports', flags);
+  const canWriteTasks = canWrite(user, 'tasks');
 
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
   const [showCreate, setShowCreate] = useState(false);
@@ -155,7 +157,13 @@ export default function TaskManagement() {
           }
           actions={
             <>
-              <Button variant="outline" onClick={() => setShowCreate(true)}>+ Buat Tugas</Button>
+              {canWriteTasks ? (
+                <Button variant="outline" onClick={() => setShowCreate(true)}>+ Buat Tugas</Button>
+              ) : (
+                <span className="text-xs text-text-muted px-3 py-2 rounded-xl border border-surface/70 bg-surface/20">
+                  {getOperationalRoleLabel(user)} — hanya baca
+                </span>
+              )}
               {canOpenReports && (
                 <Link to="/komandan/reports" className="inline-flex items-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary hover:border-primary">
                   Laporan

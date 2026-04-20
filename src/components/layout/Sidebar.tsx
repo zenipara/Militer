@@ -66,7 +66,8 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
     { path: '/prajurit/profile',     label: 'Profil',            icon: 'Users' },
   ],
   guard: [
-    { path: '/guard/gatepass-scan', label: 'Scan Gate Pass', icon: 'ClipboardCheck' },
+    { path: '/guard/gatepass-scan', label: 'Scan Gate Pass',        icon: 'ClipboardCheck' },
+    { path: '/guard/discipline',    label: 'Catatan Disiplin',      icon: 'ScrollText' },
   ],
   staf: [
     { path: '/staf/dashboard',      label: 'Pusat Staf',     icon: 'LayoutDashboard' },

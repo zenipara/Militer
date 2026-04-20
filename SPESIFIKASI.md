@@ -1243,6 +1243,7 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 - [x] Analytics dashboard dengan chart canggih
 - [ ] Multi-satuan (satu sistem untuk banyak unit)
 - [x] Backup otomatis terjadwal
+- [x] **Hierarki & Role** — utility RBAC (`rolePermissions.ts`), komandan scope badge, guard discipline notes, staf bidang write-guard
 
 ---
 
