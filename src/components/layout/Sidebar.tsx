@@ -242,7 +242,7 @@ export default function Sidebar() {
                 {user.pangkat ?? roleLabelMap[user.role]} — {user.satuan}
               </div>
             </div>
-            <div className="h-2 w-2 rounded-full bg-success flex-shrink-0 ring-2 ring-success/20" title="Online" />
+            <div className="h-2 w-2 status-dot status-dot--online status-dot--pulse flex-shrink-0" title="Online" />
           </div>
         </div>
 
