@@ -790,7 +790,7 @@ export default function GatePassMonitorPage() {
               onChange={(e) => setQuery(e.target.value)}
             />
             <select
-              className="w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+              className="form-control"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as GatePassStatus | 'all')}
               data-testid="gatepass-monitor-status-filter"
@@ -829,7 +829,7 @@ export default function GatePassMonitorPage() {
             <div>
               <label className="mb-1 block text-xs font-semibold text-text-muted">Satuan</label>
               <select
-                className="w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+                className="form-control"
                 value={unitFilter}
                 onChange={(e) => setUnitFilter(e.target.value)}
                 data-testid="gatepass-monitor-unit-filter"
@@ -843,7 +843,7 @@ export default function GatePassMonitorPage() {
             <div>
               <label className="mb-1 block text-xs font-semibold text-text-muted">Durasi terlambat</label>
               <select
-                className="w-full rounded-xl border border-surface bg-bg-card px-3 py-2.5 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+                className="form-control"
                 value={overdueBucket}
                 onChange={(e) => setOverdueBucket(e.target.value as OverdueBucket)}
                 data-testid="gatepass-monitor-overdue-filter"
@@ -873,7 +873,7 @@ export default function GatePassMonitorPage() {
             <Button variant="ghost" size="sm" onClick={() => applyDatePreset(7)}>7 hari</Button>
             <Button variant="ghost" size="sm" onClick={() => applyDatePreset(30)}>30 hari</Button>
             <select
-              className="min-w-[210px] rounded-xl border border-surface bg-bg-card px-3 py-2 text-sm text-text-primary shadow-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+              className="form-control min-w-[210px]"
               value={sortMode}
               onChange={(e) => setSortMode(e.target.value as SortMode)}
               data-testid="gatepass-monitor-sort-mode"

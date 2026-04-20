@@ -16,9 +16,9 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, subtitle, actions, meta, breadcrumbs }: PageHeaderProps) {
   return (
-    <div className="app-card overflow-hidden border-0 px-4 py-4 shadow-sm sm:px-6 sm:py-5">
+    <div className="app-card relative overflow-hidden border-0 px-4 py-4 shadow-sm sm:px-6 sm:py-5">
       {/* Top gradient accent strip */}
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary via-blue-500 to-indigo-400 opacity-80" aria-hidden="true" />
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary via-blue-500 to-indigo-400 opacity-90" aria-hidden="true" />
 
       {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (

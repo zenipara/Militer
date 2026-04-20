@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import BottomTabBar from './BottomTabBar';
@@ -13,6 +14,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const { displayDensity, setSidebarOpen } = useUIStore();
+  const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
@@ -21,6 +24,13 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
       setSidebarOpen(false);
     }
   }, [setSidebarOpen]);
+
+  // Scroll to top on route change
+  useEffect(() => {
+    if (typeof mainRef.current?.scrollTo === 'function') {
+      mainRef.current.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [location.pathname]);
 
   const mainPadding = displayDensity === 'compact'
     ? 'px-4 py-3 pb-28 sm:px-5 sm:py-4 lg:px-6 lg:py-6 lg:pb-8'
@@ -48,8 +58,8 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
           }}
         />
         {/* pb-28 on mobile to avoid content being hidden behind BottomTabBar + safe area */}
-        <main className={`relative flex-1 overflow-y-auto scroll-y ${mainPadding}`}>
-          <div className={`mx-auto w-full ${shellWidth} animate-fade-up transition-all duration-300`}>
+        <main ref={mainRef} className={`relative flex-1 overflow-y-auto scroll-y ${mainPadding}`}>
+          <div key={location.pathname} className={`mx-auto w-full ${shellWidth} animate-fade-up`}>
             {children}
           </div>
         </main>

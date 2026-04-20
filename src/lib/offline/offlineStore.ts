@@ -4,7 +4,8 @@
  */
 
 import { getOfflineDB } from './indexedDBSchema';
-import type { UserRecord, GatePassRecord, TaskRecord, QueuedOperation, SyncMetadata } from './indexedDBSchema';
+import type { UserRecord, GatePassRecord, TaskRecord, QueuedOperation, SyncMetadata, KaryoOfflineDB } from './indexedDBSchema';
+import type { StoreNames } from 'idb';
 
 /**
  * USER OPERATIONS
@@ -218,6 +219,6 @@ export async function clearAllOfflineData(): Promise<void> {
     'queued_operations',
   ];
   for (const storeName of stores) {
-    await db.clear(storeName as any);
+    await db.clear(storeName as StoreNames<KaryoOfflineDB>);
   }
 }

@@ -6,6 +6,7 @@ interface BadgeProps {
   variant?: BadgeVariant;
   children: React.ReactNode;
   size?: 'sm' | 'md';
+  dot?: boolean;
   guard?: string;
 }
 
@@ -18,12 +19,22 @@ const variants: Record<BadgeVariant, string> = {
   gold: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-accent-gold/40 dark:bg-accent-gold/14 dark:text-accent-gold',
 };
 
-export default function Badge({ variant = 'neutral', children, size = 'sm' }: BadgeProps) {
+const dotColors: Record<BadgeVariant, string> = {
+  success: 'bg-green-500 dark:bg-success',
+  error: 'bg-red-500 dark:bg-accent-red',
+  warning: 'bg-amber-500 dark:bg-accent-gold',
+  info: 'bg-blue-500 dark:bg-primary',
+  neutral: 'bg-slate-400',
+  gold: 'bg-amber-500 dark:bg-accent-gold',
+};
+
+export default function Badge({ variant = 'neutral', children, size = 'sm', dot }: BadgeProps) {
   const sizes = { sm: 'px-2.5 py-1 text-[11px]', md: 'px-3 py-1 text-sm' };
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border font-semibold tracking-[0.03em] shadow-sm ${variants[variant]} ${sizes[size]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border font-semibold tracking-[0.03em] shadow-sm ${variants[variant]} ${sizes[size]}`}
     >
+      {dot && <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${dotColors[variant]}`} aria-hidden="true" />}
       {children}
     </span>
   );
@@ -31,46 +42,46 @@ export default function Badge({ variant = 'neutral', children, size = 'sm' }: Ba
 
 // Convenience badge components
 export function TaskStatusBadge({ status }: { status: TaskStatus; guard?: string }) {
-  const map: Record<TaskStatus, { label: string; variant: BadgeVariant; icon: string }> = {
-    pending: { label: 'Menunggu', variant: 'neutral', icon: '○' },
-    in_progress: { label: 'Dikerjakan', variant: 'info', icon: '◑' },
-    done: { label: 'Selesai', variant: 'warning', icon: '●' },
-    approved: { label: 'Disetujui', variant: 'success', icon: '✓' },
-    rejected: { label: 'Ditolak', variant: 'error', icon: '✕' },
+  const map: Record<TaskStatus, { label: string; variant: BadgeVariant; dot?: boolean }> = {
+    pending:     { label: 'Menunggu',   variant: 'neutral', dot: false },
+    in_progress: { label: 'Dikerjakan', variant: 'info',    dot: true },
+    done:        { label: 'Selesai',    variant: 'warning', dot: false },
+    approved:    { label: 'Disetujui',  variant: 'success', dot: false },
+    rejected:    { label: 'Ditolak',    variant: 'error',   dot: false },
   };
-  const { label, variant, icon } = map[status];
-  return <Badge variant={variant}><span aria-hidden="true" className="text-[10px] leading-none">{icon}</span>{label}</Badge>;
+  const { label, variant, dot } = map[status];
+  return <Badge variant={variant} dot={dot}>{label}</Badge>;
 }
 
 export function AttendanceBadge({ status }: { status: AttendanceStatus; guard?: string }) {
-  const map: Record<AttendanceStatus, { label: string; variant: BadgeVariant; icon: string }> = {
-    hadir: { label: 'Hadir', variant: 'success', icon: '✓' },
-    izin: { label: 'Izin', variant: 'warning', icon: '~' },
-    sakit: { label: 'Sakit', variant: 'info', icon: '+' },
-    alpa: { label: 'Alpa', variant: 'error', icon: '✕' },
-    dinas_luar: { label: 'Dinas Luar', variant: 'neutral', icon: '↗' },
+  const map: Record<AttendanceStatus, { label: string; variant: BadgeVariant; dot?: boolean }> = {
+    hadir:      { label: 'Hadir',      variant: 'success', dot: true },
+    izin:       { label: 'Izin',       variant: 'warning', dot: false },
+    sakit:      { label: 'Sakit',      variant: 'info',    dot: false },
+    alpa:       { label: 'Alpa',       variant: 'error',   dot: false },
+    dinas_luar: { label: 'Dinas Luar', variant: 'neutral', dot: false },
   };
-  const { label, variant, icon } = map[status];
-  return <Badge variant={variant}><span aria-hidden="true" className="text-[10px] leading-none">{icon}</span>{label}</Badge>;
+  const { label, variant, dot } = map[status];
+  return <Badge variant={variant} dot={dot}>{label}</Badge>;
 }
 
 export function LeaveStatusBadge({ status }: { status: LeaveStatus; guard?: string }) {
-  const map: Record<LeaveStatus, { label: string; variant: BadgeVariant; icon: string }> = {
-    pending: { label: 'Menunggu', variant: 'warning', icon: '○' },
-    approved: { label: 'Disetujui', variant: 'success', icon: '✓' },
-    rejected: { label: 'Ditolak', variant: 'error', icon: '✕' },
+  const map: Record<LeaveStatus, { label: string; variant: BadgeVariant; dot?: boolean }> = {
+    pending:  { label: 'Menunggu',  variant: 'warning', dot: true },
+    approved: { label: 'Disetujui', variant: 'success', dot: false },
+    rejected: { label: 'Ditolak',   variant: 'error',   dot: false },
   };
-  const { label, variant, icon } = map[status];
-  return <Badge variant={variant}><span aria-hidden="true" className="text-[10px] leading-none">{icon}</span>{label}</Badge>;
+  const { label, variant, dot } = map[status];
+  return <Badge variant={variant} dot={dot}>{label}</Badge>;
 }
 
 export function RoleBadge({ role }: { role: Role }) {
   const map: Record<Role, { label: string; variant: BadgeVariant }> = {
-    admin: { label: 'Admin', variant: 'gold' },
+    admin:    { label: 'Admin',    variant: 'gold' },
     komandan: { label: 'Komandan', variant: 'info' },
     prajurit: { label: 'Prajurit', variant: 'neutral' },
-    guard: { label: 'Guard', variant: 'info' },
-    staf: { label: 'Staf', variant: 'warning' },
+    guard:    { label: 'Guard',    variant: 'info' },
+    staf:     { label: 'Staf',     variant: 'warning' },
   };
   const { label, variant } = map[role];
   return <Badge variant={variant}>{label}</Badge>;

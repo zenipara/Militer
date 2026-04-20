@@ -22,20 +22,6 @@ const mockUser = {
   created_at: now, updated_at: now,
 };
 
-/** Build a chainable mock Supabase query that resolves to `result`. */
-function buildQuery(result: { data: unknown; error: unknown }) {
-  const q: Record<string, unknown> = {};
-  const chain = () => q;
-  q.select = chain;
-  q.eq = chain;
-  q.order = chain;
-  q.insert = vi.fn(() => Promise.resolve(result));
-  q.update = vi.fn(() => q);
-  q.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve);
-  q.catch = (reject: (e: unknown) => unknown) => Promise.resolve(result).catch(reject);
-  return q;
-}
-
 describe('posJagaStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -52,17 +38,21 @@ describe('posJagaStore', () => {
   // ── fetchPosJaga ──────────────────────────────────────────
   describe('fetchPosJaga', () => {
     it('fetches all pos jaga and updates store', async () => {
-      mockSupabase.from.mockReturnValue(buildQuery({ data: samplePos, error: null }));
+      mockSupabase.rpc
+        .mockResolvedValueOnce({ data: null, error: null })        // set_session_context
+        .mockResolvedValueOnce({ data: samplePos, error: null });  // api_get_pos_jaga
 
       await usePosJagaStore.getState().fetchPosJaga();
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('pos_jaga');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_get_pos_jaga');
       expect(usePosJagaStore.getState().posJagaList).toHaveLength(2);
       expect(usePosJagaStore.getState().posJagaList[0].nama).toBe('Pos Jaga Utara');
     });
 
     it('throws on supabase error', async () => {
-      mockSupabase.from.mockReturnValue(buildQuery({ data: null, error: new Error('db error') }));
+      mockSupabase.rpc
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({ data: null, error: new Error('db error') });
 
       await expect(usePosJagaStore.getState().fetchPosJaga()).rejects.toThrow('db error');
     });
@@ -81,18 +71,13 @@ describe('posJagaStore', () => {
         created_at: now,
       };
 
-      const singleMock = vi.fn().mockResolvedValue({ data: created, error: null });
-      const selectMock = vi.fn().mockReturnValue({ single: singleMock });
-      const insertMock = vi.fn().mockReturnValue({ select: selectMock });
-      const insertQuery = buildQuery({ data: null, error: null }) as Record<string, unknown>;
-      insertQuery.insert = insertMock;
-
-      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
-      mockSupabase.from.mockReturnValue(insertQuery);
+      mockSupabase.rpc
+        .mockResolvedValueOnce({ data: null, error: null })       // set_session_context
+        .mockResolvedValueOnce({ data: created, error: null });   // api_insert_pos_jaga
 
       const result = await usePosJagaStore.getState().createPosJaga('Pos Baru');
 
-      expect(insertMock).toHaveBeenCalledWith([{ nama: 'Pos Baru' }]);
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_insert_pos_jaga', expect.objectContaining({ p_nama: 'Pos Baru' }));
       expect(result.qr_token).toBe('token-baru');
       expect(usePosJagaStore.getState().posJagaList).toHaveLength(3);
       expect(usePosJagaStore.getState().posJagaList[0].id).toBe('p3');
@@ -102,37 +87,28 @@ describe('posJagaStore', () => {
   // ── setActive ─────────────────────────────────────────────
   describe('setActive', () => {
     it('calls update with correct is_active value and refreshes', async () => {
-      const eqMock = vi.fn().mockResolvedValue({ error: null });
-      const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
-      const patchQuery = buildQuery({ data: null, error: null }) as Record<string, unknown>;
-      patchQuery.update = updateMock;
-
-      const listQuery = buildQuery({ data: samplePos, error: null });
-
-      let callCount = 0;
-      mockSupabase.from.mockImplementation(() => {
-        callCount++;
-        return callCount === 1 ? patchQuery : listQuery;
-      });
+      mockSupabase.rpc
+        .mockResolvedValueOnce({ data: null, error: null })       // set_session_context (patchPosJagaActive)
+        .mockResolvedValueOnce({ data: null, error: null })       // api_set_pos_jaga_active
+        .mockResolvedValueOnce({ data: null, error: null })       // set_session_context (fetchPosJaga refresh)
+        .mockResolvedValueOnce({ data: samplePos, error: null }); // api_get_pos_jaga
 
       await usePosJagaStore.getState().setActive('p2', true);
 
-      expect(updateMock).toHaveBeenCalledWith({ is_active: true });
-      expect(eqMock).toHaveBeenCalledWith('id', 'p2');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_set_pos_jaga_active', expect.objectContaining({ p_id: 'p2', p_is_active: true }));
       expect(usePosJagaStore.getState().posJagaList).toHaveLength(2);
     });
 
     it('deactivates a pos jaga (is_active = false)', async () => {
-      const eqMock = vi.fn().mockResolvedValue({ error: null });
-      const updateMock = vi.fn().mockReturnValue({ eq: eqMock });
-      const patchQuery = buildQuery({ data: null, error: null }) as Record<string, unknown>;
-      patchQuery.update = updateMock;
-
-      mockSupabase.from.mockImplementation(() => patchQuery);
+      mockSupabase.rpc
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({ data: samplePos, error: null });
 
       await usePosJagaStore.getState().setActive('p1', false);
 
-      expect(updateMock).toHaveBeenCalledWith({ is_active: false });
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('api_set_pos_jaga_active', expect.objectContaining({ p_id: 'p1', p_is_active: false }));
     });
   });
 

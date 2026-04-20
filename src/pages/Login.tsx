@@ -125,7 +125,7 @@ export default function Login() {
               { label: 'Secure', icon: '🔒' },
               { label: 'Terintegrasi', icon: '🔗' },
             ].map((chip) => (
-              <span key={chip.label} className="inline-flex items-center gap-1.5 rounded-full border border-surface/70 bg-bg-card/80 px-3 py-1 text-xs font-medium text-text-muted backdrop-blur-sm">
+              <span key={chip.label} className="chip">
                 <span aria-hidden="true">{chip.icon}</span>
                 {chip.label}
               </span>

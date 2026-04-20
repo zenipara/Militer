@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { ICONS, IconType } from '../../icons';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -6,13 +7,25 @@ import { usePlatformStore } from '../../store/platformStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { isPathEnabled } from '../../lib/featureFlags';
 import type { Role } from '../../types';
-import { useRef } from 'react';
 
 interface NavItem {
   path: string;
   label: string;
   icon: keyof typeof ICONS;
 }
+
+type NavSection = 'Utama' | 'Operasional' | 'Administrasi' | 'Komunikasi' | 'Pribadi' | 'Sistem';
+const SECTION_ORDER: NavSection[] = ['Utama', 'Operasional', 'Administrasi', 'Komunikasi', 'Pribadi', 'Sistem'];
+
+const resolveNavSection = (item: NavItem): NavSection => {
+  const { path } = item;
+  if (path.includes('/dashboard')) return 'Utama';
+  if (path.includes('/messages') || path.includes('/announcements')) return 'Komunikasi';
+  if (path.includes('/profile') || path.includes('/leave')) return 'Pribadi';
+  if (path.includes('/settings')) return 'Sistem';
+  if (path.includes('/audit') || path.includes('/users') || path.includes('/satuan') || path.includes('/documents')) return 'Administrasi';
+  return 'Operasional';
+};
 
 const NAV_ITEMS: Record<Role, NavItem[]> = {
   admin: [
@@ -71,7 +84,9 @@ export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { settings } = usePlatformStore();
   const { flags } = useFeatureStore();
+  const location = useLocation();
   const navigate = useNavigate();
+  const [query, setQuery] = useState('');
 
   // Swipe-to-close: track touch start X position
   const touchStartX = useRef<number | null>(null);
@@ -88,9 +103,45 @@ export default function Sidebar() {
     touchStartX.current = null;
   };
 
-  if (!user) return null;
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [sidebarOpen, setSidebarOpen]);
 
-  const navItems = NAV_ITEMS[user.role].filter((item) => isPathEnabled(item.path, flags));
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.innerWidth < 1024) setSidebarOpen(false);
+  }, [location.pathname, setSidebarOpen]);
+
+  const navItems = useMemo(() => {
+    if (!user) return [] as NavItem[];
+    return NAV_ITEMS[user.role].filter((item) => isPathEnabled(item.path, flags));
+  }, [user, flags]);
+
+  const filteredNavItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return navItems;
+    return navItems.filter((item) =>
+      `${item.label} ${item.path}`.toLowerCase().includes(normalizedQuery),
+    );
+  }, [navItems, query]);
+
+  const groupedNavItems = useMemo(() => {
+    const grouped = new Map<NavSection, NavItem[]>();
+    filteredNavItems.forEach((item) => {
+      const section = resolveNavSection(item);
+      grouped.set(section, [...(grouped.get(section) ?? []), item]);
+    });
+    return SECTION_ORDER
+      .map((section) => [section, grouped.get(section) ?? []] as const)
+      .filter(([, items]) => items.length > 0);
+  }, [filteredNavItems]);
+
+  if (!user) return null;
 
   const handleLogout = async () => {
     await logout();
@@ -119,7 +170,7 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          app-panel fixed left-0 top-0 z-30 h-full w-[248px] border-r border-surface/60
+          app-panel fixed left-0 top-0 z-30 h-full w-[min(86vw,280px)] border-r border-surface/60 sm:w-[260px]
           flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0 lg:static lg:z-auto
@@ -129,21 +180,46 @@ export default function Sidebar() {
       >
         {/* Logo */}
         <div className="border-b border-surface/60 px-5 py-4">
-          <div className="flex items-center gap-3">
-            {settings.platformLogoUrl ? (
-              <img
-                src={settings.platformLogoUrl}
-                alt={settings.platformName}
-                className="h-10 w-10 rounded-2xl border border-primary/20 bg-primary/10 object-cover shadow-sm"
-              />
-            ) : (
-              <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-primary to-blue-700 text-lg text-white shadow-md shadow-primary/30">◈</span>
-            )}
-            <div>
-              <div className="text-sm font-extrabold tracking-tight text-text-primary leading-tight">{settings.platformName}</div>
-              <div className="text-[10px] uppercase tracking-[0.14em] text-text-muted">{settings.platformTagline}</div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {settings.platformLogoUrl ? (
+                <img
+                  src={settings.platformLogoUrl}
+                  alt={settings.platformName}
+                  className="h-10 w-10 rounded-2xl border border-primary/20 bg-primary/10 object-cover shadow-sm"
+                />
+              ) : (
+                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-primary to-blue-700 text-lg text-white shadow-md shadow-primary/30">◈</span>
+              )}
+              <div>
+                <div className="text-sm font-extrabold tracking-tight text-text-primary leading-tight">{settings.platformName}</div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-text-muted">{settings.platformTagline}</div>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="grid h-10 w-10 place-items-center rounded-xl text-text-muted transition-colors hover:bg-slate-100 dark:hover:bg-surface/50 lg:hidden"
+              aria-label="Tutup navigasi"
+            >
+              {ICONS.X ? <ICONS.X className="h-5 w-5" aria-hidden="true" /> : '✕'}
+            </button>
           </div>
+        </div>
+
+        <div className="border-b border-surface/60 px-4 py-3">
+          <label htmlFor="sidebar-nav-search" className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted">
+            Cari menu
+          </label>
+          <input
+            id="sidebar-nav-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="form-control h-10 min-h-[40px] bg-slate-50/85 text-sm dark:bg-surface/35"
+            placeholder="Contoh: personel, gate pass..."
+            autoComplete="off"
+          />
         </div>
 
         {/* User info */}
@@ -166,37 +242,49 @@ export default function Sidebar() {
                 {user.pangkat ?? roleLabelMap[user.role]} — {user.satuan}
               </div>
             </div>
-            <div className="h-2 w-2 rounded-full bg-success flex-shrink-0 ring-2 ring-success/20" title="Online" />
+            <div className="h-2 w-2 status-dot status-dot--online status-dot--pulse flex-shrink-0" title="Online" />
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
-          {navItems.map((item) => {
-            const Icon = ICONS[item.icon] as IconType;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `group relative flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200
-                  ${
-                    isActive
-                      ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-md shadow-primary/25'
-                      : 'text-text-muted hover:bg-slate-100/80 hover:text-text-primary dark:hover:bg-surface/50'
-                  }`
-                }
-                onClick={() => {
-                  if (window.innerWidth < 1024) setSidebarOpen(false);
-                }}
-              >
-                <span className="grid h-6 w-6 place-items-center rounded-lg bg-black/[0.06] text-center transition-colors duration-200 dark:bg-white/[0.08]">
-                  {Icon ? <Icon className="w-4 h-4" aria-hidden="true" /> : null}
-                </span>
-                {item.label}
-              </NavLink>
-            );
-          })}
+        <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
+          {groupedNavItems.map(([section, items]) => (
+            <div key={section} className="space-y-1">
+              <p className="px-3 pb-0.5 pt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-text-muted/80">
+                {section}
+              </p>
+              {items.map((item) => {
+                const Icon = ICONS[item.icon] as IconType;
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `group relative flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200
+                      ${
+                        isActive
+                          ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-md shadow-primary/25'
+                          : 'text-text-muted hover:bg-slate-100/80 hover:text-text-primary dark:hover:bg-surface/50'
+                      }`
+                    }
+                    onClick={() => {
+                      if (window.innerWidth < 1024) setSidebarOpen(false);
+                    }}
+                  >
+                    <span className="grid h-6 w-6 place-items-center rounded-lg bg-black/[0.06] text-center transition-colors duration-200 dark:bg-white/[0.08]">
+                      {Icon ? <Icon className="w-4 h-4" aria-hidden="true" /> : null}
+                    </span>
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </div>
+          ))}
+          {filteredNavItems.length === 0 && (
+            <div className="rounded-xl border border-dashed border-surface/80 px-3 py-4 text-center text-xs text-text-muted">
+              Menu tidak ditemukan, ubah kata kunci pencarian.
+            </div>
+          )}
         </nav>
 
         {/* Logout */}

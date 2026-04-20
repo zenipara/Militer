@@ -11,6 +11,7 @@ import KomandanDashboard from '../../pages/komandan/KomandanDashboard';
 import PrajuritDashboard from '../../pages/prajurit/PrajuritDashboard';
 import GuardDashboard from '../../pages/guard/GuardDashboard';
 import { DEFAULT_FEATURE_FLAGS } from '../../lib/featureFlags';
+import type { AdminDashboardSnapshot } from '../../lib/api/dashboard';
 
 vi.mock('html5-qrcode', () => ({
   Html5QrcodeScanner: vi.fn(() => ({
@@ -59,6 +60,24 @@ const dataMap = {
   audit_logs: [
     { id: 'log1', action: 'LOGIN', user: { id: 'u1', nama: 'Admin', nrp: '12345', role: 'admin' }, created_at: '2026-04-14T08:00:00Z' },
   ],
+};
+
+const mockAdminSnapshot: AdminDashboardSnapshot = {
+  stats: {
+    totalPersonel: 5,
+    totalOnline: 3,
+    totalTugas: 4,
+    tugasAktif: 2,
+    pendingIzin: 1,
+    absensiHariIni: 5,
+    absensiMasuk: 3,
+    pinnedPengumuman: 1,
+  },
+  recentLogs: dataMap.audit_logs as AdminDashboardSnapshot['recentLogs'],
+  lowStockItems: dataMap.logistics_items as AdminDashboardSnapshot['lowStockItems'],
+  heatmapAttendances: [],
+  gatePassStats: { checkedIn: 2, completed: 1, overdue: 1, personilTersedia: 3, personilDiLuar: 2 },
+  fetchedAt: new Date().toISOString(),
 };
 
 type MockSupabaseQuery = {
@@ -171,7 +190,12 @@ beforeEach(() => {
     setAllFeaturesEnabled: vi.fn(),
   });
   mockSupabase.from = vi.fn((table: string) => buildQuery(table));
-  mockSupabase.rpc = vi.fn(() => Promise.resolve({ data: null, error: null }));
+  mockSupabase.rpc = vi.fn((fn: string) => {
+    if (fn === 'api_get_admin_dashboard_snapshot') {
+      return Promise.resolve({ data: mockAdminSnapshot, error: null });
+    }
+    return Promise.resolve({ data: null, error: null });
+  });
   mockSupabase.channel = vi.fn(() => ({ on: vi.fn().mockReturnThis(), subscribe: vi.fn().mockReturnThis() }));
   mockSupabase.removeChannel = vi.fn().mockResolvedValue(undefined);
 });

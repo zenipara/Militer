@@ -118,6 +118,10 @@ export default function BottomTabBar() {
                     )}
                   </span>
                   <span className={`text-[10px] leading-none mt-0.5 transition-all duration-200 ${isActive ? 'font-semibold' : ''}`}>{tab.label}</span>
+                  {/* Active dot indicator below label */}
+                  {isActive && (
+                    <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary animate-scale-in" aria-hidden="true" />
+                  )}
                 </>
               )}
             </NavLink>

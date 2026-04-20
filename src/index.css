@@ -342,7 +342,571 @@ html {
   text-size-adjust: 100%;
 }
 
-/* ── Print / PDF export ─────────────────────────────────── */
+/* ── Section heading ──────────────────────────────────────── */
+.section-header {
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+}
+
+/* ── Progress bar ─────────────────────────────────────────── */
+.progress-bar {
+  height: 0.375rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 70%, #818cf8));
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── kbd element ──────────────────────────────────────────── */
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.6875rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-surface) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-surface) 90%, transparent);
+  border-bottom-width: 2px;
+  border-radius: 0.375rem;
+  line-height: 1.4;
+}
+
+/* ── Divider with text ────────────────────────────────────── */
+.divider-text {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.divider-text::before,
+.divider-text::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+}
+
+/* ── Numeric tabular figures utility ─────────────────────── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Focus ring visible utility ──────────────────────────── */
+.focus-ring {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* ── Dark-mode shadow for app-card (parity with app-panel) ── */
+[data-theme="dark"] .app-card {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .app-card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Card selected / active state ────────────────────────── */
+.card-selected {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, transparent) !important;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent),
+    0 4px 16px rgba(15, 23, 42, 0.06);
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-bg-card));
+}
+
+/* ── Interactive element base ────────────────────────────── */
+/* Use on div/li elements that behave like buttons but aren't <button> */
+.interactive {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.interactive:hover {
+  transform: translateY(-1px);
+}
+
+.interactive:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ── Status dot ───────────────────────────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.status-dot--online  { background-color: var(--color-success); }
+.status-dot--offline { background-color: var(--color-surface); border: 1.5px solid color-mix(in srgb, var(--color-text-muted) 50%, transparent); }
+.status-dot--busy    { background-color: var(--color-accent-red); }
+.status-dot--away    { background-color: var(--color-accent-gold); }
+
+/* Animated pulse variant — use alongside status-dot--online etc. */
+.status-dot--pulse {
+  position: relative;
+}
+
+.status-dot--pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  background: inherit;
+  opacity: 0.4;
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.4; }
+  50%       { transform: scale(1.9); opacity: 0;   }
+}
+
+/* ── Chip / Tag ───────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--color-surface) 85%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 45%, transparent);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.chip--primary {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: var(--color-primary);
+}
+
+.chip--success {
+  background: color-mix(in srgb, var(--color-success) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 28%, transparent);
+  color: var(--color-success);
+}
+
+.chip--danger {
+  background: color-mix(in srgb, var(--color-accent-red) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-red) 28%, transparent);
+  color: var(--color-accent-red);
+}
+
+.chip--warning {
+  background: color-mix(in srgb, var(--color-accent-gold) 10%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-gold) 30%, transparent);
+  color: var(--color-accent-gold);
+}
+
+/* ── Loading overlay ─────────────────────────────────────── */
+/* Wrap any .app-card or container in a `relative` div and add this class */
+.loading-overlay {
+  position: relative;
+  pointer-events: none;
+}
+
+.loading-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--color-bg-card) 70%, transparent);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 10;
+  animation: fade-in 0.15s ease-out;
+}
+
+/* ── Form select ─────────────────────────────────────────── */
+select.form-control {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+select.form-control:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* Dark mode chevron */
+[data-theme="dark"] select.form-control {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* ── Textarea ─────────────────────────────────────────────── */
+textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+}
+
+/* ── Horizontal scroll container ─────────────────────────── */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  /* Thin horizontal scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-surface) 86%, transparent) transparent;
+}
+
+/* ── Additional animations ────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2.2s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+@keyframes spin-reverse {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+.animate-spin-reverse {
+  animation: spin-reverse 1s linear infinite;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50%       { transform: rotate(3deg); }
+}
+
+.animate-wiggle {
+  animation: wiggle 0.45s ease-in-out 2;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-4px); }
+  40%       { transform: translateX(4px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(3px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* ── Toggle switch ───────────────────────────────────────── */
+/*
+  Usage:
+    <button role="switch" aria-checked={on} className="toggle-switch" data-checked={on}>
+      <span />
+    </button>
+
+  The <span> is the sliding thumb. State is driven by [data-checked="true"].
+*/
+.toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2.75rem;     /* 44px */
+  height: 1.5rem;     /* 24px */
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-switch:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.toggle-switch[data-checked="true"] {
+  background: var(--color-primary);
+}
+
+.toggle-switch[disabled],
+.toggle-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The sliding thumb */
+.toggle-switch > span {
+  position: absolute;
+  left: 0.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+.toggle-switch[data-checked="true"] > span {
+  transform: translateX(1.25rem);
+}
+
+/* ── Segmented control ───────────────────────────────────── */
+/*
+  Usage:
+    <div className="seg-control">
+      <button className="seg-btn seg-btn--active">Nyaman</button>
+      <button className="seg-btn">Ringkas</button>
+    </div>
+*/
+.seg-control {
+  display: inline-flex;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
+  background: color-mix(in srgb, var(--color-bg-card) 97%, transparent);
+}
+
+.seg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.seg-btn:hover:not(.seg-btn--active) {
+  color: var(--color-text-primary);
+  background: color-mix(in srgb, var(--color-surface) 40%, transparent);
+}
+
+.seg-btn--active {
+  background: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.seg-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* ── Setting row ─────────────────────────────────────────── */
+/*
+  Usage:
+    <div className="setting-row">
+      <div>
+        <p className="setting-row__label">Label</p>
+        <p className="setting-row__desc">Description text</p>
+      </div>
+      <!-- control (toggle, select, etc.) -->
+    </div>
+*/
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 20%, transparent);
+  padding: 1rem;
+}
+
+.setting-row__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.setting-row__desc {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin: 0.125rem 0 0;
+}
+
+/* ── Icon button ─────────────────────────────────────────── */
+/*
+  Usage: <button className="icon-btn">…icon…</button>
+  Size modifiers: icon-btn--sm (32px), icon-btn--lg (48px)
+*/
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;    /* 40px */
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
+  background: color-mix(in srgb, var(--color-bg-card) 80%, transparent);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-bg-card));
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  color: var(--color-primary);
+}
+
+.icon-btn:active {
+  transform: scale(0.93);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-btn--sm {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+}
+
+.icon-btn--lg {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.875rem;
+}
+
+/* Danger variant */
+.icon-btn--danger:hover {
+  background: color-mix(in srgb, var(--color-accent-red) 8%, var(--color-bg-card));
+  border-color: color-mix(in srgb, var(--color-accent-red) 30%, transparent);
+  color: var(--color-accent-red);
+}
+
+/* ── Dropdown panel ──────────────────────────────────────── */
+.dropdown-panel {
+  position: absolute;
+  z-index: 50;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
+  background: var(--color-bg-card);
+  padding: 0.5rem;
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
+  animation: scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top right;
+}
+
+[data-theme="dark"] .dropdown-panel {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* Hidden state */
+.dropdown-panel[hidden],
+.dropdown-panel[aria-hidden="true"] {
+  display: none;
+}
+
+/* Item inside dropdown */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.12s ease;
+  text-decoration: none;
+}
+
+.dropdown-item:hover {
+  background: color-mix(in srgb, var(--color-surface) 40%, transparent);
+}
+
+.dropdown-item--danger {
+  color: var(--color-accent-red);
+}
+
+.dropdown-item--danger:hover {
+  background: color-mix(in srgb, var(--color-accent-red) 8%, transparent);
+}
+
+.dropdown-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+/* ── Print improvements ─────────────────────────────────── */
 @media print {
   /* Hide chrome */
   nav,
@@ -367,6 +931,25 @@ html {
     overflow: visible !important;
   }
 
+  /* Flatten cards and panels for print */
+  .app-card,
+  .app-panel {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    border-radius: 4px !important;
+    background: #ffffff !important;
+    break-inside: avoid;
+  }
+
+  /* Flatten badges / chips */
+  [class*="badge"],
+  .chip {
+    border: 1px solid #ccc !important;
+    background: #f5f5f5 !important;
+    color: #000 !important;
+    box-shadow: none !important;
+  }
+
   /* Table print styles */
   table {
     width: 100%;
@@ -387,5 +970,17 @@ html {
   /* Avoid page breaks inside rows */
   tr {
     page-break-inside: avoid;
+  }
+
+  /* Ensure gradient text still renders */
+  .text-gradient {
+    -webkit-text-fill-color: var(--color-primary) !important;
+    background: none !important;
+  }
+
+  /* Hide interactive elements */
+  button:not([data-print-show]),
+  [role="button"]:not([data-print-show]) {
+    display: none !important;
   }
 }
