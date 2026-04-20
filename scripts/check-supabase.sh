@@ -53,8 +53,16 @@ else
   warn "$ENV_FILE tidak ditemukan, fallback ke environment shell saat ini."
 fi
 
-SUPABASE_URL="${VITE_SUPABASE_URL:-$(read_env_value VITE_SUPABASE_URL "$ENV_FILE")}" 
-SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-$(read_env_value VITE_SUPABASE_ANON_KEY "$ENV_FILE")}" 
+SUPABASE_URL="$(read_env_value VITE_SUPABASE_URL "$ENV_FILE")"
+SUPABASE_ANON_KEY="$(read_env_value VITE_SUPABASE_ANON_KEY "$ENV_FILE")"
+
+if [[ -z "$SUPABASE_URL" ]]; then
+  SUPABASE_URL="${VITE_SUPABASE_URL:-}"
+fi
+
+if [[ -z "$SUPABASE_ANON_KEY" ]]; then
+  SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-}"
+fi
 
 [[ -z "$SUPABASE_URL" ]] && error "VITE_SUPABASE_URL belum diset."
 [[ -z "$SUPABASE_ANON_KEY" ]] && error "VITE_SUPABASE_ANON_KEY belum diset."
@@ -64,10 +72,10 @@ if [[ ! "$SUPABASE_URL" =~ ^https://[a-zA-Z0-9-]+\.supabase\.co/?$ ]]; then
 fi
 
 health_code=$(curl -sS -m 15 -o /dev/null -w "%{http_code}" "${SUPABASE_URL%/}/auth/v1/health" || true)
-if [[ "$health_code" != "200" ]]; then
+if [[ "$health_code" != "200" && "$health_code" != "401" ]]; then
   error "Auth health check gagal (HTTP $health_code). Periksa URL project / status project Supabase."
 fi
-success "Auth endpoint reachable (HTTP 200)."
+success "Auth endpoint reachable (HTTP $health_code)."
 
 rest_code=$(curl -sS -m 15 -o /dev/null -w "%{http_code}" "${SUPABASE_URL%/}/rest/v1/" \
   -H "apikey: $SUPABASE_ANON_KEY" \

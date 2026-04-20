@@ -45,6 +45,7 @@ GRANT EXECUTE ON FUNCTION public.matches_current_satuan(UUID, TEXT) TO authentic
 -- ============================================================
 -- USERS RPCs
 -- ============================================================
+DROP FUNCTION IF EXISTS public.api_get_users(UUID, TEXT, TEXT, TEXT, BOOLEAN, TEXT, BOOLEAN);
 CREATE OR REPLACE FUNCTION public.api_get_users(
   p_user_id   UUID,
   p_role      TEXT,
@@ -190,6 +191,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_count_users_filtered(UUID, TEXT, TEXT, TEXT, BOOLEAN, TEXT);
 CREATE OR REPLACE FUNCTION public.api_count_users_filtered(
   p_user_id       UUID,
   p_role          TEXT,
@@ -264,6 +266,7 @@ $$;
 -- ============================================================
 -- TASKS
 -- ============================================================
+DROP FUNCTION IF EXISTS public.api_get_tasks(UUID, TEXT, UUID, UUID, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.api_get_tasks(
   p_user_id    UUID,
   p_role       TEXT,
@@ -342,6 +345,7 @@ $$;
 -- ============================================================
 -- ANNOUNCEMENTS
 -- ============================================================
+DROP FUNCTION IF EXISTS public.api_get_announcements(UUID, TEXT);
 CREATE OR REPLACE FUNCTION public.api_get_announcements(
   p_user_id UUID,
   p_role    TEXT
@@ -380,6 +384,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_insert_announcement(UUID, TEXT, TEXT, TEXT, UUID, TEXT[], TEXT, BOOLEAN);
 CREATE OR REPLACE FUNCTION public.api_insert_announcement(
   p_caller_id   UUID,
   p_caller_role TEXT,
@@ -418,6 +423,7 @@ $$;
 -- ============================================================
 -- DOCUMENTS
 -- ============================================================
+DROP FUNCTION IF EXISTS public.api_get_documents(UUID, TEXT);
 CREATE OR REPLACE FUNCTION public.api_get_documents(
   p_user_id UUID,
   p_role TEXT
@@ -459,6 +465,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_insert_document(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER);
 CREATE OR REPLACE FUNCTION public.api_insert_document(
   p_caller_id UUID,
   p_caller_role TEXT,
@@ -490,6 +497,7 @@ $$;
 -- ============================================================
 -- LEAVE REQUESTS / LOGISTICS / ATTENDANCE / REPORTS
 -- ============================================================
+DROP FUNCTION IF EXISTS public.api_get_leave_requests(UUID, TEXT, UUID);
 CREATE OR REPLACE FUNCTION public.api_get_leave_requests(
   p_user_id UUID,
   p_role TEXT,
@@ -542,6 +550,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_insert_leave_request(UUID, TEXT, TEXT, DATE, DATE, TEXT);
 CREATE OR REPLACE FUNCTION public.api_insert_leave_request(
   p_user_id UUID,
   p_caller_role TEXT,
@@ -561,6 +570,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_get_logistics_requests(UUID, TEXT, TEXT, UUID);
 CREATE OR REPLACE FUNCTION public.api_get_logistics_requests(
   p_user_id UUID,
   p_role TEXT,
@@ -625,6 +635,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_insert_logistics_request(UUID, TEXT, TEXT, TEXT, INT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.api_insert_logistics_request(
   p_caller_id UUID,
   p_caller_role TEXT,
@@ -632,7 +643,7 @@ CREATE OR REPLACE FUNCTION public.api_insert_logistics_request(
   p_nama_item TEXT,
   p_jumlah INT,
   p_satuan_item TEXT DEFAULT NULL,
-  p_alasan TEXT
+  p_alasan TEXT DEFAULT NULL
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -660,6 +671,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_get_attendance_report(DATE, DATE, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION public.api_get_attendance_report(
   p_date_from DATE,
   p_date_to DATE,
@@ -711,6 +723,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_get_komandan_reports(TEXT, DATE);
 CREATE OR REPLACE FUNCTION public.api_get_komandan_reports(
   p_satuan TEXT,
   p_tanggal DATE
@@ -776,6 +789,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.api_get_staf_stats(TEXT);
 CREATE OR REPLACE FUNCTION public.api_get_staf_stats(
   p_satuan TEXT
 )

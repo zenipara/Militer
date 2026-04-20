@@ -14,6 +14,17 @@ END $$;
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS level_komando command_level;
 
+-- Normalize existing rows before adding strict constraint.
+UPDATE users
+SET level_komando = CASE
+  WHEN role <> 'komandan' THEN NULL
+  WHEN level_komando IS NOT NULL THEN level_komando
+  WHEN jabatan ILIKE '%batalyon%' THEN 'BATALION'::command_level
+  WHEN jabatan ILIKE '%kompi%' THEN 'KOMPI'::command_level
+  WHEN jabatan ILIKE '%peleton%' THEN 'PELETON'::command_level
+  ELSE 'KOMPI'::command_level
+END;
+
 -- 3. Add CHECK constraint so level_komando is required for komandan only
 --    Drop first if it already exists from a previous attempt.
 DO $$ BEGIN

@@ -90,6 +90,9 @@ DROP POLICY IF EXISTS "discipline_notes_komandan_own_satuan" ON public.disciplin
 -- USERS
 -- ============================================================
 DROP POLICY IF EXISTS "users_admin_all" ON public.users;
+DROP POLICY IF EXISTS "users_komandan_read_satuan_v2" ON public.users;
+DROP POLICY IF EXISTS "users_prajurit_own" ON public.users;
+DROP POLICY IF EXISTS "users_login_rpc" ON public.users;
 CREATE POLICY "users_admin_all"
   ON public.users FOR ALL TO anon
   USING (public.current_karyo_role() = 'admin')
@@ -117,6 +120,9 @@ CREATE POLICY "users_login_rpc"
 -- TASKS
 -- ============================================================
 DROP POLICY IF EXISTS "tasks_admin_all" ON public.tasks;
+DROP POLICY IF EXISTS "tasks_komandan_own_v2" ON public.tasks;
+DROP POLICY IF EXISTS "tasks_prajurit_assigned_v2" ON public.tasks;
+DROP POLICY IF EXISTS "tasks_prajurit_update_status_v2" ON public.tasks;
 CREATE POLICY "tasks_admin_all"
   ON public.tasks FOR ALL TO anon
   USING (public.current_karyo_role() = 'admin')
@@ -160,6 +166,8 @@ CREATE POLICY "tasks_prajurit_update_status_v2"
 -- ATTENDANCE
 -- ============================================================
 DROP POLICY IF EXISTS "attendance_admin_all" ON public.attendance;
+DROP POLICY IF EXISTS "attendance_komandan_read_satuan_v2" ON public.attendance;
+DROP POLICY IF EXISTS "attendance_prajurit_own_v2" ON public.attendance;
 CREATE POLICY "attendance_admin_all"
   ON public.attendance FOR ALL TO anon
   USING (public.current_karyo_role() = 'admin')
@@ -189,6 +197,8 @@ CREATE POLICY "attendance_prajurit_own_v2"
 -- LEAVE REQUESTS
 -- ============================================================
 DROP POLICY IF EXISTS "leave_requests_admin_all" ON public.leave_requests;
+DROP POLICY IF EXISTS "leave_requests_komandan_read_approve_v2" ON public.leave_requests;
+DROP POLICY IF EXISTS "leave_requests_prajurit_own_v2" ON public.leave_requests;
 CREATE POLICY "leave_requests_admin_all"
   ON public.leave_requests FOR ALL TO anon
   USING (public.current_karyo_role() = 'admin')
@@ -221,6 +231,7 @@ CREATE POLICY "leave_requests_prajurit_own_v2"
 -- ============================================================
 -- MESSAGES
 -- ============================================================
+DROP POLICY IF EXISTS "messages_own_v2" ON public.messages;
 CREATE POLICY "messages_own_v2"
   ON public.messages FOR ALL TO anon
   USING (
@@ -239,6 +250,7 @@ CREATE POLICY "messages_own_v2"
 -- ANNOUNCEMENTS
 -- ============================================================
 DROP POLICY IF EXISTS "announcements_admin_all" ON public.announcements;
+DROP POLICY IF EXISTS "announcements_read_satuan_v2" ON public.announcements;
 CREATE POLICY "announcements_admin_all"
   ON public.announcements FOR ALL TO anon
   USING (public.current_karyo_role() = 'admin')
@@ -259,6 +271,7 @@ CREATE POLICY "announcements_read_satuan_v2"
 -- LOGISTICS REQUESTS
 -- ============================================================
 DROP POLICY IF EXISTS "logistics_requests_admin_all" ON public.logistics_requests;
+DROP POLICY IF EXISTS "logistics_requests_komandan_own_v2" ON public.logistics_requests;
 CREATE POLICY "logistics_requests_admin_all"
   ON public.logistics_requests FOR ALL TO anon
   USING (public.current_karyo_role() = 'admin')
@@ -281,6 +294,7 @@ CREATE POLICY "logistics_requests_komandan_own_v2"
 -- DOCUMENTS
 -- ============================================================
 DROP POLICY IF EXISTS "documents_admin_all" ON public.documents;
+DROP POLICY IF EXISTS "documents_read_authenticated_v2" ON public.documents;
 CREATE POLICY "documents_admin_all"
   ON public.documents FOR ALL TO anon
   USING (public.current_karyo_role() = 'admin')
@@ -297,6 +311,8 @@ CREATE POLICY "documents_read_authenticated_v2"
 -- DISCIPLINE NOTES
 -- ============================================================
 DROP POLICY IF EXISTS "discipline_notes_admin_all" ON public.discipline_notes;
+DROP POLICY IF EXISTS "discipline_notes_komandan_own_satuan_v2" ON public.discipline_notes;
+DROP POLICY IF EXISTS "discipline_notes_prajurit_own_v2" ON public.discipline_notes;
 CREATE POLICY "discipline_notes_admin_all"
   ON public.discipline_notes FOR ALL TO anon
   USING (public.current_karyo_role() = 'admin')

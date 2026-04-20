@@ -34,6 +34,14 @@ if [[ -z "${SUPABASE_PROJECT_REF:-}" ]]; then
   SUPABASE_PROJECT_REF="$(read_env_key "SUPABASE_PROJECT_REF" "$ENV_FILE" || true)"
 fi
 
+if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
+  SUPABASE_ACCESS_TOKEN="$(read_env_key "SUPABASE_ACCESS_TOKEN" "$ENV_FILE" || true)"
+fi
+
+if [[ -z "${SUPABASE_DB_PASSWORD:-}" ]]; then
+  SUPABASE_DB_PASSWORD="$(read_env_key "SUPABASE_DB_PASSWORD" "$ENV_FILE" || true)"
+fi
+
 if [[ -z "${VITE_SUPABASE_URL:-}" ]]; then
   VITE_SUPABASE_URL="$(read_env_key "VITE_SUPABASE_URL" "$ENV_FILE" || true)"
 fi
