@@ -35,6 +35,7 @@ interface QuickLink {
 
 const quickLinks: QuickLink[] = [
   { href: '/admin/users', icon: 'UsersRound', title: 'Personel', desc: 'CRUD user & reset PIN' },
+  { href: '/admin/analytics', icon: 'TrendingUp', title: 'Analitik', desc: 'Tren tugas, absensi & personel' },
   { href: '/admin/logistics', icon: 'Package', title: 'Logistik', desc: 'Inventaris perlengkapan' },
   { href: '/admin/gatepass-monitor', icon: 'ClipboardCheck', title: 'Gate Pass', desc: 'Monitoring keluar/masuk batalion' },
   { href: '/admin/pos-jaga', icon: 'MapPin', title: 'Pos Jaga', desc: 'Kelola pos jaga & QR statis' },

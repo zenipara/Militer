@@ -61,6 +61,10 @@ import {
   ArrowUpDown,
   Copy,
   Building2,
+  TrendingUp,
+  PieChart,
+  Activity,
+  Clock,
 } from 'lucide-react';
 
 
@@ -127,6 +131,10 @@ export const ICONS = {
   ArrowUpDown,
   Copy,
   Building2,
+  TrendingUp,
+  PieChart,
+  Activity,
+  Clock,
 } as const;
 
 export type IconName = keyof typeof ICONS;

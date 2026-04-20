@@ -32,6 +32,7 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
     { path: '/admin/dashboard',     label: 'Pusat Kendali',  icon: 'LayoutDashboard' },
     { path: '/admin/satuan',        label: 'Satuan',         icon: 'Building2' },
     { path: '/admin/users',         label: 'Personel',       icon: 'Users' },
+    { path: '/admin/analytics',     label: 'Analitik',       icon: 'TrendingUp' },
     { path: '/admin/logistics',     label: 'Logistik',       icon: 'Package' },
     { path: '/admin/documents',     label: 'Dokumen',        icon: 'FileText' },
     { path: '/admin/announcements', label: 'Pengumuman',     icon: 'Megaphone' },

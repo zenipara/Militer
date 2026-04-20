@@ -110,10 +110,12 @@ export default function UserManagement() {
     }
     setIsSaving(true);
     try {
-      const payload: Parameters<typeof createUser>[0] = { ...form, is_active: true };
-      if (form.role === 'komandan' && form.level_komando) {
-        payload.level_komando = form.level_komando as CommandLevel;
-      }
+      const { level_komando: rawLevelKomando, ...formRest } = form;
+      const payload: Parameters<typeof createUser>[0] = {
+        ...formRest,
+        is_active: true,
+        level_komando: (rawLevelKomando || undefined) as CommandLevel | undefined,
+      };
       await createUser(payload);
       showNotification('Personel berhasil ditambahkan', 'success');
       setPage(1);

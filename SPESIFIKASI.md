@@ -1240,9 +1240,9 @@ Deployment frontend dijalankan di GitHub Pages dengan konfigurasi berikut:
 ### Phase 3 — Advanced (v2.0)
 - [x] PWA (Progressive Web App) untuk akses offline
 - [ ] Integrasi API eksternal (cuaca, peta)
-- [ ] Analytics dashboard dengan chart canggih
+- [x] Analytics dashboard dengan chart canggih
 - [ ] Multi-satuan (satu sistem untuk banyak unit)
-- [ ] Backup otomatis terjadwal
+- [x] Backup otomatis terjadwal
 
 ---
 

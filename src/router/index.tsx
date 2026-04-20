@@ -40,6 +40,7 @@ const GatePassMonitorPage = lazy(() => import('../pages/admin/GatePassMonitorPag
 const PosJagaPage = lazy(() => import('../pages/admin/PosJagaPage'));
 const StafDashboard = lazy(() => import('../pages/staf/StafDashboard'));
 const StafMessages = lazy(() => import('../pages/staf/StafMessages'));
+const Analytics = lazy(() => import('../pages/admin/Analytics'));
 const ErrorPage = lazy(() => import('../pages/ErrorPage'));
 
 const wrap = (element: React.ReactNode) => (
@@ -63,6 +64,7 @@ export const router = createHashRouter([
       { path: '/admin/satuan',    element: wrap(<SatuanManagement />) },
       { path: '/admin/audit',     element: wrap(<AuditLog />) },
       { path: '/admin/settings',  element: wrap(<Settings />) },
+      { path: '/admin/analytics', element: wrap(<Analytics />) },
     ],
   },
   // Admin + Staf shared routes (Staf dapat akses baca/kelola sesuai bidang)

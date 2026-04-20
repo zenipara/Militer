@@ -94,6 +94,88 @@ export default function Settings() {
   const [platformTaglineInput, setPlatformTaglineInput] = useState(settings.platformTagline);
   const [platformLogoInput, setPlatformLogoInput] = useState(settings.platformLogoUrl ?? '');
 
+  // ── Backup otomatis terjadwal ──────────────────────────────────────────────
+  const AUTO_BACKUP_KEY = 'karyo_auto_backup_enabled';
+  const AUTO_BACKUP_INTERVAL_KEY = 'karyo_auto_backup_interval_days';
+  const AUTO_BACKUP_LAST_KEY = 'karyo_auto_backup_last_at';
+
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState<boolean>(() => {
+    return localStorage.getItem(AUTO_BACKUP_KEY) === 'true';
+  });
+  const [autoBackupIntervalDays, setAutoBackupIntervalDays] = useState<number>(() => {
+    return Number(localStorage.getItem(AUTO_BACKUP_INTERVAL_KEY) ?? '7');
+  });
+  const [lastAutoBackupAt, setLastAutoBackupAt] = useState<string | null>(() => {
+    return localStorage.getItem(AUTO_BACKUP_LAST_KEY);
+  });
+  const [isAutoExporting, setIsAutoExporting] = useState(false);
+
+  const nextAutoBackupDue = useMemo<Date | null>(() => {
+    if (!autoBackupEnabled || !lastAutoBackupAt) return null;
+    const last = new Date(lastAutoBackupAt);
+    last.setDate(last.getDate() + autoBackupIntervalDays);
+    return last;
+  }, [autoBackupEnabled, lastAutoBackupAt, autoBackupIntervalDays]);
+
+  const isAutoBackupOverdue = useMemo<boolean>(() => {
+    if (!autoBackupEnabled) return false;
+    if (!nextAutoBackupDue) return true; // never backed up
+    return new Date() >= nextAutoBackupDue;
+  }, [autoBackupEnabled, nextAutoBackupDue]);
+
+  const saveAutoBackupPrefs = (enabled: boolean, intervalDays: number) => {
+    localStorage.setItem(AUTO_BACKUP_KEY, String(enabled));
+    localStorage.setItem(AUTO_BACKUP_INTERVAL_KEY, String(intervalDays));
+  };
+
+  const handleAutoBackupToggle = (next: boolean) => {
+    setAutoBackupEnabled(next);
+    saveAutoBackupPrefs(next, autoBackupIntervalDays);
+  };
+
+  const handleAutoBackupIntervalChange = (days: number) => {
+    setAutoBackupIntervalDays(days);
+    saveAutoBackupPrefs(autoBackupEnabled, days);
+  };
+
+  const triggerAutoBackup = async () => {
+    if (isAutoExporting) return;
+    setIsAutoExporting(true);
+    try {
+      const { data, error } = await supabase.rpc('api_export_backup', {
+        p_caller_role: user?.role,
+        p_satuan: user?.satuan ?? null,
+      });
+      if (error) throw new Error(`Gagal backup otomatis: ${error.message}`);
+      const backup = (data as BackupData | null) ?? null;
+      if (!backup?.tables) throw new Error('Payload backup tidak valid');
+      const filename = `karyo_autobackup_${new Date().toISOString().slice(0, 10)}.json`;
+      downloadJson(backup, filename);
+      const now = new Date().toISOString();
+      setLastAutoBackupAt(now);
+      localStorage.setItem(AUTO_BACKUP_LAST_KEY, now);
+      showNotification('Backup otomatis berhasil diunduh', 'success');
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal backup otomatis', 'error');
+    } finally {
+      setIsAutoExporting(false);
+    }
+  };
+
+  // Check auto-backup due on mount and every hour
+  useEffect(() => {
+    if (!autoBackupEnabled) return;
+    if (isAutoBackupOverdue) void triggerAutoBackup();
+
+    const intervalId = window.setInterval(() => {
+      if (isAutoBackupOverdue) void triggerAutoBackup();
+    }, 3600000); // re-check every 1 hour
+
+    return () => window.clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoBackupEnabled, isAutoBackupOverdue]);
+  // ── End backup otomatis ────────────────────────────────────────────────────
+
   useEffect(() => {
     setPlatformNameInput(settings.platformName);
     setPlatformTaglineInput(settings.platformTagline);
@@ -663,6 +745,102 @@ export default function Settings() {
                   <span className="text-sm font-semibold text-text-primary">{value}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Backup Otomatis Terjadwal ── */}
+        <div className="app-card p-6">
+          <h2 className="mb-1 text-lg font-bold tracking-tight text-text-primary">Backup Otomatis Terjadwal</h2>
+          <p className="mb-5 text-sm text-text-muted">
+            Aktifkan pencadangan otomatis agar sistem mengunduh backup setiap periode tertentu saat halaman pengaturan dibuka.
+          </p>
+
+          {isAutoBackupOverdue && autoBackupEnabled && (
+            <div className="mb-4 flex items-start gap-3 rounded-xl border border-accent-gold/40 bg-accent-gold/10 p-4">
+              <AlertTriangle size={16} className="mt-0.5 flex-shrink-0 text-accent-gold" aria-hidden="true" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-accent-gold">Backup terjadwal sudah jatuh tempo</p>
+                <p className="mt-0.5 text-xs text-accent-gold/90">
+                  Backup otomatis akan segera diunduh. Jangan tutup halaman ini.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="setting-row">
+              <div>
+                <p className="text-sm font-semibold text-text-primary">Backup Otomatis</p>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {autoBackupEnabled
+                    ? `Aktif — backup setiap ${autoBackupIntervalDays} hari`
+                    : 'Nonaktif — backup hanya dilakukan secara manual'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleAutoBackupToggle(!autoBackupEnabled)}
+                className="toggle-switch"
+                data-checked={autoBackupEnabled}
+                aria-label="Toggle backup otomatis"
+                role="switch"
+                aria-checked={autoBackupEnabled}
+              >
+                <span />
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <div>
+                <label htmlFor="auto-backup-interval" className="text-sm font-semibold text-text-primary">
+                  Interval Backup
+                </label>
+                <select
+                  id="auto-backup-interval"
+                  className="form-control mt-1"
+                  value={autoBackupIntervalDays}
+                  disabled={!autoBackupEnabled}
+                  onChange={(e) => handleAutoBackupIntervalChange(Number(e.target.value))}
+                >
+                  <option value={1}>Setiap 1 hari</option>
+                  <option value={3}>Setiap 3 hari</option>
+                  <option value={7}>Setiap 7 hari</option>
+                  <option value={14}>Setiap 14 hari</option>
+                  <option value={30}>Setiap 30 hari</option>
+                </select>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isAutoExporting}
+                onClick={() => { void triggerAutoBackup(); }}
+              >
+                {isAutoExporting ? 'Mengekspor…' : 'Backup Sekarang'}
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-4 text-xs text-text-muted">
+              <span>
+                Backup terakhir:{' '}
+                <strong className="text-text-primary">
+                  {lastAutoBackupAt
+                    ? new Date(lastAutoBackupAt).toLocaleString('id-ID', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit',
+                      })
+                    : 'Belum pernah'}
+                </strong>
+              </span>
+              {nextAutoBackupDue && (
+                <span>
+                  Backup berikutnya:{' '}
+                  <strong className="text-text-primary">
+                    {nextAutoBackupDue.toLocaleDateString('id-ID', {
+                      day: 'numeric', month: 'short', year: 'numeric',
+                    })}
+                  </strong>
+                </span>
+              )}
             </div>
           </div>
         </div>

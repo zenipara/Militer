@@ -15,6 +15,9 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 ### Ditambahkan
 - Fondasi implementasi database untuk penajaman akses per bidang staf (S-1/S-3/S-4), akses discipline notes untuk guard/provost, dan pembatasan akses operasional admin.
 - Prompt instalasi PWA dari menu profil agar aplikasi dapat dipasang langsung ke perangkat saat browser mendukung `beforeinstallprompt`.
+- **Halaman Analytics** (`/admin/analytics`): dashboard analitik lanjutan dengan chart distribusi status tugas, tingkat kehadiran harian, aktivitas tugas mingguan, distribusi role personel, gate pass bulan ini, dan leaderboard top-5 personel paling aktif.
+- **Backup Otomatis Terjadwal**: pengaturan baru di Settings untuk mengaktifkan pencadangan data otomatis dengan interval yang dapat dikonfigurasi (1/3/7/14/30 hari) dan indikator kapan backup terakhir/berikutnya.
+- Ikon baru ditambahkan: `TrendingUp`, `PieChart`, `Activity`, `Clock`.
 
 ---
 
