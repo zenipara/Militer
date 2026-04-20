@@ -14,7 +14,7 @@ import EmptyState from '../../components/common/EmptyState';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { AttendanceBadge } from '../../components/common/Badge';
 import { CardListSkeleton } from '../../components/common/Skeleton';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/ui/PageHeader';
 import { ICONS } from '../../icons';
@@ -33,24 +33,26 @@ export default function PrajuritDashboard() {
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
 
-  const activeTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress');
-  const doneTasks = tasks.filter((t) => t.status === 'done' || t.status === 'approved');
-  const rejectedTasks = tasks.filter((t) => t.status === 'rejected');
+  const activeTasks = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress'), [tasks]);
+  const doneTasks = useMemo(() => tasks.filter((t) => t.status === 'done' || t.status === 'approved'), [tasks]);
+  const rejectedTasks = useMemo(() => tasks.filter((t) => t.status === 'rejected'), [tasks]);
 
   const canOpenGatePass = isPathEnabled('/prajurit/gatepass', flags);
   // Active gate pass: sudah scan keluar (checked_in) atau overdue
-  const activeGatePass = canOpenGatePass
-    ? gatePasses.find((gp) => gp.status === 'checked_in' || gp.status === 'overdue')
-    : undefined;
+  const activeGatePass = useMemo(
+    () => (canOpenGatePass ? gatePasses.find((gp) => gp.status === 'checked_in' || gp.status === 'overdue') : undefined),
+    [canOpenGatePass, gatePasses],
+  );
 
   useEffect(() => {
     if (canOpenGatePass) void fetchGatePasses();
   }, [canOpenGatePass, fetchGatePasses]);
 
   // Recent announcements: pinned first, limit 3
-  const recentAnnouncements = [...announcements]
-    .sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
-    .slice(0, 3);
+  const recentAnnouncements = useMemo(
+    () => [...announcements].sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0)).slice(0, 3),
+    [announcements],
+  );
 
   const canOpenTasks = isPathEnabled('/prajurit/tasks', flags);
   const canOpenMessages = isPathEnabled('/prajurit/messages', flags);

@@ -13,6 +13,7 @@ import { usePlatformStore } from './store/platformStore';
 import { useFeatureStore } from './store/featureStore';
 import { useUIStore } from './store/uiStore';
 import { useGlobalRealtimeSync } from './hooks/useGlobalRealtimeSync';
+import { useNotifications } from './hooks/useNotifications';
 import { subscribeDataChanges } from './lib/dataSync';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -29,6 +30,7 @@ export function App() {
   const { loadFeatureFlags } = useFeatureStore();
   const { loadUserPreferences } = useUIStore();
   useGlobalRealtimeSync();
+  useNotifications();
 
   useEffect(() => {
     void restoreSession();

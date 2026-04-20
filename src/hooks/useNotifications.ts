@@ -10,8 +10,8 @@ const PERM_ASKED_KEY = 'karyo_notif_asked';
  * then subscribes to new messages & task assignments via Supabase Realtime.
  */
 export function useNotifications() {
-  const { user } = useAuthStore();
-  const { notificationsEnabled } = useUIStore();
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const notificationsEnabled = useUIStore((s) => s.notificationsEnabled);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const requestPermission = useCallback(async () => {
@@ -45,7 +45,7 @@ export function useNotifications() {
   }, []);
 
   useEffect(() => {
-    if (!user?.id || !notificationsEnabled) return;
+    if (!userId || !notificationsEnabled) return;
 
     void requestPermission();
 
@@ -54,11 +54,11 @@ export function useNotifications() {
       void supabase.removeChannel(channelRef.current);
     }
 
-    const channel = supabase.channel(`karyo-notif-${user.id}`);
+    const channel = supabase.channel(`karyo-notif-${userId}`);
     // New message received
     channel.on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `to_user=eq.${user.id}` },
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `to_user=eq.${userId}` },
       (payload) => {
         const row = payload.new as { isi: string };
         sendNotification('📨 Pesan Baru', row.isi?.slice(0, 120) ?? 'Anda mendapat pesan baru');
@@ -67,7 +67,7 @@ export function useNotifications() {
     // New task assigned
     channel.on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'tasks', filter: `assigned_to=eq.${user.id}` },
+      { event: 'INSERT', schema: 'public', table: 'tasks', filter: `assigned_to=eq.${userId}` },
       (payload) => {
         const row = payload.new as { judul: string };
         sendNotification('🪖 Tugas Baru', `"${row.judul ?? 'Tugas baru'}" telah diberikan kepada Anda`);
@@ -80,7 +80,7 @@ export function useNotifications() {
         event: 'UPDATE',
         schema: 'public',
         table: 'tasks',
-        filter: `assigned_to=eq.${user.id}`,
+        filter: `assigned_to=eq.${userId}`,
       },
       (payload) => {
         const row = payload.new as { judul: string; status: string };
@@ -100,7 +100,7 @@ export function useNotifications() {
         channelRef.current = null;
       }
     };
-  }, [user?.id, notificationsEnabled, requestPermission, sendNotification]);
+  }, [userId, notificationsEnabled, requestPermission, sendNotification]);
 
   return { sendNotification };
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -110,7 +110,7 @@ export default function StafDashboard() {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const bidang = detectBidang(user?.jabatan);
+  const bidang = useMemo(() => detectBidang(user?.jabatan), [user?.jabatan]);
 
   const loadStats = useCallback(async () => {
     if (!user?.satuan) return;
@@ -144,12 +144,14 @@ export default function StafDashboard() {
     });
   }, [loadStats]);
 
-  const modules = BIDANG_MODULES[bidang].filter((m) => isPathEnabled(m.path, flags));
-  const pinnedAnnouncements = announcements.filter((a) => a.is_pinned).slice(0, 3);
+  const modules = useMemo(() => BIDANG_MODULES[bidang].filter((m) => isPathEnabled(m.path, flags)), [bidang, flags]);
+  const pinnedAnnouncements = useMemo(() => announcements.filter((a) => a.is_pinned).slice(0, 3), [announcements]);
 
-  const hadirPct = stats.totalPersonel > 0
-    ? Math.round((stats.hadirHariIni / stats.totalPersonel) * 100)
-    : 0;
+  const hadirPct = useMemo(() => (
+    stats.totalPersonel > 0
+      ? Math.round((stats.hadirHariIni / stats.totalPersonel) * 100)
+      : 0
+  ), [stats.hadirHariIni, stats.totalPersonel]);
 
   return (
     <DashboardLayout title="Pusat Staf">

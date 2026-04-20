@@ -15,9 +15,9 @@ test.describe('Gate Pass Pengajuan Baru', () => {
 		await page.goto('./#/prajurit/gatepass');
 
 		await expect(page).toHaveURL(/\/prajurit\/gatepass/);
-		await expect(page.locator('main').getByRole('heading', { name: 'Pengajuan Gate Pass' })).toBeVisible();
-		await expect(page.getByText(/otomatis disetujui/i)).toBeVisible();
-		await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
+		await expect(page.locator('main').getByRole('heading', { name: 'Gate Pass', exact: true })).toBeVisible();
+		await expect(page.locator('main').getByRole('heading', { name: 'Ajukan Izin Keluar' })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Ajukan Gate Pass' })).toBeVisible();
 		await expect(page.getByText('Tunjukkan QR ini ke pos jaga')).toHaveCount(0);
 	});
 
@@ -28,15 +28,23 @@ test.describe('Gate Pass Pengajuan Baru', () => {
 
 		const suffix = `${Date.now()}`;
 		const tujuan = `Tes Workflow ${suffix}`;
+		const now = new Date();
+		now.setSeconds(0, 0);
+		const keluar = new Date(now.getTime() + 60 * 60 * 1000);
+		const kembali = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+		const toLocalInputValue = (value: Date) => {
+			const tzOffsetMs = value.getTimezoneOffset() * 60_000;
+			return new Date(value.getTime() - tzOffsetMs).toISOString().slice(0, 16);
+		};
 		await page.getByLabel('Keperluan').fill('Keperluan test alur baru');
 		await page.getByLabel('Tujuan').fill(tujuan);
-		await page.getByLabel('Waktu Keluar').fill('2026-04-18T10:00');
-		await page.getByLabel('Waktu Kembali').fill('2026-04-18T12:00');
-		await page.getByRole('button', { name: 'Submit' }).click();
+		await page.getByLabel('Waktu Keluar').fill(toLocalInputValue(keluar));
+		await page.getByLabel('Waktu Kembali').fill(toLocalInputValue(kembali));
+		await page.getByRole('button', { name: 'Ajukan Gate Pass' }).click();
 
 		await expect(page.getByText(tujuan)).toBeVisible();
-		const row = page.locator('main .p-3.border.rounded').filter({ hasText: tujuan }).first();
-		await expect(row.getByText(/Approved|Pending/i)).toBeVisible();
+		const row = page.locator('main .app-card').filter({ hasText: tujuan }).first();
+		await expect(row.getByText(/Disetujui|Menunggu/i)).toBeVisible();
 	});
 
 	test('halaman scan pos jaga tersedia untuk verifikasi keluar dan kembali', async ({ page }) => {

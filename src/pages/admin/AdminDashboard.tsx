@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -131,23 +131,26 @@ export default function AdminDashboard() {
     }
   };
 
-  const attendanceRate = stats && stats.absensiHariIni > 0
-    ? Math.round((stats.absensiMasuk / stats.absensiHariIni) * 100)
-    : 0;
+  const attendanceRate = useMemo(() => (
+    stats && stats.absensiHariIni > 0
+      ? Math.round((stats.absensiMasuk / stats.absensiHariIni) * 100)
+      : 0
+  ), [stats]);
 
-  const operationalHighlights = stats
-    ? [
-        { label: 'Absensi hari ini', value: `${stats.absensiMasuk}/${stats.absensiHariIni}`, hint: `${attendanceRate}% hadir` },
-        { label: 'Izin pending', value: String(stats.pendingIzin), hint: 'Menunggu persetujuan' },
-        { label: 'Gate Pass checked-in', value: String(gatePassStats.checkedIn), hint: 'Sudah scan keluar' },
-        { label: 'Gate Pass completed', value: String(gatePassStats.completed), hint: 'Sudah scan kembali' },
-        { label: 'Gate Pass overdue', value: String(gatePassStats.overdue), hint: 'Terlambat kembali' },
-        { label: 'Pengumuman pin', value: String(stats.pinnedPengumuman), hint: 'Tersemat di feed' },
-        { label: 'Stok rendah', value: String(lowStockItems.length), hint: 'Perlu pengecekan' },
-      ]
-    : [];
+  const operationalHighlights = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { label: 'Absensi hari ini', value: `${stats.absensiMasuk}/${stats.absensiHariIni}`, hint: `${attendanceRate}% hadir` },
+      { label: 'Izin pending', value: String(stats.pendingIzin), hint: 'Menunggu persetujuan' },
+      { label: 'Gate Pass checked-in', value: String(gatePassStats.checkedIn), hint: 'Sudah scan keluar' },
+      { label: 'Gate Pass completed', value: String(gatePassStats.completed), hint: 'Sudah scan kembali' },
+      { label: 'Gate Pass overdue', value: String(gatePassStats.overdue), hint: 'Terlambat kembali' },
+      { label: 'Pengumuman pin', value: String(stats.pinnedPengumuman), hint: 'Tersemat di feed' },
+      { label: 'Stok rendah', value: String(lowStockItems.length), hint: 'Perlu pengecekan' },
+    ];
+  }, [attendanceRate, gatePassStats.completed, gatePassStats.checkedIn, gatePassStats.overdue, lowStockItems.length, stats]);
 
-  const enabledQuickLinks = quickLinks.filter((item) => isPathEnabled(item.href, flags));
+  const enabledQuickLinks = useMemo(() => quickLinks.filter((item) => isPathEnabled(item.href, flags)), [flags]);
   const isUserManagementEnabled = flags.user_management !== false;
 
   return (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -49,10 +49,10 @@ export default function KomandanDashboard() {
     });
   }, [fetchStats, refetchTasks, user?.satuan]);
 
-  const pendingTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress');
-  const doneTasks = tasks.filter((t) => t.status === 'done');
-  const approvedTasks = tasks.filter((t) => t.status === 'approved');
-  const pinnedAnnouncements = announcements.filter((a) => a.is_pinned);
+  const pendingTasks = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress'), [tasks]);
+  const doneTasks = useMemo(() => tasks.filter((t) => t.status === 'done'), [tasks]);
+  const approvedTasks = useMemo(() => tasks.filter((t) => t.status === 'approved'), [tasks]);
+  const pinnedAnnouncements = useMemo(() => announcements.filter((a) => a.is_pinned), [announcements]);
 
   const canOpenTasks = isPathEnabled('/komandan/tasks', flags);
   const canOpenReports = isPathEnabled('/komandan/reports', flags);

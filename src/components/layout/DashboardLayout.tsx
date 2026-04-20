@@ -4,7 +4,6 @@ import Navbar from './Navbar';
 import BottomTabBar from './BottomTabBar';
 import Notification from '../common/Notification';
 import { ToastContainer } from '../common/Toast';
-import { useNotifications } from '../../hooks/useNotifications';
 import { useUIStore } from '../../store/uiStore';
 
 interface DashboardLayoutProps {
@@ -13,8 +12,6 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
-  // Activate browser push notifications for all logged-in users
-  useNotifications();
   const { displayDensity, setSidebarOpen } = useUIStore();
 
   useEffect(() => {
