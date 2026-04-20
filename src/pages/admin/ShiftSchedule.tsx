@@ -6,10 +6,10 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Input from '../../components/common/Input';
+import UserSearchSelect from '../../components/common/UserSearchSelect';
 import PageHeader from '../../components/ui/PageHeader';
 import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
-import { useUsers } from '../../hooks/useUsers';
 import { supabase } from '../../lib/supabase';
 import type { ShiftSchedule } from '../../types';
 
@@ -32,7 +32,6 @@ const DAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 export default function ShiftSchedule() {
   const { showNotification } = useUIStore();
   const { user } = useAuthStore();
-  const { users } = useUsers({ isActive: true });
 
   // View mode: 'list' (day list) | 'calendar' (monthly grid)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
@@ -408,18 +407,14 @@ export default function ShiftSchedule() {
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-text-primary">Personel *</label>
-            <select
-              className="form-control mt-1"
+            <UserSearchSelect
+              className="mt-1 space-y-2"
               value={form.user_id}
-              onChange={(e) => setForm({ ...form, user_id: e.target.value })}
-            >
-              <option value="">Pilih personel...</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.pangkat ? `${u.pangkat} ` : ''}{u.nama} — {u.nrp}
-                </option>
-              ))}
-            </select>
+              onChange={(userId) => setForm({ ...form, user_id: userId })}
+              isActive
+              emptyLabel="Pilih personel..."
+              placeholder="Cari personel (nama/NRP)..."
+            />
           </div>
           <Input
             label="Tanggal"

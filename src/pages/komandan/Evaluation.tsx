@@ -6,8 +6,8 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Badge from '../../components/common/Badge';
+import UserSearchSelect from '../../components/common/UserSearchSelect';
 import PageHeader from '../../components/ui/PageHeader';
-import { useUsers } from '../../hooks/useUsers';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { supabase } from '../../lib/supabase';
@@ -16,7 +16,6 @@ import type { DisciplineNote } from '../../types';
 export default function Evaluation() {
   const { user } = useAuthStore();
   const { showNotification } = useUIStore();
-  const { users } = useUsers({ satuan: user?.satuan, isActive: true });
   const [notes, setNotes] = useState<DisciplineNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterUserId, setFilterUserId] = useState('');
@@ -110,18 +109,15 @@ export default function Evaluation() {
         />
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <select
+          <UserSearchSelect
+            className="flex-1"
             value={filterUserId}
-            onChange={(e) => setFilterUserId(e.target.value)}
-            className="form-control flex-1"
-          >
-            <option value="">Semua Personel</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.pangkat ? `${u.pangkat} ` : ''}{u.nama}
-              </option>
-            ))}
-          </select>
+            onChange={setFilterUserId}
+            satuan={user?.satuan}
+            isActive
+            emptyLabel="Semua Personel"
+            placeholder="Cari personel untuk filter..."
+          />
           <Button onClick={() => setShowCreate(true)} leftIcon={<Plus className="h-4 w-4" />}>Tambah Catatan</Button>
         </div>
 
@@ -196,18 +192,16 @@ export default function Evaluation() {
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-text-primary">Personel *</label>
-            <select
-              className="form-control mt-1"
+            <UserSearchSelect
+              className="mt-1 space-y-2"
               value={form.user_id}
-              onChange={(e) => setForm({ ...form, user_id: e.target.value })}
-            >
-              <option value="">Pilih personel...</option>
-              {users.filter((u) => u.role === 'prajurit').map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.pangkat ? `${u.pangkat} ` : ''}{u.nama}
-                </option>
-              ))}
-            </select>
+              onChange={(userId) => setForm({ ...form, user_id: userId })}
+              satuan={user?.satuan}
+              roleFilter="prajurit"
+              isActive
+              emptyLabel="Pilih personel..."
+              placeholder="Cari prajurit..."
+            />
           </div>
           <div>
             <label className="text-sm font-medium text-text-primary">Jenis Catatan</label>

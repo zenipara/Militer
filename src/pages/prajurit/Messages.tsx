@@ -4,11 +4,11 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Badge from '../../components/common/Badge';
+import UserSearchSelect from '../../components/common/UserSearchSelect';
 import EmptyState from '../../components/common/EmptyState';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageHeader from '../../components/ui/PageHeader';
 import { useMessages } from '../../hooks/useMessages';
-import { useUsers } from '../../hooks/useUsers';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import type { Message } from '../../types';
@@ -20,7 +20,6 @@ export default function Messages() {
   const { user } = useAuthStore();
   const { showNotification } = useUIStore();
   const { inbox, sent, unreadCount, isLoading, sendMessage, markAsRead, markAllAsRead } = useMessages();
-  const { users } = useUsers({ isActive: true });
 
   const [tab, setTab] = useState<Tab>('inbox');
   const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
@@ -231,21 +230,16 @@ export default function Messages() {
         <div className="space-y-4">
           <div>
             <label htmlFor="compose-to" className="text-sm font-semibold text-text-primary">Kepada *</label>
-            <select
-              id="compose-to"
-              className="form-control mt-1"
+            <UserSearchSelect
+              className="mt-1 space-y-2"
               value={composeForm.to_user}
-              onChange={(e) => setComposeForm({ ...composeForm, to_user: e.target.value })}
-            >
-              <option value="">Pilih penerima...</option>
-              {users
-                .filter((u) => u.id !== user?.id)
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.pangkat ? `${u.pangkat} ` : ''}{u.nama} ({u.role})
-                  </option>
-                ))}
-            </select>
+              onChange={(toUser) => setComposeForm({ ...composeForm, to_user: toUser })}
+              isActive
+              excludeUserId={user?.id}
+              emptyLabel="Pilih penerima..."
+              placeholder="Cari nama/NRP penerima..."
+              showRole
+            />
           </div>
           <div>
             <label htmlFor="compose-isi" className="text-sm font-semibold text-text-primary">Pesan *</label>

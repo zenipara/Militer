@@ -5,10 +5,10 @@ import TaskCard from '../../components/ui/TaskCard';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
+import UserSearchSelect from '../../components/common/UserSearchSelect';
 import EmptyState from '../../components/common/EmptyState';
 import { TaskStatusBadge } from '../../components/common/Badge';
 import { useTasks } from '../../hooks/useTasks';
-import { useUsers } from '../../hooks/useUsers';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { useUIStore } from '../../store/uiStore';
@@ -23,7 +23,6 @@ export default function TaskManagement() {
   const { flags } = useFeatureStore();
   const { showNotification } = useUIStore();
   const { tasks, isLoading, createTask, approveTask, rejectTask, getTaskReport } = useTasks({ assignedBy: user?.id });
-  const { users } = useUsers({ role: 'prajurit', isActive: true });
   const canOpenReports = isPathEnabled('/komandan/reports', flags);
 
   const [filterStatus, setFilterStatus] = useState<TaskStatus | ''>('');
@@ -263,18 +262,15 @@ export default function TaskManagement() {
           </div>
           <div>
             <label className="text-sm font-medium text-text-primary">Ditugaskan ke *</label>
-            <select
-              className="mt-1 w-full rounded-lg border border-surface bg-bg-card px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+            <UserSearchSelect
+              className="mt-1 space-y-2"
               value={form.assigned_to}
-              onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
-            >
-              <option value="">Pilih Personel...</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.pangkat ? `${u.pangkat} ` : ''}{u.nama} — {u.nrp}
-                </option>
-              ))}
-            </select>
+              onChange={(userId) => setForm({ ...form, assigned_to: userId })}
+              roleFilter="prajurit"
+              isActive
+              emptyLabel="Pilih Personel..."
+              placeholder="Cari prajurit (nama/NRP)..."
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
