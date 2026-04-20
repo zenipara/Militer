@@ -77,11 +77,11 @@ export function LeaveStatusBadge({ status }: { status: LeaveStatus; guard?: stri
 
 export function RoleBadge({ role }: { role: Role }) {
   const map: Record<Role, { label: string; variant: BadgeVariant }> = {
-    admin:    { label: 'Admin',    variant: 'gold' },
-    komandan: { label: 'Komandan', variant: 'info' },
-    prajurit: { label: 'Prajurit', variant: 'neutral' },
-    guard:    { label: 'Guard',    variant: 'info' },
-    staf:     { label: 'Staf',     variant: 'warning' },
+    admin:    { label: 'Super Admin',  variant: 'gold' },
+    komandan: { label: 'Komandan',     variant: 'info' },
+    prajurit: { label: 'Prajurit',     variant: 'neutral' },
+    guard:    { label: 'Petugas Jaga', variant: 'info' },
+    staf:     { label: 'Staf',         variant: 'warning' },
   };
   const { label, variant } = map[role];
   return <Badge variant={variant}>{label}</Badge>;

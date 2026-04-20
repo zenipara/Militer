@@ -16,7 +16,7 @@ import Input from './Input';
 import { RoleBadge } from './Badge';
 import { useUIStore } from '../../store/uiStore';
 import { fetchUserPersonalStats, fetchUserDisciplineNotes, type UserPersonalStats } from '../../lib/api/users';
-import type { User, Role, DisciplineNote } from '../../types';
+import type { User, Role, DisciplineNote, CommandLevel } from '../../types';
 
 type Tab = 'info' | 'personal' | 'stats' | 'disiplin';
 type ModalMode = 'view' | 'edit';
@@ -77,6 +77,7 @@ export default function UserDetailModal({
         jabatan: user.jabatan ?? '',
         satuan: user.satuan,
         role: user.role,
+        level_komando: user.level_komando,
         tempat_lahir: user.tempat_lahir ?? '',
         tanggal_lahir: user.tanggal_lahir ?? '',
         no_telepon: user.no_telepon ?? '',
@@ -227,13 +228,29 @@ export default function UserDetailModal({
                 <Input label="Satuan *" value={editForm.satuan ?? ''} onChange={(e) => setEditForm({ ...editForm, satuan: e.target.value })} required />
                 <div>
                   <label className="text-sm font-semibold text-text-primary">Role *</label>
-                  <select className="form-control mt-1" value={editForm.role ?? 'prajurit'} onChange={(e) => setEditForm({ ...editForm, role: e.target.value as Role })}>
+                  <select className="form-control mt-1" value={editForm.role ?? 'prajurit'} onChange={(e) => setEditForm({ ...editForm, role: e.target.value as Role, level_komando: undefined })}>
                     <option value="prajurit">Prajurit</option>
                     <option value="komandan">Komandan</option>
-                    <option value="admin">Admin</option>
-                    <option value="guard">Guard</option>
+                    <option value="staf">Staf Operasional</option>
+                    <option value="admin">Super Admin</option>
+                    <option value="guard">Petugas Jaga</option>
                   </select>
                 </div>
+                {editForm.role === 'komandan' && (
+                  <div>
+                    <label className="text-sm font-semibold text-text-primary">Tingkat Komando *</label>
+                    <select
+                      className="form-control mt-1"
+                      value={editForm.level_komando ?? ''}
+                      onChange={(e) => setEditForm({ ...editForm, level_komando: e.target.value as CommandLevel || undefined })}
+                    >
+                      <option value="">— Pilih Tingkat —</option>
+                      <option value="BATALION">Batalion (Danyon)</option>
+                      <option value="KOMPI">Kompi (Danki)</option>
+                      <option value="PELETON">Peleton (Danton)</option>
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-semibold text-text-primary">Tanggal Masuk Dinas</label>
                   <input
@@ -252,6 +269,17 @@ export default function UserDetailModal({
                 <InfoRow label="Jabatan" value={user.jabatan} />
                 <InfoRow label="Satuan" value={user.satuan} />
                 <InfoRow label="Role" value={user.role} />
+                {user.role === 'komandan' && (
+                  <InfoRow
+                    label="Tingkat Komando"
+                    value={
+                      user.level_komando === 'BATALION' ? 'Batalion (Danyon)'
+                      : user.level_komando === 'KOMPI' ? 'Kompi (Danki)'
+                      : user.level_komando === 'PELETON' ? 'Peleton (Danton)'
+                      : undefined
+                    }
+                  />
+                )}
                 <InfoRow
                   label="Tanggal Masuk Dinas"
                   value={user.tanggal_masuk_dinas

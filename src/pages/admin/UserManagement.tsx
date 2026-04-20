@@ -17,7 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
-import type { User, Role } from '../../types';
+import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
 
@@ -67,7 +67,7 @@ export default function UserManagement() {
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
   // Form state
-  const [form, setForm] = useState({ nrp: '', nama: '', pin: '', role: 'prajurit' as Role, satuan: '', pangkat: '' });
+  const [form, setForm] = useState({ nrp: '', nama: '', pin: '', role: 'prajurit' as Role, satuan: '', pangkat: '', level_komando: '' as '' | 'BATALION' | 'KOMPI' | 'PELETON' });
   const [newPin, setNewPin] = useState('');
   const [bulkPin, setBulkPin] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -104,13 +104,21 @@ export default function UserManagement() {
       showNotification('PIN harus 6 digit angka', 'error');
       return;
     }
+    if (form.role === 'komandan' && !form.level_komando) {
+      showNotification('Tingkat komando wajib diisi untuk role Komandan', 'error');
+      return;
+    }
     setIsSaving(true);
     try {
-      await createUser({ ...form, is_active: true });
+      const payload: Parameters<typeof createUser>[0] = { ...form, is_active: true };
+      if (form.role === 'komandan' && form.level_komando) {
+        payload.level_komando = form.level_komando as CommandLevel;
+      }
+      await createUser(payload);
       showNotification('Personel berhasil ditambahkan', 'success');
       setPage(1);
       setShowCreate(false);
-      setForm({ nrp: '', nama: '', pin: '', role: 'prajurit', satuan: '', pangkat: '' });
+      setForm({ nrp: '', nama: '', pin: '', role: 'prajurit', satuan: '', pangkat: '', level_komando: '' });
     } catch (err) {
       const message = err instanceof Error
         ? err.message.replace(/menabah/gi, 'menambah')
@@ -644,14 +652,29 @@ export default function UserManagement() {
           )}
           <div>
             <label className="text-sm font-semibold text-text-primary">Role *</label>
-            <select className="form-control mt-1" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
+            <select className="form-control mt-1" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role, level_komando: '' })}>
               <option value="prajurit">Prajurit</option>
               <option value="staf">Staf Operasional</option>
               <option value="komandan">Komandan</option>
-              <option value="guard">Guard</option>
-              <option value="admin">Admin</option>
+              <option value="guard">Petugas Jaga</option>
+              <option value="admin">Super Admin</option>
             </select>
           </div>
+          {form.role === 'komandan' && (
+            <div>
+              <label className="text-sm font-semibold text-text-primary">Tingkat Komando *</label>
+              <select
+                className="form-control mt-1"
+                value={form.level_komando}
+                onChange={(e) => setForm({ ...form, level_komando: e.target.value as '' | 'BATALION' | 'KOMPI' | 'PELETON' })}
+              >
+                <option value="">— Pilih Tingkat —</option>
+                <option value="BATALION">Batalion (Danyon)</option>
+                <option value="KOMPI">Kompi (Danki)</option>
+                <option value="PELETON">Peleton (Danton)</option>
+              </select>
+            </div>
+          )}
           <Input label="PIN Awal *" type="password" inputMode="numeric" maxLength={6} helpText="6 digit angka" value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, '').slice(0, 6) })} required />
         </div>
       </Modal>

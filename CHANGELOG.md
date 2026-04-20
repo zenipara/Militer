@@ -97,4 +97,4 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 
 ---
 
-*Untuk panduan upgrade atau rollback, lihat [DEPLOYMENT_SETUP.md](./DEPLOYMENT_SETUP.md).*
+*Untuk panduan upgrade atau rollback, lihat [DEPLOYMENT.md](./DEPLOYMENT.md).*
