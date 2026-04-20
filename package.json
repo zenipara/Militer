@@ -8,7 +8,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "env -u VITE_SUPABASE_URL -u VITE_SUPABASE_ANON_KEY vite",
     "build": "tsc -b && vite build",
     "sync:supabase": "bash scripts/sync-supabase.sh",
     "preview": "vite preview",
