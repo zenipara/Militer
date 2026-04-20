@@ -37,6 +37,9 @@ export function useUsers(options: UseUsersOptions = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalItems, setTotalItems] = useState(0);
+  const isFetchingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const fetchUsersRef = useRef<(() => Promise<void>) | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const sessionContext = readSessionContext();
@@ -108,6 +111,13 @@ export function useUsers(options: UseUsersOptions = {}) {
       return;
     }
 
+    if (isFetchingRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
+
+    isFetchingRef.current = true;
+
     setIsLoading(true);
     setError(null);
 
@@ -133,9 +143,18 @@ export function useUsers(options: UseUsersOptions = {}) {
     } catch (err) {
       setError(handleError(err, 'Gagal memuat data user'));
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        void fetchUsersRef.current?.();
+      }
     }
   }, [callerId, callerRole, loadUsersData, requestParams]);
+
+  useEffect(() => {
+    fetchUsersRef.current = fetchUsers;
+  }, [fetchUsers]);
 
   useEffect(() => {
     void fetchUsers();

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchGatePassesByUser, insertGatePass } from '../lib/api/gatepass';
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
@@ -11,6 +11,9 @@ export function useGatePass() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const user = useAuthStore(s => s.user);
+  const isFetchingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const fetchGatePassesRef = useRef<(() => Promise<void>) | null>(null);
 
   const fetchGatePasses = useCallback(async () => {
     if (!user) {
@@ -18,6 +21,13 @@ export function useGatePass() {
       setIsLoading(false);
       return;
     }
+
+    if (isFetchingRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
+
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
@@ -26,9 +36,18 @@ export function useGatePass() {
     } catch (err) {
       setError(handleError(err, 'Gagal memuat gate pass'));
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        void fetchGatePassesRef.current?.();
+      }
     }
   }, [user]);
+
+  useEffect(() => {
+    fetchGatePassesRef.current = fetchGatePasses;
+  }, [fetchGatePasses]);
 
   useEffect(() => {
     if (!user) return;

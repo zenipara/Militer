@@ -28,6 +28,11 @@ export function clearLeaveRequestsCache(): void {
 export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
   const { user } = useAuthStore();
 
+  // Request coalescing: prevent duplicate simultaneous fetches when realtime burst occurs
+  const isFetchingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const fetchRequestsRef = useRef<(() => Promise<void>) | null>(null);
+
   const cacheKey = useMemo(
     () => buildLeaveKey(options.userId, options.satuan),
     [options.userId, options.satuan],
@@ -39,6 +44,10 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchRequests = useCallback(async (force = false) => {
+    if (isFetchingRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
     if (!user) {
       setRequests([]);
       setIsLoading(false);
@@ -52,6 +61,7 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
         return;
       }
     }
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
@@ -71,7 +81,13 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
     } catch (err) {
       setError(handleError(err, 'Gagal memuat permintaan izin'));
     } finally {
-      setIsLoading(false);
+      isFetchingRef.current = false;
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        await fetchRequestsRef.current?.();
+      } else {
+        setIsLoading(false);
+      }
     }
   }, [user, cacheKey, options.userId, options.satuan]);
 
@@ -108,6 +124,14 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
       }
     };
   }, [user, cacheKey, fetchRequests]);
+
+  /**
+   * Sync the current fetchRequests function to the ref so queued refreshes
+   * have access to the latest version with updated dependencies.
+   */
+  useEffect(() => {
+    fetchRequestsRef.current = fetchRequests;
+  }, [fetchRequests]);
 
   const submitLeaveRequest = async (data: {
     jenis_izin: 'cuti' | 'sakit' | 'dinas_luar';

@@ -38,6 +38,9 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
   const [isLoading, setIsLoading] = useState(() => !auditLogsCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const isFetchingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const fetchLogsRef = useRef<((force?: boolean) => Promise<void>) | null>(null);
 
   const fetchLogs = useCallback(async (force = false) => {
     if (!user) {
@@ -45,11 +48,19 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
       setIsLoading(false);
       return;
     }
+
+    if (isFetchingRef.current) {
+      if (force) refreshQueuedRef.current = true;
+      return;
+    }
+
+    isFetchingRef.current = true;
     if (!force) {
       const cached = auditLogsCache.get(cacheKey);
       if (cached) {
         setLogs(cached);
         setIsLoading(false);
+        isFetchingRef.current = false;
         return;
       }
     }
@@ -68,9 +79,18 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
     } catch (err) {
       setError(handleError(err, 'Gagal memuat audit log'));
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        void fetchLogsRef.current?.(true);
+      }
     }
   }, [user, cacheKey, options.userId, options.action, options.limit]);
+
+  useEffect(() => {
+    fetchLogsRef.current = fetchLogs;
+  }, [fetchLogs]);
 
   useEffect(() => {
     void fetchLogs();

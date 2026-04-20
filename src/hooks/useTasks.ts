@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { fetchTasks as apiFetchTasks, insertTask, patchTaskStatus, insertTaskReport, fetchLatestTaskReport } from '../lib/api/tasks';
 import { handleError } from '../lib/handleError';
@@ -34,6 +34,11 @@ export function clearTasksCache(): void {
 export function useTasks(options: UseTasksOptions = {}) {
   const { user } = useAuthStore();
 
+  // Request coalescing: prevent duplicate simultaneous fetches when realtime burst occurs
+  const isFetchingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const fetchTasksRef = useRef<(() => Promise<void>) | null>(null);
+
   // Stabilize cacheKey so it only changes when the option values change (not object references)
   const cacheKey = useMemo(
     () => buildCacheKey(options),
@@ -47,6 +52,10 @@ export function useTasks(options: UseTasksOptions = {}) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = useCallback(async (force = false) => {
+    if (isFetchingRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
     if (!user) {
       setTasks([]);
       setIsLoading(false);
@@ -60,6 +69,7 @@ export function useTasks(options: UseTasksOptions = {}) {
         return;
       }
     }
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
@@ -76,7 +86,13 @@ export function useTasks(options: UseTasksOptions = {}) {
     } catch (err) {
       setError(handleError(err, 'Gagal memuat data tugas'));
     } finally {
-      setIsLoading(false);
+      isFetchingRef.current = false;
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        await fetchTasksRef.current?.();
+      } else {
+        setIsLoading(false);
+      }
     }
   }, [user, cacheKey, options.assignedTo, options.assignedBy, options.status, options.satuan]);
 
@@ -103,6 +119,14 @@ export function useTasks(options: UseTasksOptions = {}) {
     channel.subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [user, options.assignedTo, cacheKey, fetchTasks]);
+
+  /**
+   * Sync the current fetchTasks function to the ref so queued refreshes
+   * have access to the latest version with updated dependencies.
+   */
+  useEffect(() => {
+    fetchTasksRef.current = fetchTasks;
+  }, [fetchTasks]);
 
   const createTask = async (taskData: {
     judul: string;

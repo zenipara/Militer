@@ -50,7 +50,13 @@ export default function AdminDashboard() {
   const { user } = useAuthStore();
   const { dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, showNotification } = useUIStore();
   const { flags } = useFeatureStore();
-  const { users: latestUsers, isLoading: isMembersLoading, deleteUser } = useUsers({ orderBy: 'created_at', ascending: false });
+  const { users: latestUsers, isLoading: isMembersLoading, deleteUser } = useUsers({
+    orderBy: 'created_at',
+    ascending: false,
+    serverPaginated: true,
+    page: 1,
+    pageSize: 6,
+  });
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [confirmMember, setConfirmMember] = useState<{ id: string; nama: string } | null>(null);
   const {

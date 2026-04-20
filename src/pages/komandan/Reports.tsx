@@ -79,29 +79,120 @@ export default function Reports() {
     return () => { supabase.removeChannel(channel); };
   }, [user?.satuan, fetchData]);
 
-  const leaveByStatus = useMemo(() => ({
-    pending: leaveRequests.filter((r) => r.status === 'pending').length,
-    approved: leaveRequests.filter((r) => r.status === 'approved').length,
-    rejected: leaveRequests.filter((r) => r.status === 'rejected').length,
-  }), [leaveRequests]);
+  const reportStats = useMemo(() => {
+    let presentCount = 0;
+    let absenCount = 0;
+    let sakitCount = 0;
+    let izinCount = 0;
+    let approvedTasks = 0;
+    let doneTasks = 0;
+    let pendingTasks = 0;
+    let inProgressTasks = 0;
+    let rejectedTasks = 0;
+    let pendingLeave = 0;
+    let approvedLeave = 0;
+    let rejectedLeave = 0;
 
-  // Per-person task completion chart: top 8 assignees by task count
-  const taskByPerson = useMemo(() => {
-    const map = new Map<string, { nama: string; done: number; total: number }>();
-    tasks.forEach((t) => {
-      const key = t.assignee?.id ?? '';
-      const nama = t.assignee?.nama ?? '—';
-      const prev = map.get(key) ?? { nama, done: 0, total: 0 };
-      map.set(key, {
-        nama,
-        done: prev.done + (t.status === 'approved' || t.status === 'done' ? 1 : 0),
-        total: prev.total + 1,
-      });
-    });
-    return Array.from(map.values())
+    const taskByPersonMap = new Map<string, { nama: string; done: number; total: number }>();
+    const pendingLeaveRequests: typeof leaveRequests = [];
+
+    for (const attendance of attendances) {
+      switch (attendance.status) {
+        case 'hadir':
+          presentCount += 1;
+          break;
+        case 'alpa':
+          absenCount += 1;
+          break;
+        case 'sakit':
+          sakitCount += 1;
+          break;
+        case 'izin':
+          izinCount += 1;
+          break;
+      }
+    }
+
+    for (const task of tasks) {
+      const key = task.assignee?.id ?? '';
+      const nama = task.assignee?.nama ?? '—';
+      const prev = taskByPersonMap.get(key) ?? { nama, done: 0, total: 0 };
+
+      prev.total += 1;
+      if (task.status === 'approved' || task.status === 'done') {
+        prev.done += 1;
+      }
+      taskByPersonMap.set(key, prev);
+
+      switch (task.status) {
+        case 'approved':
+          approvedTasks += 1;
+          break;
+        case 'done':
+          doneTasks += 1;
+          break;
+        case 'pending':
+          pendingTasks += 1;
+          break;
+        case 'in_progress':
+          inProgressTasks += 1;
+          pendingTasks += 1;
+          break;
+        case 'rejected':
+          rejectedTasks += 1;
+          break;
+      }
+    }
+
+    for (const request of leaveRequests) {
+      switch (request.status) {
+        case 'pending':
+          pendingLeave += 1;
+          pendingLeaveRequests.push(request);
+          break;
+        case 'approved':
+          approvedLeave += 1;
+          break;
+        case 'rejected':
+          rejectedLeave += 1;
+          break;
+      }
+    }
+
+    const taskByPerson = Array.from(taskByPersonMap.values())
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
-  }, [tasks]);
+
+    return {
+      presentCount,
+      absenCount,
+      sakitCount,
+      izinCount,
+      approvedTasks,
+      doneTasks,
+      pendingTasks,
+      rejectedTasks,
+      pendingLeave,
+      approvedLeave,
+      rejectedLeave,
+      taskByPerson,
+      attendanceRate: attendances.length > 0 ? Math.round((presentCount / attendances.length) * 100) : 0,
+      taskStatusChart: [
+        { label: 'Pending', value: pendingTasks, color: '#94a3b8' },
+        { label: 'Dikerjakan', value: inProgressTasks, color: 'var(--color-accent-gold)' },
+        { label: 'Selesai', value: doneTasks, color: '#60a5fa' },
+        { label: 'Disetujui', value: approvedTasks, color: 'var(--color-success)' },
+        { label: 'Ditolak', value: rejectedTasks, color: 'var(--color-accent-red)' },
+      ],
+      attendanceChart: [
+        { label: 'Hadir', value: presentCount, color: 'var(--color-success)' },
+        { label: 'Alpa', value: absenCount, color: 'var(--color-accent-red)' },
+        { label: 'Sakit', value: sakitCount, color: 'var(--color-accent-gold)' },
+        { label: 'Izin', value: izinCount, color: '#60a5fa' },
+      ],
+      pendingLeaveRequests,
+    };
+  }, [attendances, tasks, leaveRequests]);
 
   if (isLoading) return (
     <DashboardLayout title="Laporan Harian">
@@ -112,16 +203,7 @@ export default function Reports() {
     </DashboardLayout>
   );
 
-  const presentCount = attendances.filter((a) => a.status === 'hadir').length;
-  const absenCount = attendances.filter((a) => a.status === 'alpa').length;
-  const sakitCount = attendances.filter((a) => a.status === 'sakit').length;
-  const izinCount = attendances.filter((a) => a.status === 'izin').length;
-  const approvedTasks = tasks.filter((t) => t.status === 'approved').length;
-  const doneTasks = tasks.filter((t) => t.status === 'done').length;
-  const pendingTasks = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length;
-  const rejectedTasks = tasks.filter((t) => t.status === 'rejected').length;
-  const pendingLeave = leaveRequests.filter((r) => r.status === 'pending').length;
-  const attendanceRate = attendances.length > 0 ? Math.round((presentCount / attendances.length) * 100) : 0;
+  const { presentCount, absenCount, approvedTasks, pendingTasks, pendingLeave, approvedLeave, rejectedLeave, taskByPerson, attendanceRate, taskStatusChart, attendanceChart, pendingLeaveRequests } = reportStats;
 
   const handleExportCSV = () => {
     const headers = ['Tanggal', 'NRP', 'Nama', 'Pangkat', 'Status', 'Check-In', 'Check-Out', 'Keterangan'];
@@ -185,9 +267,9 @@ export default function Reports() {
             />
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-text-muted">
-            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin menunggu: {leaveByStatus.pending}</span>
-            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin disetujui: {leaveByStatus.approved}</span>
-            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin ditolak: {leaveByStatus.rejected}</span>
+            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin menunggu: {pendingLeave}</span>
+            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin disetujui: {approvedLeave}</span>
+            <span className="rounded-full border border-surface/70 px-2.5 py-1">Izin ditolak: {rejectedLeave}</span>
           </div>
         </div>
 
@@ -224,12 +306,7 @@ export default function Reports() {
               />
             ) : (
               <BarChart
-                data={[
-                  { label: 'Hadir',     value: presentCount, color: 'var(--color-success)' },
-                  { label: 'Alpa',      value: absenCount,   color: 'var(--color-accent-red)' },
-                  { label: 'Sakit',     value: sakitCount,   color: 'var(--color-accent-gold)' },
-                  { label: 'Izin',      value: izinCount,    color: '#60a5fa' },
-                ]}
+                data={attendanceChart}
                 maxValue={attendances.length}
                 height={160}
               />
@@ -244,13 +321,7 @@ export default function Reports() {
               <p className="text-sm text-text-muted py-8 text-center">Belum ada data tugas</p>
             ) : (
               <BarChart
-                data={[
-                  { label: 'Pending',   value: tasks.filter((t) => t.status === 'pending').length,      color: '#94a3b8' },
-                  { label: 'Dikerjakan', value: tasks.filter((t) => t.status === 'in_progress').length, color: 'var(--color-accent-gold)' },
-                  { label: 'Selesai',   value: doneTasks,    color: '#60a5fa' },
-                  { label: 'Disetujui', value: approvedTasks, color: 'var(--color-success)' },
-                  { label: 'Ditolak',   value: rejectedTasks, color: 'var(--color-accent-red)' },
-                ]}
+                data={taskStatusChart}
                 maxValue={tasks.length}
                 height={160}
               />
@@ -286,8 +357,7 @@ export default function Reports() {
               </span>
             </div>
             <div className="divide-y divide-surface/50">
-              {leaveRequests
-                .filter((r) => r.status === 'pending')
+              {pendingLeaveRequests
                 .map((req) => {
                   const jenisLabel: Record<string, string> = {
                     cuti: 'Cuti',

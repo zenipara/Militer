@@ -21,6 +21,21 @@ const realtimeTableMap: Array<{ table: string; resource: DataResource }> = [
 export function useGlobalRealtimeSync() {
   const hasUser = useAuthStore((s) => Boolean(s.user));
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const pendingResourcesRef = useRef<Set<DataResource>>(new Set());
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPendingResources = () => {
+    if (flushTimerRef.current) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+
+    if (pendingResourcesRef.current.size === 0) return;
+
+    const resources = Array.from(pendingResourcesRef.current);
+    pendingResourcesRef.current.clear();
+    notifyDataChanged(resources);
+  };
 
   useEffect(() => {
     if (!hasUser) {
@@ -28,6 +43,7 @@ export function useGlobalRealtimeSync() {
         void supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      flushPendingResources();
       return;
     }
 
@@ -40,7 +56,12 @@ export function useGlobalRealtimeSync() {
 
     for (const { table, resource } of realtimeTableMap) {
       channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-        notifyDataChanged(resource);
+        pendingResourcesRef.current.add(resource);
+        if (flushTimerRef.current) return;
+
+        flushTimerRef.current = setTimeout(() => {
+          flushPendingResources();
+        }, 100);
       });
     }
 
@@ -48,6 +69,7 @@ export function useGlobalRealtimeSync() {
     channelRef.current = channel;
 
     return () => {
+      flushPendingResources();
       if (channelRef.current) {
         void supabase.removeChannel(channelRef.current);
         channelRef.current = null;

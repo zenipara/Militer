@@ -15,7 +15,16 @@ export function useMessages() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Request coalescing: prevent duplicate simultaneous fetches when realtime burst occurs
+  const isFetchingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const fetchMessagesRef = useRef<(() => Promise<void>) | null>(null);
+
   const fetchMessages = useCallback(async () => {
+    if (isFetchingRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
     if (!user) {
       setInbox([]);
       setSent([]);
@@ -23,6 +32,7 @@ export function useMessages() {
       setIsLoading(false);
       return;
     }
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
@@ -36,7 +46,13 @@ export function useMessages() {
     } catch (err) {
       setError(handleError(err, 'Gagal memuat pesan'));
     } finally {
-      setIsLoading(false);
+      isFetchingRef.current = false;
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        await fetchMessagesRef.current?.();
+      } else {
+        setIsLoading(false);
+      }
     }
   }, [user]);
 
@@ -80,6 +96,14 @@ export function useMessages() {
       }
     };
   }, [user, fetchMessages]);
+
+  /**
+   * Sync the current fetchMessages function to the ref so queued refreshes
+   * have access to the latest version with updated dependencies.
+   */
+  useEffect(() => {
+    fetchMessagesRef.current = fetchMessages;
+  }, [fetchMessages]);
 
   const sendMessage = async (toUserId: string, isi: string) => {
     if (!user) throw new Error('Not authenticated');

@@ -19,6 +19,11 @@ export function clearAnnouncementsCache(): void {
 export function useAnnouncements() {
   const { user } = useAuthStore();
 
+  // Request coalescing: prevent duplicate simultaneous fetches when realtime burst occurs
+  const isFetchingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const fetchAnnouncementsRef = useRef<((force?: boolean) => Promise<void>) | null>(null);
+
   const cacheKey = useMemo(() => `${user?.id ?? ''}:${user?.role ?? ''}`, [user?.id, user?.role]);
 
   const [announcements, setAnnouncements] = useState<Announcement[]>(() => announcementsCache.get(cacheKey) ?? []);
@@ -27,6 +32,10 @@ export function useAnnouncements() {
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchAnnouncements = useCallback(async (force = false) => {
+    if (isFetchingRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
     if (!user) {
       setAnnouncements([]);
       setIsLoading(false);
@@ -40,6 +49,7 @@ export function useAnnouncements() {
         return;
       }
     }
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
@@ -49,11 +59,21 @@ export function useAnnouncements() {
     } catch (err) {
       setError(handleError(err, 'Gagal memuat pengumuman'));
     } finally {
-      setIsLoading(false);
+      isFetchingRef.current = false;
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        await fetchAnnouncementsRef.current?.(true);
+      } else {
+        setIsLoading(false);
+      }
     }
   }, [user, cacheKey]);
 
   const fetchAnnouncementsOrThrow = useCallback(async (force = false) => {
+    if (isFetchingRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
     if (!user) throw new Error('Not authenticated');
     if (!force) {
       const cached = announcementsCache.get(cacheKey);
@@ -63,6 +83,7 @@ export function useAnnouncements() {
         return;
       }
     }
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
     try {
@@ -72,8 +93,20 @@ export function useAnnouncements() {
     } catch (err) {
       const message = handleError(err, 'Gagal memuat pengumuman');
       setError(message);
+      isFetchingRef.current = false;
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        await fetchAnnouncementsRef.current?.(true);
+      } else {
+        setIsLoading(false);
+      }
       throw new Error(message);
-    } finally {
+    }
+    isFetchingRef.current = false;
+    if (refreshQueuedRef.current) {
+      refreshQueuedRef.current = false;
+      await fetchAnnouncementsRef.current?.(true);
+    } else {
       setIsLoading(false);
     }
   }, [user, cacheKey]);
@@ -111,6 +144,14 @@ export function useAnnouncements() {
       }
     };
   }, [user, cacheKey, fetchAnnouncements]);
+
+  /**
+   * Sync the current fetchAnnouncements function to the ref so queued refreshes
+   * have access to the latest version with updated dependencies.
+   */
+  useEffect(() => {
+    fetchAnnouncementsRef.current = fetchAnnouncements;
+  }, [fetchAnnouncements]);
 
   const createAnnouncement = async (data: {
     judul: string;

@@ -263,34 +263,94 @@ export default function GatePassMonitorPage() {
     return rows.sort((a, b) => compareMonitorPriority(a, b, now));
   }, [monitorRows, debouncedQuery, statusFilter, unitFilter, startDate, endDate, criticalMode, overdueBucket, sortMode, now]);
 
-  const unitOptions = useMemo(() => {
-    return Array.from(new Set(monitorRows.map((gp) => gp.user?.satuan).filter((value): value is string => Boolean(value && value.trim())))).sort((a, b) => a.localeCompare(b, 'id-ID'));
-  }, [monitorRows]);
+  const monitorSummary = useMemo(() => {
+    const unitMap = new Map<string, { unit: string; total: number; overdue: number; checkedIn: number; approved: number }>();
+    const quickStatusStats = {
+      all: 0,
+      overdue: 0,
+      checked_in: 0,
+      approved: 0,
+      completed: 0,
+    };
 
-  const quickStatusStats = useMemo(() => ({
-    all: monitorRows.length,
-    overdue: monitorRows.filter((gp) => gp.effectiveStatus === 'overdue').length,
-    checked_in: monitorRows.filter((gp) => gp.effectiveStatus === 'checked_in').length,
-    approved: monitorRows.filter((gp) => gp.effectiveStatus === 'approved').length,
-    completed: monitorRows.filter((gp) => gp.effectiveStatus === 'completed').length,
-  }), [monitorRows]);
+    let approvedCount = 0;
+    let keluarCount = 0;
+    let completedCount = 0;
+    let overdueCount = 0;
+    let longestOverdue: MonitorGatePass | null = null;
+    let longestOverdueMs = Number.NEGATIVE_INFINITY;
+    let nearestDeadline: MonitorGatePass | null = null;
+    let nearestDeadlineMs = Number.POSITIVE_INFINITY;
 
-  const monitorIntel = useMemo(() => {
-    const overdueRows = monitorRows
-      .filter((gp) => gp.effectiveStatus === 'overdue' && Number.isFinite(parseTimeMs(gp.waktu_kembali)))
-      .sort((a, b) => parseTimeMs(a.waktu_kembali) - parseTimeMs(b.waktu_kembali));
+    for (const gatePass of monitorRows) {
+      quickStatusStats.all += 1;
 
-    const activeRows = monitorRows
-      .filter((gp) => gp.effectiveStatus === 'checked_in' && Number.isFinite(parseTimeMs(gp.waktu_kembali)))
-      .sort((a, b) => parseTimeMs(a.waktu_kembali) - parseTimeMs(b.waktu_kembali));
+      const effectiveStatus = gatePass.effectiveStatus;
+      if (effectiveStatus === 'overdue') {
+        quickStatusStats.overdue += 1;
+        overdueCount += 1;
+      } else if (effectiveStatus === 'checked_in') {
+        quickStatusStats.checked_in += 1;
+        keluarCount += 1;
+      } else if (effectiveStatus === 'approved') {
+        quickStatusStats.approved += 1;
+        approvedCount += 1;
+      } else if (effectiveStatus === 'completed') {
+        quickStatusStats.completed += 1;
+        completedCount += 1;
+      }
 
-    const longestOverdue = overdueRows.length > 0 ? overdueRows[0] : null;
-    const nearestDeadline = activeRows.length > 0 ? activeRows[0] : null;
+      const unit = gatePass.user?.satuan?.trim();
+      if (unit) {
+        const current = unitMap.get(unit) ?? { unit, total: 0, overdue: 0, checkedIn: 0, approved: 0 };
+        current.total += 1;
+        if (effectiveStatus === 'overdue') current.overdue += 1;
+        if (effectiveStatus === 'checked_in') current.checkedIn += 1;
+        if (effectiveStatus === 'approved') current.approved += 1;
+        unitMap.set(unit, current);
+      }
 
-    return { longestOverdue, nearestDeadline };
-  }, [monitorRows]);
+      if (effectiveStatus === 'overdue') {
+        const dueMs = parseTimeMs(gatePass.waktu_kembali);
+        if (Number.isFinite(dueMs) && dueMs < longestOverdueMs) {
+          longestOverdueMs = dueMs;
+          longestOverdue = gatePass;
+        }
+      }
 
-  const unitSummary = useMemo(() => {
+      if (effectiveStatus === 'checked_in') {
+        const dueMs = parseTimeMs(gatePass.waktu_kembali);
+        if (Number.isFinite(dueMs) && dueMs < nearestDeadlineMs) {
+          nearestDeadlineMs = dueMs;
+          nearestDeadline = gatePass;
+        }
+      }
+    }
+
+    const unitSummary = Array.from(unitMap.values())
+      .sort((a, b) => b.total - a.total || b.overdue - a.overdue || a.unit.localeCompare(b.unit, 'id-ID'))
+      .slice(0, 6);
+
+    const unitOptions = Array.from(unitMap.keys()).sort((a, b) => a.localeCompare(b, 'id-ID'));
+    const diLuarCount = approvedCount + keluarCount + overdueCount;
+    const tersediaCount = Math.max(0, totalPersonil - diLuarCount);
+
+    return {
+      quickStatusStats,
+      unitSummary,
+      unitOptions,
+      longestOverdue,
+      nearestDeadline,
+      approved: approvedCount,
+      keluar: keluarCount,
+      completed: completedCount,
+      overdue: overdueCount,
+      personilDiLuar: diLuarCount,
+      personilTersedia: tersediaCount,
+    };
+  }, [monitorRows, totalPersonil]);
+
+  const filteredSummary = useMemo(() => {
     const summaryMap = new Map<string, { unit: string; total: number; overdue: number; checkedIn: number; approved: number }>();
 
     for (const row of filteredRows) {
@@ -308,27 +368,8 @@ export default function GatePassMonitorPage() {
       .slice(0, 6);
   }, [filteredRows]);
 
-  // Memoize statistics computation to avoid recalculation on every render
-  const { approved, keluar, completed, overdue, personilDiLuar, personilTersedia } = useMemo(() => {
-    const approvedCount = monitorRows.filter(gp => gp.effectiveStatus === 'approved').length;
-    const keluarCount = monitorRows.filter(gp => gp.effectiveStatus === 'checked_in').length;
-    const completedCount = monitorRows.filter(gp => gp.effectiveStatus === 'completed').length;
-    const overdueCount = monitorRows.filter(gp => gp.effectiveStatus === 'overdue').length;
-    
-    // Personil di luar = approved + checked_in + overdue
-    const diLuarCount = approvedCount + keluarCount + overdueCount;
-    // Personil tersedia = total personil - personil di luar (minimum 0)
-    const tersediaCount = Math.max(0, totalPersonil - diLuarCount);
-    
-    return {
-      approved: approvedCount,
-      keluar: keluarCount,
-      completed: completedCount,
-      overdue: overdueCount,
-      personilDiLuar: diLuarCount,
-      personilTersedia: tersediaCount,
-    };
-  }, [monitorRows, totalPersonil]);
+  const unitSummary = filteredSummary;
+  const { quickStatusStats, unitOptions, longestOverdue, nearestDeadline, approved, keluar, completed, overdue, personilDiLuar, personilTersedia } = monitorSummary;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -623,10 +664,10 @@ export default function GatePassMonitorPage() {
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
               <p className="text-xs text-text-muted">Terlambat Terlama</p>
-              {monitorIntel.longestOverdue ? (
+              {longestOverdue ? (
                 <>
-                  <p className="mt-1 text-sm font-semibold text-text-primary">{monitorIntel.longestOverdue.user?.nama ?? 'Personil tidak diketahui'}</p>
-                  <p className="text-xs text-accent-red">Terlambat {formatDuration(Math.max(0, now.getTime() - parseTimeMs(monitorIntel.longestOverdue.waktu_kembali)))}</p>
+                  <p className="mt-1 text-sm font-semibold text-text-primary">{longestOverdue.user?.nama ?? 'Personil tidak diketahui'}</p>
+                  <p className="text-xs text-accent-red">Terlambat {formatDuration(Math.max(0, now.getTime() - parseTimeMs(longestOverdue.waktu_kembali)))}</p>
                 </>
               ) : (
                 <p className="mt-1 text-xs text-text-muted">Tidak ada kasus overdue.</p>
@@ -635,10 +676,10 @@ export default function GatePassMonitorPage() {
 
             <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
               <p className="text-xs text-text-muted">Batas Kembali Terdekat</p>
-              {monitorIntel.nearestDeadline ? (
+              {nearestDeadline ? (
                 <>
-                  <p className="mt-1 text-sm font-semibold text-text-primary">{monitorIntel.nearestDeadline.user?.nama ?? 'Personil tidak diketahui'}</p>
-                  <p className="text-xs text-orange-500">Sisa {formatDuration(Math.max(0, parseTimeMs(monitorIntel.nearestDeadline.waktu_kembali) - now.getTime()))}</p>
+                  <p className="mt-1 text-sm font-semibold text-text-primary">{nearestDeadline.user?.nama ?? 'Personil tidak diketahui'}</p>
+                  <p className="text-xs text-orange-500">Sisa {formatDuration(Math.max(0, parseTimeMs(nearestDeadline.waktu_kembali) - now.getTime()))}</p>
                 </>
               ) : (
                 <p className="mt-1 text-xs text-text-muted">Tidak ada personil aktif di luar.</p>
