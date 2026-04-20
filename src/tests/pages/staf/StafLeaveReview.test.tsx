@@ -23,13 +23,13 @@ vi.mock('../../../components/ui/PageHeader', () => ({
 }));
 
 vi.mock('../../../components/ui/Table', () => ({
-  default: <T,>({ rows, columns }: { rows: T[]; columns: { key: string; header: string; render?: (row: T) => React.ReactNode }[] }) => (
+  default: <T,>({ data, columns }: { data: T[]; columns: { key: string; header: string; render?: (row: T) => React.ReactNode }[] }) => (
     <table>
       <thead>
         <tr>{columns.map((c) => <th key={c.key}>{c.header}</th>)}</tr>
       </thead>
       <tbody>
-        {(rows as Record<string, unknown>[]).map((row, i) => (
+        {(data as Record<string, unknown>[]).map((row, i) => (
           <tr key={i}>
             {columns.map((c) => (
               <td key={c.key}>{c.render ? (c.render as (r: T) => React.ReactNode)(row as T) : String(row[c.key] ?? '')}</td>
@@ -172,7 +172,8 @@ describe('StafLeaveReview', () => {
 
   it('calls reviewLeaveRequest with approved when Setujui is clicked', async () => {
     render(<StafLeaveReview />);
-    const approveBtn = screen.getByRole('button', { name: /setujui/i });
+    // Use exact text to avoid matching the "Disetujui" filter tab
+    const approveBtn = screen.getByRole('button', { name: 'Setujui' });
     fireEvent.click(approveBtn);
     await waitFor(() => {
       expect(mockReviewLeaveRequest).toHaveBeenCalledWith('req-1', 'approved');
@@ -185,15 +186,15 @@ describe('StafLeaveReview', () => {
 
   it('opens rejection modal when Tolak is clicked', () => {
     render(<StafLeaveReview />);
-    const rejectBtn = screen.getByRole('button', { name: /^tolak$/i });
+    const rejectBtn = screen.getByRole('button', { name: 'Tolak' });
     fireEvent.click(rejectBtn);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('calls reviewLeaveRequest with rejected from modal confirm', async () => {
     render(<StafLeaveReview />);
-    fireEvent.click(screen.getByRole('button', { name: /^tolak$/i }));
-    const confirmBtn = screen.getByRole('button', { name: /konfirmasi tolak/i });
+    fireEvent.click(screen.getByRole('button', { name: 'Tolak' }));
+    const confirmBtn = screen.getByRole('button', { name: 'Ya, Tolak Izin' });
     fireEvent.click(confirmBtn);
     await waitFor(() => {
       expect(mockReviewLeaveRequest).toHaveBeenCalledWith('req-1', 'rejected');
