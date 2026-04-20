@@ -192,22 +192,18 @@ export default function ShiftSchedule() {
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3">
           {/* View toggle */}
-          <div className="flex rounded-xl border border-surface/70 bg-bg-card p-1 gap-0.5">
+          <div className="seg-control">
             <button
               type="button"
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                viewMode === 'list' ? 'bg-primary text-white' : 'text-text-muted hover:text-text-primary'
-              }`}
+              className={`seg-btn ${viewMode === 'list' ? 'seg-btn--active' : ''}`}
             >
               <List size={13} aria-hidden="true" /> Harian
             </button>
             <button
               type="button"
               onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                viewMode === 'calendar' ? 'bg-primary text-white' : 'text-text-muted hover:text-text-primary'
-              }`}
+              className={`seg-btn ${viewMode === 'calendar' ? 'seg-btn--active' : ''}`}
             >
               <CalendarDays size={13} aria-hidden="true" /> Bulanan
             </button>

@@ -79,7 +79,7 @@ export default function Navbar({ title }: NavbarProps) {
       <div className="flex h-16 items-center gap-3">
         <button
           onClick={toggleSidebar}
-          className="lg:hidden flex h-11 w-11 items-center justify-center rounded-xl text-text-muted transition-all duration-200 hover:bg-slate-100 hover:text-text-primary active:scale-[0.93] dark:hover:bg-surface/60"
+          className="icon-btn lg:hidden h-11 w-11"
           aria-label="Toggle sidebar"
         >
           {ICONS.Menu ? (
@@ -124,7 +124,7 @@ export default function Navbar({ title }: NavbarProps) {
           {canOpenMessages && (
             <div className="relative">
               <button
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-surface/70 bg-slate-50/80 text-text-muted transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 hover:text-primary active:scale-[0.93] dark:bg-surface/35"
+                className="icon-btn"
                 aria-label={`Pesan${unreadCount > 0 ? ` — ${unreadCount} belum dibaca` : ''}`}
                 title="Pesan & Notifikasi"
                 onClick={() => {
@@ -147,7 +147,7 @@ export default function Navbar({ title }: NavbarProps) {
           {/* Dark mode toggle */}
           <button
             onClick={toggleDarkMode}
-            className="hidden sm:flex h-10 w-10 items-center justify-center rounded-xl border border-surface/70 bg-slate-50/80 text-text-muted transition-all duration-200 hover:border-primary/30 hover:bg-primary/5 hover:text-primary active:scale-[0.93] dark:bg-surface/35"
+            className="icon-btn hidden sm:flex"
             aria-label={isDarkMode ? 'Beralih ke mode terang' : 'Beralih ke mode gelap'}
             title={isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
           >
@@ -187,9 +187,9 @@ export default function Navbar({ title }: NavbarProps) {
 
             {/* Dropdown menu */}
             <div
-              className={`absolute right-0 top-[calc(100%+8px)] z-50 w-52 rounded-2xl border border-surface/70 bg-bg-card p-2 shadow-xl shadow-slate-900/10 transition-all duration-200 ${
+              className={`dropdown-panel right-0 top-[calc(100%+8px)] w-52 ${
                 isAvatarDropdownOpen
-                  ? 'pointer-events-auto translate-y-0 opacity-100 animate-scale-in'
+                  ? 'pointer-events-auto translate-y-0 opacity-100'
                   : 'pointer-events-none -translate-y-2 opacity-0'
               }`}
               role="menu"
@@ -206,7 +206,7 @@ export default function Navbar({ title }: NavbarProps) {
                   to={PROFILE_PATH[user.role]}
                   role="menuitem"
                   onClick={() => setIsAvatarDropdownOpen(false)}
-                  className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-2 py-2.5 text-sm text-text-primary transition-all duration-150 hover:bg-slate-100/80 dark:hover:bg-surface/50"
+                  className="dropdown-item"
                 >
                   {ICONS.User ? <ICONS.User className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
                   {user.role === 'staf' ? 'Dasbor Staf' : 'Profil Saya'}
@@ -219,7 +219,7 @@ export default function Navbar({ title }: NavbarProps) {
                   to="/admin/settings"
                   role="menuitem"
                   onClick={() => setIsAvatarDropdownOpen(false)}
-                  className="flex min-h-[44px] items-center gap-2.5 rounded-xl px-2 py-2.5 text-sm text-text-primary transition-all duration-150 hover:bg-slate-100/80 dark:hover:bg-surface/50"
+                  className="dropdown-item"
                 >
                   {ICONS.Settings ? <ICONS.Settings className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
                   Pengaturan
@@ -232,7 +232,7 @@ export default function Navbar({ title }: NavbarProps) {
               <button
                 role="menuitem"
                 onClick={handleLogout}
-                className="flex min-h-[44px] w-full items-center gap-2.5 rounded-xl px-2 py-2.5 text-sm text-accent-red transition-all duration-150 hover:bg-accent-red/8"
+                className="dropdown-item dropdown-item--danger w-full"
               >
                 {ICONS.LogOut ? <ICONS.LogOut className="w-4 h-4" aria-hidden="true" /> : null}
                 Keluar

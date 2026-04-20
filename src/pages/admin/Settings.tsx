@@ -437,7 +437,7 @@ export default function Settings() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-surface/70 bg-surface/20 p-4">
+              <div className="setting-row">
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Mode Gelap</p>
                   <p className="text-xs text-text-muted mt-0.5">
@@ -446,67 +446,53 @@ export default function Settings() {
                 </div>
                 <button
                   onClick={toggleDarkMode}
-                  className={`relative h-6 w-12 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                    isDarkMode ? 'bg-primary' : 'bg-surface'
-                  }`}
+                  className="toggle-switch"
+                  data-checked={isDarkMode}
                   aria-label="Toggle dark mode"
                   role="switch"
                   aria-checked={isDarkMode}
                 >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                      isDarkMode ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
+                  <span />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-surface/70 bg-surface/20 p-4">
+              <div className="setting-row">
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Kepadatan Tampilan</p>
                   <p className="text-xs text-text-muted mt-0.5">Mengatur jarak antar elemen di dashboard dan panel data.</p>
                 </div>
-                <div className="flex rounded-xl border border-surface/70 bg-bg-card p-1">
+                <div className="seg-control">
                   <button
                     type="button"
                     onClick={() => setDisplayDensity('comfortable')}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      displayDensity === 'comfortable' ? 'bg-primary text-white' : 'text-text-muted hover:text-text-primary'
-                    }`}
+                    className={`seg-btn ${displayDensity === 'comfortable' ? 'seg-btn--active' : ''}`}
                   >
                     Nyaman
                   </button>
                   <button
                     type="button"
                     onClick={() => setDisplayDensity('compact')}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      displayDensity === 'compact' ? 'bg-primary text-white' : 'text-text-muted hover:text-text-primary'
-                    }`}
+                    className={`seg-btn ${displayDensity === 'compact' ? 'seg-btn--active' : ''}`}
                   >
                     Ringkas
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-surface/70 bg-surface/20 p-4">
+              <div className="setting-row">
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Sidebar Desktop</p>
                   <p className="text-xs text-text-muted mt-0.5">Menjaga sidebar tetap terbuka saat sesi berikutnya.</p>
                 </div>
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className={`relative h-6 w-12 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                    sidebarOpen ? 'bg-primary' : 'bg-surface'
-                  }`}
+                  className="toggle-switch"
+                  data-checked={sidebarOpen}
                   aria-label="Toggle sidebar preference"
                   role="switch"
                   aria-checked={sidebarOpen}
                 >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                      sidebarOpen ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
+                  <span />
                 </button>
               </div>
             </div>
@@ -515,7 +501,7 @@ export default function Settings() {
           <div className="app-card p-6">
             <h2 className="mb-4 text-lg font-bold tracking-tight text-text-primary">Notifikasi & Sinkronisasi</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-surface/70 bg-surface/20 p-4">
+              <div className="setting-row">
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Notifikasi Browser</p>
                   <p className="text-xs text-text-muted mt-0.5">
@@ -524,22 +510,17 @@ export default function Settings() {
                 </div>
                 <button
                   onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                  className={`relative h-6 w-12 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                    notificationsEnabled ? 'bg-primary' : 'bg-surface'
-                  }`}
+                  className="toggle-switch"
+                  data-checked={notificationsEnabled}
                   aria-label="Toggle notifications"
                   role="switch"
                   aria-checked={notificationsEnabled}
                 >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                      notificationsEnabled ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
+                  <span />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-surface/70 bg-surface/20 p-4">
+              <div className="setting-row">
                 <div>
                   <p className="text-sm font-semibold text-text-primary">Auto Refresh Dashboard</p>
                   <p className="text-xs text-text-muted mt-0.5">
@@ -548,18 +529,13 @@ export default function Settings() {
                 </div>
                 <button
                   onClick={() => setDashboardAutoRefreshEnabled(!dashboardAutoRefreshEnabled)}
-                  className={`relative h-6 w-12 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                    dashboardAutoRefreshEnabled ? 'bg-primary' : 'bg-surface'
-                  }`}
+                  className="toggle-switch"
+                  data-checked={dashboardAutoRefreshEnabled}
                   aria-label="Toggle auto refresh"
                   role="switch"
                   aria-checked={dashboardAutoRefreshEnabled}
                 >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                      dashboardAutoRefreshEnabled ? 'translate-x-6' : 'translate-x-0'
-                    }`}
-                  />
+                  <span />
                 </button>
               </div>
 
@@ -652,18 +628,13 @@ export default function Settings() {
                       <button
                         onClick={() => { void handleFeatureToggle(feature.key, !enabled); }}
                         disabled={isFeatureFlagsLoading || isFeatureFlagsSaving}
-                        className={`relative h-6 w-12 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-60 ${
-                          enabled ? 'bg-primary' : 'bg-surface'
-                        }`}
+                        className="toggle-switch"
+                        data-checked={enabled}
                         aria-label={`Toggle ${feature.label}`}
                         role="switch"
                         aria-checked={enabled}
                       >
-                        <span
-                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                            enabled ? 'translate-x-6' : 'translate-x-0'
-                          }`}
-                        />
+                        <span />
                       </button>
                     </div>
                   </div>
