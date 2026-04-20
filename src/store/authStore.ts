@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { clearSessionContext, writeSessionContext } from '../lib/sessionContext';
+import { normalizeRole } from '../lib/rolePermissions';
 import type { User, KaryoSession } from '../types';
 
 const SESSION_KEY = 'karyo_session';
@@ -172,7 +173,7 @@ async function restoreSessionWithRetry(
     try {
       await supabase.rpc('set_session_context', {
         p_user_id: session.user_id,
-        p_role: session.role,
+        p_role: normalizeRole(session.role) ?? session.role,
       });
 
       const { data: userData, error } = await supabase
@@ -185,7 +186,10 @@ async function restoreSessionWithRetry(
         return false;
       }
 
-      const user = userData as User;
+      const user = {
+        ...(userData as User),
+        role: (normalizeRole((userData as User).role) ?? (userData as User).role) as User['role'],
+      };
       set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
       return true;
     } catch (err) {
@@ -223,16 +227,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const { user_id, user_role } = row;
 
       // Step 1b: Bind role/user context for RLS-based queries.
+      const normalizedRole = normalizeRole(user_role) ?? user_role;
       await supabase.rpc('set_session_context', {
         p_user_id: user_id,
-        p_role: user_role,
+        p_role: normalizedRole,
       });
 
       // Step 2: Get user data via RPC (not direct select)
       const { data: userData, error: userError } = await supabase.rpc('get_user_by_id', { p_user_id: user_id }).single();
       if (userError || !userData) throw new Error('Data pengguna tidak ditemukan.');
 
-      const user = userData as User;
+      const user = {
+        ...(userData as User),
+        role: (normalizeRole((userData as User).role) ?? (userData as User).role) as User['role'],
+      };
 
       // Step 3: Update last_login and is_online via RPC
       await supabase.rpc('update_user_login', {
@@ -251,7 +259,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       const sessionPayload: KaryoSession = {
         user_id,
-        role: user_role as User['role'],
+        role: normalizedRole as User['role'],
         expires_at: makeSessionExpiry(),
       };
       await saveSession(sessionPayload);

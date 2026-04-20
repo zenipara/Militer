@@ -7,14 +7,7 @@ import Input from '../components/common/Input';
 import Notification from '../components/common/Notification';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { usePlatformStore } from '../store/platformStore';
-
-const ROLE_DEFAULT_PATH = {
-  admin: '/admin/dashboard',
-  komandan: '/komandan/dashboard',
-  prajurit: '/prajurit/dashboard',
-  guard: '/guard/gatepass-scan',
-  staf: '/staf/dashboard',
-} as const;
+import { getRoleDefaultPath } from '../lib/rolePermissions';
 
 export default function Login() {
   const { login, isAuthenticated, user, isLoading, error, clearError } = useAuthStore();
@@ -29,7 +22,7 @@ export default function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      const redirectPath = ROLE_DEFAULT_PATH[user.role] ?? '/login';
+      const redirectPath = getRoleDefaultPath(user.role) ?? '/login';
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, user, navigate]);

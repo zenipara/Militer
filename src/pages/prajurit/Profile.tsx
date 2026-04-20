@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 import { fetchUserPersonalStats } from '../../lib/api/users';
 import { notifyDataChanged } from '../../lib/dataSync';
 import { handleError } from '../../lib/handleError';
+import { getRoleCode, getRoleDisplayLabel } from '../../lib/rolePermissions';
 import type { User } from '../../types';
 
 interface PersonalStats {
@@ -147,7 +148,7 @@ export default function Profile() {
         <PageHeader
           title="Profil Saya"
           subtitle="Kelola informasi pribadi, statistik performa, dan keamanan akun Anda."
-          meta={<span>Role: {user.role}</span>}
+          meta={<span>Role: {getRoleDisplayLabel(user.role)} ({getRoleCode(user.role)})</span>}
         />
 
         {/* Avatar + basic info */}

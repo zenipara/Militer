@@ -10,6 +10,139 @@
 
 import type { User, CommandLevel } from '../types';
 
+export const KNOWN_ROLES = ['admin', 'komandan', 'staf', 'guard', 'prajurit'] as const;
+export type KnownRole = typeof KNOWN_ROLES[number];
+
+export const ROLE_CODE_MAP: Record<KnownRole, string> = {
+  admin: 'SAD',
+  komandan: 'KMD',
+  staf: 'STF',
+  prajurit: 'PRJ',
+  guard: 'PJP',
+};
+
+const ROLE_CODE_TO_ROLE: Record<string, KnownRole> = Object.fromEntries(
+  Object.entries(ROLE_CODE_MAP).map(([role, code]) => [code, role]),
+) as Record<string, KnownRole>;
+
+const ROLE_ACCESS_MAP: Record<KnownRole, string> = {
+  admin: 'Super Admin: konfigurasi sistem & audit',
+  komandan: 'Komando bertingkat (BATALION/KOMPI/PELETON)',
+  staf: 'Input operasional sesuai bidang (S-1/S-3/S-4)',
+  prajurit: 'Personal tasks & attendance',
+  guard: 'Petugas Jaga / Provost: scan gate pass + cek disiplin',
+};
+
+const ROLE_DEFAULT_PATH_MAP: Record<KnownRole, string> = {
+  admin: '/admin/dashboard',
+  komandan: '/komandan/dashboard',
+  staf: '/staf/dashboard',
+  prajurit: '/prajurit/dashboard',
+  guard: '/guard/gatepass-scan',
+};
+
+const ROLE_FALLBACK_PATH_MAP: Record<KnownRole, string[]> = {
+  admin: ['/admin/dashboard', '/admin/settings'],
+  komandan: ['/komandan/dashboard', '/komandan/tasks', '/komandan/attendance'],
+  staf: ['/staf/dashboard', '/staf/messages', '/staf/leave-review'],
+  prajurit: ['/prajurit/dashboard', '/prajurit/profile'],
+  guard: ['/guard/gatepass-scan', '/guard/discipline'],
+};
+
+function humanizeRole(role: string): string {
+  return role
+    .replace(/[_-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+export function normalizeRole(role: string | null | undefined): KnownRole | string | null {
+  if (!role) return null;
+  const trimmed = role.trim();
+  const lowered = trimmed.toLowerCase();
+  if (KNOWN_ROLES.includes(lowered as KnownRole)) return lowered as KnownRole;
+  const codeMatch = ROLE_CODE_TO_ROLE[trimmed.toUpperCase()];
+  if (codeMatch) return codeMatch;
+  return trimmed;
+}
+
+export function isKnownRole(role: string | null | undefined): role is KnownRole {
+  const normalized = normalizeRole(role);
+  return typeof normalized === 'string' && KNOWN_ROLES.includes(normalized as KnownRole);
+}
+
+export function getRoleDisplayLabel(role: string | null | undefined): string {
+  const normalized = normalizeRole(role);
+  if (!normalized) return '—';
+  switch (normalized) {
+    case 'admin': return 'Super Admin';
+    case 'komandan': return 'Komandan';
+    case 'prajurit': return 'Prajurit';
+    case 'guard': return 'Petugas Jaga / Provost';
+    case 'staf': return 'Staf Operasional';
+    default: return humanizeRole(normalized);
+  }
+}
+
+export const ROLE_OPTIONS = KNOWN_ROLES.map((role) => ({
+  value: role,
+  label: `${getRoleDisplayLabel(role)} (${ROLE_CODE_MAP[role]})`,
+  code: ROLE_CODE_MAP[role],
+  description: ROLE_ACCESS_MAP[role],
+}));
+
+export function getRoleCode(role: string | null | undefined): string {
+  const normalized = normalizeRole(role);
+  if (!normalized) return '—';
+  if (typeof normalized !== 'string') return '—';
+  if (!isKnownRole(normalized)) return normalized.toUpperCase();
+  return ROLE_CODE_MAP[normalized];
+}
+
+export function getRoleAccessDescription(role: string | null | undefined): string {
+  const normalized = normalizeRole(role);
+  if (!normalized || !isKnownRole(normalized)) return '—';
+  return ROLE_ACCESS_MAP[normalized];
+}
+
+export function getRoleDefaultPath(role: string | null | undefined): string | null {
+  const normalized = normalizeRole(role);
+  if (!normalized || !isKnownRole(normalized)) return null;
+  return ROLE_DEFAULT_PATH_MAP[normalized];
+}
+
+export function getRoleFallbackPaths(role: string | null | undefined): string[] {
+  const normalized = normalizeRole(role);
+  if (!normalized || !isKnownRole(normalized)) return [];
+  return ROLE_FALLBACK_PATH_MAP[normalized];
+}
+
+export function hasRole(role: string | null | undefined, expectedRole: KnownRole): boolean {
+  return normalizeRole(role) === expectedRole;
+}
+
+export function isRoleAdmin(role: string | null | undefined): boolean {
+  return hasRole(role, 'admin');
+}
+
+export function isRoleKomandan(role: string | null | undefined): boolean {
+  return hasRole(role, 'komandan');
+}
+
+export function isRoleStaf(role: string | null | undefined): boolean {
+  return hasRole(role, 'staf');
+}
+
+export function isRolePrajurit(role: string | null | undefined): boolean {
+  return hasRole(role, 'prajurit');
+}
+
+export function isRoleGuard(role: string | null | undefined): boolean {
+  return hasRole(role, 'guard');
+}
+
 // ── Staf bidang ──────────────────────────────────────────────────────────────
 
 export type StafBidang = 's1' | 's3' | 's4' | 'umum';
@@ -51,9 +184,10 @@ const BIDANG_WRITE_MAP: Record<StafBidang, WriteModule[]> = {
  */
 export function canWrite(user: User | null, module: WriteModule): boolean {
   if (!user) return false;
-  if (user.role === 'admin') return true;
-  if (user.role === 'komandan') return true;
-  if (user.role === 'staf') {
+  const role = normalizeRole(user.role);
+  if (isRoleAdmin(role)) return true;
+  if (isRoleKomandan(role)) return true;
+  if (isRoleStaf(role)) {
     const bidang = getBidangFromJabatan(user.jabatan);
     return BIDANG_WRITE_MAP[bidang].includes(module);
   }
@@ -80,7 +214,7 @@ const LEVEL_TO_SCOPE: Record<CommandLevel, KomandanScope> = {
 };
 
 export function getKomandanScope(user: User | null): KomandanScope {
-  if (!user || user.role !== 'komandan') return 'none';
+  if (!user || !isRoleKomandan(user.role)) return 'none';
   if (!user.level_komando) return 'none';
   return LEVEL_TO_SCOPE[user.level_komando] ?? 'none';
 }
@@ -117,10 +251,11 @@ export function getKomandanScopeDescription(level?: CommandLevel | null): string
 /** Role + bidang/level → display label sesuai SPESIFIKASI §3.3 */
 export function getOperationalRoleLabel(user: User | null): string {
   if (!user) return '—';
-  switch (user.role) {
-    case 'admin':    return 'Super Admin';
-    case 'prajurit': return 'Prajurit';
-    case 'guard':    return 'Petugas Jaga / Provost';
+  const role = normalizeRole(user.role);
+  switch (role) {
+    case 'admin':    return getRoleDisplayLabel(user.role);
+    case 'prajurit': return getRoleDisplayLabel(user.role);
+    case 'guard':    return getRoleDisplayLabel(user.role);
     case 'komandan': return getKomandanScopeLabel(user.level_komando);
     case 'staf': {
       const b = getBidangFromJabatan(user.jabatan);
@@ -132,7 +267,7 @@ export function getOperationalRoleLabel(user: User | null): string {
       };
       return labels[b];
     }
-    default: return user.role;
+    default: return getRoleDisplayLabel(user.role);
   }
 }
 
@@ -141,5 +276,6 @@ export function getOperationalRoleLabel(user: User | null): string {
 /** True if the user is a Guard/Provost and can read discipline notes. */
 export function canReadDisciplineNotes(user: User | null): boolean {
   if (!user) return false;
-  return user.role === 'guard' || user.role === 'komandan' || user.role === 'admin';
+  const role = normalizeRole(user.role);
+  return isRoleGuard(role) || isRoleKomandan(role) || isRoleAdmin(role);
 }

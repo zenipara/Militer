@@ -11,7 +11,11 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageHeader from '../../components/ui/PageHeader';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useUIStore } from '../../store/uiStore';
+import { getRoleDisplayLabel } from '../../lib/rolePermissions';
 import type { Announcement, Role } from '../../types';
+
+const ANNOUNCEMENT_TARGET_ROLES = ['admin', 'komandan', 'prajurit'] as const;
+type AnnouncementTargetRole = (typeof ANNOUNCEMENT_TARGET_ROLES)[number];
 
 export default function Announcements() {
   const { announcements, isLoading, createAnnouncement, deleteAnnouncement, togglePin } = useAnnouncements();
@@ -134,7 +138,7 @@ export default function Announcements() {
                       {ann.target_role && ann.target_role.length > 0 && (
                         <div className="flex gap-1">
                           {ann.target_role.map((r) => (
-                            <Badge key={r} variant="info" size="sm">{r}</Badge>
+                            <Badge key={r} variant="info" size="sm">{getRoleDisplayLabel(r)}</Badge>
                           ))}
                         </div>
                       )}
@@ -207,8 +211,8 @@ export default function Announcements() {
           <div>
             <p className="mb-2 text-sm font-semibold text-text-primary">Target Role (kosong = semua)</p>
             <div className="flex gap-4">
-              {(['admin', 'komandan', 'prajurit'] as const).map((r) => {
-                const key = `target_${r}` as 'target_admin' | 'target_komandan' | 'target_prajurit';
+              {ANNOUNCEMENT_TARGET_ROLES.map((r) => {
+                const key = `target_${r}` as `target_${AnnouncementTargetRole}`;
                 return (
                   <label key={r} className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -217,7 +221,7 @@ export default function Announcements() {
                       onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
                       className="rounded border-surface text-primary focus:ring-primary/50"
                     />
-                    <span className="text-sm text-text-muted capitalize">{r}</span>
+                    <span className="text-sm text-text-muted">{getRoleDisplayLabel(r)}</span>
                   </label>
                 );
               })}

@@ -65,7 +65,7 @@ export default function BottomTabBar() {
 
   if (!user) return null;
 
-  const tabs = BOTTOM_TABS[user.role].filter((tab) => isPathEnabled(tab.path, flags));
+  const tabs = (BOTTOM_TABS[user.role] ?? []).filter((tab) => isPathEnabled(tab.path, flags));
 
   if (!tabs || tabs.length === 0) return null;
 

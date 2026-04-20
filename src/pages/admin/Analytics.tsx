@@ -10,6 +10,7 @@ import { ICONS } from '../../icons';
 import { useSatuans } from '../../hooks/useSatuans';
 import { fetchAnalyticsSnapshot, type AnalyticsSnapshot } from '../../lib/api/analytics';
 import { handleError } from '../../lib/handleError';
+import { getRoleDisplayLabel } from '../../lib/rolePermissions';
 
 // Colour map for task statuses
 const TASK_STATUS_COLOR: Record<string, string> = {
@@ -27,15 +28,6 @@ const ATTENDANCE_STATUS_COLOR: Record<string, string> = {
   sakit: '#f59e0b',
   dinas_luar: 'var(--color-primary)',
   alpa: 'var(--color-accent-red)',
-};
-
-// Indonesian role label
-const ROLE_LABEL: Record<string, string> = {
-  admin: 'Admin',
-  komandan: 'Komandan',
-  staf: 'Staf',
-  guard: 'Petugas Jaga',
-  prajurit: 'Prajurit',
 };
 
 // Indonesian task status label
@@ -126,7 +118,7 @@ export default function Analytics() {
       (snapshot?.personnelRoleCounts ?? [])
         .sort((a, b) => b.count - a.count)
         .map((item) => ({
-          label: ROLE_LABEL[item.role] ?? item.role,
+          label: getRoleDisplayLabel(item.role),
           value: item.count,
         })),
     [snapshot],

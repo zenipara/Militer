@@ -11,7 +11,7 @@ import UserDetailModal from '../../components/common/UserDetailModal';
 import { useUsers } from '../../hooks/useUsers';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useAuthStore } from '../../store/authStore';
-import { getKomandanScopeLabel, getKomandanScopeDescription } from '../../lib/rolePermissions';
+import { getKomandanScopeLabel, getKomandanScopeDescription, isRoleKomandan } from '../../lib/rolePermissions';
 import type { User } from '../../types';
 
 export default function Personnel() {
@@ -50,8 +50,8 @@ export default function Personnel() {
     setShowDetail(true);
   };
 
-  const scopeLabel = user?.role === 'komandan' ? getKomandanScopeLabel(user.level_komando) : null;
-  const scopeDescription = user?.role === 'komandan' ? getKomandanScopeDescription(user.level_komando) : null;
+  const scopeLabel = isRoleKomandan(user?.role) ? getKomandanScopeLabel(user?.level_komando) : null;
+  const scopeDescription = isRoleKomandan(user?.role) ? getKomandanScopeDescription(user?.level_komando) : null;
 
   return (
     <DashboardLayout title="Data Personel">

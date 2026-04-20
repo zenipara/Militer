@@ -16,6 +16,7 @@ import Input from './Input';
 import { RoleBadge } from './Badge';
 import { useUIStore } from '../../store/uiStore';
 import { fetchUserPersonalStats, fetchUserDisciplineNotes, type UserPersonalStats } from '../../lib/api/users';
+import { ROLE_OPTIONS, getOperationalRoleLabel, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan } from '../../lib/rolePermissions';
 import type { User, Role, DisciplineNote, CommandLevel } from '../../types';
 
 type Tab = 'info' | 'personal' | 'stats' | 'disiplin';
@@ -139,13 +140,13 @@ export default function UserDetailModal({
 
   if (!user) return null;
 
-  const canEdit = mode === 'edit' && viewerRole === 'admin';
+  const canEdit = mode === 'edit' && isRoleAdmin(viewerRole);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'info', label: 'Info Dasar' },
     { id: 'personal', label: 'Data Pribadi' },
     { id: 'stats', label: 'Statistik' },
-    ...(viewerRole === 'admin' || viewerRole === 'komandan' ? [{ id: 'disiplin' as Tab, label: 'Disiplin' }] : []),
+    ...(isRoleAdmin(viewerRole) || isRoleKomandan(viewerRole) ? [{ id: 'disiplin' as Tab, label: 'Disiplin' }] : []),
   ];
 
   return (
@@ -191,6 +192,7 @@ export default function UserDetailModal({
             <p className="text-sm text-text-muted font-mono">{user.nrp}</p>
             <div className="flex items-center gap-2 mt-1">
               <RoleBadge role={user.role} />
+              <span className="text-xs text-text-muted">{getOperationalRoleLabel(user)}</span>
               <div className="flex items-center gap-1">
                 <div className={`h-2 w-2 rounded-full ${user.is_online ? 'bg-success animate-pulse' : 'bg-text-muted/40'}`} />
                 <span className={`text-xs ${user.is_online ? 'text-success' : 'text-text-muted'}`}>
@@ -229,14 +231,12 @@ export default function UserDetailModal({
                 <div>
                   <label className="text-sm font-semibold text-text-primary">Role *</label>
                   <select className="form-control mt-1" value={editForm.role ?? 'prajurit'} onChange={(e) => setEditForm({ ...editForm, role: e.target.value as Role, level_komando: undefined })}>
-                    <option value="prajurit">Prajurit</option>
-                    <option value="komandan">Komandan</option>
-                    <option value="staf">Staf Operasional</option>
-                    <option value="admin">Super Admin</option>
-                    <option value="guard">Petugas Jaga / Provost</option>
+                    {ROLE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
-                {editForm.role === 'komandan' && (
+                {isRoleKomandan(editForm.role) && (
                   <div>
                     <label className="text-sm font-semibold text-text-primary">Tingkat Komando *</label>
                     <select
@@ -268,8 +268,8 @@ export default function UserDetailModal({
                 <InfoRow label="Pangkat" value={user.pangkat} />
                 <InfoRow label="Jabatan" value={user.jabatan} />
                 <InfoRow label="Satuan" value={user.satuan} />
-                <InfoRow label="Role" value={user.role} />
-                {user.role === 'komandan' && (
+                <InfoRow label="Role" value={`${getRoleDisplayLabel(user.role)} (${getRoleCode(user.role)})`} />
+                {isRoleKomandan(user.role) && (
                   <InfoRow
                     label="Tingkat Komando"
                     value={
@@ -344,12 +344,12 @@ export default function UserDetailModal({
                     placeholder="Alamat lengkap..."
                   />
                 </div>
-                {viewerRole === 'admin' && (
+                {isRoleAdmin(viewerRole) && (
                   <Input label="Nomor KTP" value={editForm.nomor_ktp ?? ''} onChange={(e) => setEditForm({ ...editForm, nomor_ktp: e.target.value.replace(/\D/g, '').slice(0, 16) })} inputMode="numeric" maxLength={16} />
                 )}
                 <Input label="Kontak Darurat — Nama" value={editForm.kontak_darurat_nama ?? ''} onChange={(e) => setEditForm({ ...editForm, kontak_darurat_nama: e.target.value })} />
                 <Input label="Kontak Darurat — Telepon" value={editForm.kontak_darurat_telp ?? ''} onChange={(e) => setEditForm({ ...editForm, kontak_darurat_telp: e.target.value })} inputMode="tel" />
-                {viewerRole === 'admin' && (
+                {isRoleAdmin(viewerRole) && (
                   <div>
                     <label className="text-sm font-semibold text-text-primary">Catatan Khusus (Internal)</label>
                     <textarea
@@ -378,7 +378,7 @@ export default function UserDetailModal({
                 <InfoRow label="Alamat" value={user.alamat} />
                 <InfoRow label="Kontak Darurat" value={user.kontak_darurat_nama} />
                 <InfoRow label="Telepon Darurat" value={user.kontak_darurat_telp} />
-                {viewerRole === 'admin' && (
+                {isRoleAdmin(viewerRole) && (
                   <>
                     <InfoRow label="Nomor KTP" value={user.nomor_ktp} mono />
                     {user.catatan_khusus && (
@@ -436,7 +436,7 @@ export default function UserDetailModal({
         )}
 
         {/* Tab: Disiplin */}
-        {activeTab === 'disiplin' && (viewerRole === 'admin' || viewerRole === 'komandan') && (
+        {activeTab === 'disiplin' && (isRoleAdmin(viewerRole) || isRoleKomandan(viewerRole)) && (
           <div>
             {isLoadingDisiplin ? (
               <div className="flex items-center justify-center py-8">

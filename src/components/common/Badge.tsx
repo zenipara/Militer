@@ -1,4 +1,5 @@
 import type { TaskStatus, AttendanceStatus, LeaveStatus, Role } from '../../types';
+import { getRoleDisplayLabel } from '../../lib/rolePermissions';
 
 type BadgeVariant = 'success' | 'error' | 'warning' | 'info' | 'neutral' | 'gold';
 
@@ -76,13 +77,15 @@ export function LeaveStatusBadge({ status }: { status: LeaveStatus; guard?: stri
 }
 
 export function RoleBadge({ role }: { role: Role }) {
-  const map: Record<Role, { label: string; variant: BadgeVariant }> = {
+  const map: Partial<Record<Role, { label: string; variant: BadgeVariant }>> = {
     admin:    { label: 'Super Admin',  variant: 'gold' },
     komandan: { label: 'Komandan',     variant: 'info' },
     prajurit: { label: 'Prajurit',     variant: 'neutral' },
     guard:    { label: 'Petugas Jaga / Provost', variant: 'info' },
-    staf:     { label: 'Staf',         variant: 'warning' },
+    staf:     { label: 'Staf Operasional', variant: 'warning' },
   };
-  const { label, variant } = map[role];
+  const roleMeta = map[role];
+  const label = roleMeta?.label ?? getRoleDisplayLabel(role);
+  const variant = roleMeta?.variant ?? 'neutral';
   return <Badge variant={variant}>{label}</Badge>;
 }

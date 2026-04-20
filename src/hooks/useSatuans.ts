@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { fetchSatuans as fetchSatuansApi } from '../lib/api/satuans';
 import type { Satuan } from '../types';
 
 interface UseSatuansOptions {
@@ -12,41 +12,36 @@ export function useSatuans(options: UseSatuansOptions = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSatuans = useCallback(async () => {
+  const loadSatuans = useCallback(async (forceRefresh = false): Promise<Satuan[]> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      let query = supabase
-        .from('satuans')
-        .select('id, nama, kode_satuan, tingkat, logo_url, is_active, created_by, created_at, updated_at')
-        .order('nama', { ascending: true });
+      const data = await fetchSatuansApi(!onlyActive, { forceRefresh });
 
-      if (onlyActive) {
-        query = query.eq('is_active', true);
-      }
-
-      const { data, error: fetchError } = await query;
-      if (fetchError) throw fetchError;
-
-      setSatuans((data ?? []) as Satuan[]);
+      setSatuans(data);
+      return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Gagal memuat data satuan';
       setError(message);
       setSatuans([]);
+      throw err;
     } finally {
       setIsLoading(false);
     }
   }, [onlyActive]);
 
+  const refreshSatuans = useCallback(() => loadSatuans(true), [loadSatuans]);
+
   useEffect(() => {
-    void fetchSatuans();
-  }, [fetchSatuans]);
+    void loadSatuans().catch(() => undefined);
+  }, [loadSatuans]);
 
   return {
     satuans,
     isLoading,
     error,
-    fetchSatuans,
+    fetchSatuans: loadSatuans,
+    refreshSatuans,
   };
 }

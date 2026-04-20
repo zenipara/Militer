@@ -9,34 +9,30 @@ import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { handleError } from '../../lib/handleError';
-import type { Role } from '../../types';
+import { getRoleDefaultPath, isRoleAdmin, isRoleKomandan, isRolePrajurit } from '../../lib/rolePermissions';
 
 interface SearchResult extends ApiSearchResult {
   href: string;
   icon: keyof typeof ICONS;
 }
 
-const ROLE_DEFAULT_PATH: Record<Role, string> = {
-  admin: '/admin/dashboard',
-  komandan: '/komandan/dashboard',
-  prajurit: '/prajurit/dashboard',
-  guard: '/guard/gatepass-scan',
-  staf: '/staf/dashboard',
-};
-
 function buildHref(result: ApiSearchResult): string {
   const role = result.role;
   if (result.type === 'task') {
-    return role === 'prajurit' ? '/prajurit/tasks' : '/komandan/tasks';
+    if (isRolePrajurit(role)) return '/prajurit/tasks';
+    if (isRoleKomandan(role)) return '/komandan/tasks';
+    return getRoleDefaultPath(role) ?? '/login';
   }
   if (result.type === 'user') {
-    return role === 'admin' ? '/admin/users' : '/komandan/personnel';
+    if (isRoleAdmin(role)) return '/admin/users';
+    if (isRoleKomandan(role)) return '/komandan/personnel';
+    return getRoleDefaultPath(role) ?? '/login';
   }
   // announcement
-  if (role === 'admin') return '/admin/announcements';
-  if (role === 'komandan') return '/komandan/dashboard';
-  if (role === 'prajurit') return '/prajurit/dashboard';
-  return '/guard/gatepass-scan';
+  if (isRoleAdmin(role)) return '/admin/announcements';
+  if (isRoleKomandan(role)) return '/komandan/dashboard';
+  if (isRolePrajurit(role)) return '/prajurit/dashboard';
+  return getRoleDefaultPath(role) ?? '/login';
 }
 
 const TYPE_ICON: Record<ApiSearchResult['type'], keyof typeof ICONS> = {
@@ -144,8 +140,8 @@ export default function GlobalSearch() {
       navigate(result.href);
       return;
     }
-    const safeRole = (activeRole ?? 'prajurit') as Role;
-    navigate(ROLE_DEFAULT_PATH[safeRole]);
+    const safeRole = activeRole ?? 'prajurit';
+    navigate(getRoleDefaultPath(safeRole) ?? '/login');
   };
 
   /** Handle keyboard navigation inside the search overlay */

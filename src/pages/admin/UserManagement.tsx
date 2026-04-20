@@ -17,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
+import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleKomandan } from '../../lib/rolePermissions';
 import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
@@ -104,7 +105,7 @@ export default function UserManagement() {
       showNotification('PIN harus 6 digit angka', 'error');
       return;
     }
-    if (form.role === 'komandan' && !form.level_komando) {
+    if (isRoleKomandan(form.role) && !form.level_komando) {
       showNotification('Tingkat komando wajib diisi untuk role Komandan', 'error');
       return;
     }
@@ -422,11 +423,9 @@ export default function UserManagement() {
               className="form-control sm:w-40 bg-bg-card"
             >
               <option value="">Semua Role</option>
-              <option value="admin">Admin</option>
-              <option value="komandan">Komandan</option>
-              <option value="staf">Staf</option>
-              <option value="prajurit">Prajurit</option>
-              <option value="guard">Guard</option>
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
             <select
               value={filterStatus}
@@ -469,7 +468,7 @@ export default function UserManagement() {
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
             <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
-              Filter role: {filterRole || 'Semua'}
+              Filter role: {filterRole ? `${getRoleDisplayLabel(filterRole)} (${getRoleCode(filterRole)})` : 'Semua'}
             </span>
             <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
               Filter status: {filterStatus === 'active' ? 'Aktif' : filterStatus === 'inactive' ? 'Nonaktif' : 'Semua'}
@@ -655,14 +654,12 @@ export default function UserManagement() {
           <div>
             <label className="text-sm font-semibold text-text-primary">Role *</label>
             <select className="form-control mt-1" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role, level_komando: '' })}>
-              <option value="prajurit">Prajurit</option>
-              <option value="staf">Staf Operasional</option>
-              <option value="komandan">Komandan</option>
-              <option value="guard">Petugas Jaga / Provost</option>
-              <option value="admin">Super Admin</option>
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </div>
-          {form.role === 'komandan' && (
+          {isRoleKomandan(form.role) && (
             <div>
               <label className="text-sm font-semibold text-text-primary">Tingkat Komando *</label>
               <select

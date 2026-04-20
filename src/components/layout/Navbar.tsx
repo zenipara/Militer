@@ -8,6 +8,7 @@ import { useMessages } from '../../hooks/useMessages';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { isPathEnabled } from '../../lib/featureFlags';
+import { getRoleDisplayLabel, isRoleAdmin, isRolePrajurit, isRoleStaf } from '../../lib/rolePermissions';
 import GlobalSearch from '../ui/GlobalSearch';
 import OfflineIndicator from '../common/OfflineIndicator';
 import SyncQueueBadge from '../common/SyncQueueBadge';
@@ -63,14 +64,6 @@ export default function Navbar({ title }: NavbarProps) {
     setIsAvatarDropdownOpen(false);
     await logout();
     navigate('/login');
-  };
-
-  const roleLabelMap: Record<Role, string> = {
-    admin: 'Super Admin',
-    komandan: 'Komandan',
-    prajurit: 'Prajurit',
-    guard: 'Petugas Jaga / Provost',
-    staf: 'Staf Operasional',
   };
 
   const messagePath = user?.role ? MESSAGES_PATH[user.role] : undefined;
@@ -183,7 +176,7 @@ export default function Navbar({ title }: NavbarProps) {
               )}
               <div className="hidden sm:block">
                 <p className="max-w-[120px] truncate text-xs font-medium text-text-primary">{user?.nama}</p>
-                <p className="text-[10px] text-text-muted">{roleLabelMap[user?.role ?? 'prajurit']}</p>
+                <p className="text-[10px] text-text-muted">{getRoleDisplayLabel(user?.role ?? 'prajurit')}</p>
               </div>
             </button>
 
@@ -203,7 +196,7 @@ export default function Navbar({ title }: NavbarProps) {
               </div>
 
               {/* Profil link — only for roles that have a profile page */}
-              {(user?.role === 'prajurit' || user?.role === 'staf') && (
+              {(isRolePrajurit(user?.role) || isRoleStaf(user?.role)) && user?.role && (
                 <Link
                   to={PROFILE_PATH[user.role]}
                   role="menuitem"
@@ -211,12 +204,12 @@ export default function Navbar({ title }: NavbarProps) {
                   className="dropdown-item"
                 >
                   {ICONS.User ? <ICONS.User className="w-4 h-4 text-text-muted" aria-hidden="true" /> : null}
-                  {user.role === 'staf' ? 'Dasbor Staf' : 'Profil Saya'}
+                  {isRoleStaf(user.role) ? 'Dasbor Staf' : 'Profil Saya'}
                 </Link>
               )}
 
               {/* Pengaturan link — admin only */}
-              {user?.role === 'admin' && (
+              {isRoleAdmin(user?.role) && (
                 <Link
                   to="/admin/settings"
                   role="menuitem"

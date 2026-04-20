@@ -14,6 +14,7 @@ import {
 } from '../lib/api/users';
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
+import { isRoleKomandan } from '../lib/rolePermissions';
 import { supabase } from '../lib/supabase';
 import { readSessionContext } from '../lib/sessionContext';
 import type { User, Role } from '../types';
@@ -199,7 +200,7 @@ export function useUsers(options: UseUsersOptions = {}) {
       pangkat: rest.pangkat,
       jabatan: rest.jabatan,
     });
-    if (rest.role === 'komandan' && rest.level_komando && callerId && callerRole && typeof data === 'string') {
+    if (isRoleKomandan(rest.role) && rest.level_komando && callerId && callerRole && typeof data === 'string') {
       await patchUser(callerId, callerRole, data, { level_komando: rest.level_komando });
     }
     void fetchUsers();

@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { normalizeRole } from '../rolePermissions';
 import type { User, Role, DisciplineNote } from '../../types';
 
 // Helper: validate ID format (strict for real UUID, lenient for test IDs)
@@ -25,6 +26,13 @@ export interface FetchUsersPageParams extends FetchUsersParams {
   offset?: number;
 }
 
+function normalizeUserRole(user: User): User {
+  return {
+    ...user,
+    role: normalizeRole(user.role) as User['role'],
+  };
+}
+
 export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
   const { data, error } = await supabase.rpc('api_get_users', {
     p_user_id: params.callerId,
@@ -36,7 +44,7 @@ export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
     p_ascending: params.ascending ?? true,
   });
   if (error) throw error;
-  return (data as unknown as User[]) ?? [];
+  return ((data as unknown as User[]) ?? []).map(normalizeUserRole);
 }
 
 export async function fetchUsersPage(params: FetchUsersPageParams): Promise<User[]> {
@@ -53,7 +61,7 @@ export async function fetchUsersPage(params: FetchUsersPageParams): Promise<User
     p_offset: params.offset ?? 0,
   });
   if (error) throw error;
-  return (data as unknown as User[]) ?? [];
+  return ((data as unknown as User[]) ?? []).map(normalizeUserRole);
 }
 
 export async function countUsers(params: FetchUsersPageParams): Promise<number> {
@@ -135,7 +143,7 @@ export async function fetchUserById(userId: string): Promise<User> {
 
   const { data, error } = await supabase.rpc('get_user_detail', { p_user_id: userId }).single();
   if (error) throw error;
-  return data as User;
+  return normalizeUserRole(data as User);
 }
 
 export interface UpdateOwnProfileParams {

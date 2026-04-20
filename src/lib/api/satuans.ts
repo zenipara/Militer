@@ -1,3 +1,5 @@
+import { CacheWithTTL } from '../cacheWithTTL';
+import { requestCoalescer } from '../requestCoalescer';
 import { supabase } from '../supabase';
 import type { Satuan } from '../../types';
 
@@ -19,19 +21,59 @@ export interface SatuanPayload {
   created_by?: string | null;
 }
 
-export async function fetchSatuans(includeInactive = true): Promise<Satuan[]> {
-  let query = supabase
-    .from('satuans')
-    .select('id, nama, kode_satuan, tingkat, logo_url, is_active, created_by, created_at, updated_at')
-    .order('nama', { ascending: true });
+type FetchSatuansOptions = {
+  forceRefresh?: boolean;
+};
 
-  if (!includeInactive) {
-    query = query.eq('is_active', true);
+const satuanCache = new CacheWithTTL<string, Satuan[]>(5 * 60 * 1000);
+
+function buildCacheKey(includeInactive: boolean): string {
+  return includeInactive ? 'satuans:all' : 'satuans:active';
+}
+
+export function invalidateSatuansCache(includeInactive?: boolean): void {
+  if (includeInactive === undefined) {
+    satuanCache.clear();
+    return;
   }
 
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []) as Satuan[];
+  satuanCache.delete(buildCacheKey(includeInactive));
+}
+
+export async function fetchSatuans(includeInactive = true, options: FetchSatuansOptions = {}): Promise<Satuan[]> {
+  const cacheKey = buildCacheKey(includeInactive);
+
+  if (!options.forceRefresh) {
+    const cached = satuanCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  return requestCoalescer.coalesce(cacheKey, async () => {
+    if (!options.forceRefresh) {
+      const cached = satuanCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    let query = supabase
+      .from('satuans')
+      .select('id, nama, kode_satuan, tingkat, logo_url, is_active, created_by, created_at, updated_at')
+      .order('nama', { ascending: true });
+
+    if (!includeInactive) {
+      query = query.eq('is_active', true);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const satuans = (data ?? []) as Satuan[];
+    satuanCache.set(cacheKey, satuans);
+    return satuans;
+  });
 }
 
 export async function createSatuan(payload: SatuanPayload): Promise<Satuan> {
@@ -50,6 +92,7 @@ export async function createSatuan(payload: SatuanPayload): Promise<Satuan> {
     .single();
 
   if (error) throw error;
+  invalidateSatuansCache();
   return data as Satuan;
 }
 
@@ -71,10 +114,12 @@ export async function updateSatuan(id: string, payload: Partial<SatuanPayload>):
     .single();
 
   if (error) throw error;
+  invalidateSatuansCache();
   return data as Satuan;
 }
 
 export async function deleteSatuan(id: string): Promise<void> {
   const { error } = await supabase.from('satuans').delete().eq('id', id);
   if (error) throw error;
+  invalidateSatuansCache();
 }

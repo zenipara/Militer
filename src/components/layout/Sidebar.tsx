@@ -6,6 +6,7 @@ import { useUIStore } from '../../store/uiStore';
 import { usePlatformStore } from '../../store/platformStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { isPathEnabled } from '../../lib/featureFlags';
+import { getRoleDisplayLabel } from '../../lib/rolePermissions';
 import type { Role } from '../../types';
 
 interface NavItem {
@@ -122,7 +123,7 @@ export default function Sidebar() {
 
   const navItems = useMemo(() => {
     if (!user) return [] as NavItem[];
-    return NAV_ITEMS[user.role].filter((item) => isPathEnabled(item.path, flags));
+    return (NAV_ITEMS[user.role] ?? []).filter((item) => isPathEnabled(item.path, flags));
   }, [user, flags]);
 
   const filteredNavItems = useMemo(() => {
@@ -149,14 +150,6 @@ export default function Sidebar() {
   const handleLogout = async () => {
     await logout();
     navigate('/login');
-  };
-
-  const roleLabelMap: Record<Role, string> = {
-    admin: 'Super Admin',
-    komandan: 'Komandan',
-    prajurit: 'Prajurit',
-    guard: 'Petugas Jaga / Provost',
-    staf: 'Staf Operasional',
   };
 
   return (
@@ -242,7 +235,7 @@ export default function Sidebar() {
             <div className="min-w-0 flex-1">
               <div className="truncate text-xs font-semibold text-text-primary">{user.nama}</div>
               <div className="truncate text-[10px] text-text-muted">
-                {user.pangkat ?? roleLabelMap[user.role]} — {user.satuan}
+                {user.pangkat ?? getRoleDisplayLabel(user.role)} — {user.satuan}
               </div>
             </div>
             <div className="h-2 w-2 status-dot status-dot--online status-dot--pulse flex-shrink-0" title="Online" />

@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useFeatureStore } from '../store/featureStore';
 import { isPathEnabled } from '../lib/featureFlags';
+import { getRoleDefaultPath, getRoleFallbackPaths } from '../lib/rolePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import type { Role } from '../types';
 
@@ -10,24 +11,8 @@ interface ProtectedRouteProps {
   allowedRoles: Role[];
 }
 
-const ROLE_DEFAULT_PATH: Record<Role, string> = {
-  admin: '/admin/dashboard',
-  komandan: '/komandan/dashboard',
-  prajurit: '/prajurit/dashboard',
-  guard: '/guard/gatepass-scan',
-  staf: '/staf/dashboard',
-};
-
-const ROLE_FALLBACK_PATHS: Record<Role, string[]> = {
-  admin: ['/admin/dashboard', '/admin/settings'],
-  komandan: ['/komandan/dashboard', '/komandan/tasks', '/komandan/attendance'],
-  prajurit: ['/prajurit/dashboard', '/prajurit/profile'],
-  guard: ['/guard/gatepass-scan', '/guard/discipline'],
-  staf: ['/staf/dashboard', '/staf/messages', '/staf/leave-review'],
-};
-
 function getRoleFallbackPath(role: Role, flags: ReturnType<typeof useFeatureStore.getState>['flags']): string | null {
-  const candidates = ROLE_FALLBACK_PATHS[role] ?? [];
+  const candidates = getRoleFallbackPaths(role);
   return candidates.find((path) => isPathEnabled(path, flags)) ?? null;
 }
 
@@ -54,7 +39,7 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   if (!allowedRoles.includes(userRole)) {
-    return <Navigate to={ROLE_DEFAULT_PATH[userRole]} replace />;
+    return <Navigate to={getRoleDefaultPath(userRole) ?? '/login'} replace />;
   }
 
   if (!isLoaded) {
