@@ -19,6 +19,12 @@ export interface FetchUsersParams {
   ascending?: boolean;
 }
 
+export interface FetchUsersPageParams extends FetchUsersParams {
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
 export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
   const { data, error } = await supabase.rpc('api_get_users', {
     p_user_id: params.callerId,
@@ -31,6 +37,36 @@ export async function fetchUsers(params: FetchUsersParams): Promise<User[]> {
   });
   if (error) throw error;
   return (data as unknown as User[]) ?? [];
+}
+
+export async function fetchUsersPage(params: FetchUsersPageParams): Promise<User[]> {
+  const { data, error } = await supabase.rpc('api_get_users_page', {
+    p_user_id: params.callerId,
+    p_role: params.callerRole,
+    p_role_filter: params.role ?? null,
+    p_satuan_filter: params.satuan ?? null,
+    p_is_active: params.isActive ?? null,
+    p_order_by: params.orderBy ?? 'nama',
+    p_ascending: params.ascending ?? true,
+    p_search: params.search?.trim() ? params.search.trim() : null,
+    p_limit: params.limit ?? 50,
+    p_offset: params.offset ?? 0,
+  });
+  if (error) throw error;
+  return (data as unknown as User[]) ?? [];
+}
+
+export async function countUsers(params: FetchUsersPageParams): Promise<number> {
+  const { data, error } = await supabase.rpc('api_count_users_filtered', {
+    p_user_id: params.callerId,
+    p_role: params.callerRole,
+    p_role_filter: params.role ?? null,
+    p_satuan_filter: params.satuan ?? null,
+    p_is_active: params.isActive ?? null,
+    p_search: params.search?.trim() ? params.search.trim() : null,
+  });
+  if (error) throw error;
+  return Number(data ?? 0);
 }
 
 export async function fetchUsersDirect(params: FetchUsersParams): Promise<User[]> {

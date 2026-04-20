@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -9,7 +9,6 @@ import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
 import Pagination from '../../components/ui/Pagination';
 import UserDetailModal from '../../components/common/UserDetailModal';
-import { usePagination } from '../../hooks/usePagination';
 import { useUsers } from '../../hooks/useUsers';
 import { useUIStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
@@ -32,14 +31,27 @@ function parseCSV(text: string): Record<string, string>[] {
 }
 
 export default function UserManagement() {
-  const { users, isLoading, error, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({ orderBy: 'created_at', ascending: false });
-  const { showNotification } = useUIStore();
-  const authUser = useAuthStore((s) => s.user);
+  const [currentPage, setCurrentPage] = useState(1);
+  const setPage = (page: number) => setCurrentPage(Math.max(1, page));
 
   const [searchRaw, setSearchRaw] = useState('');
   const search = useDebounce(searchRaw, 300);
   const [filterRole, setFilterRole] = useState<Role | ''>('');
   const [filterStatus, setFilterStatus] = useState<'active' | 'inactive' | ''>('');
+
+  const { users, isLoading, error, totalItems, totalPages, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({
+    orderBy: 'created_at',
+    ascending: false,
+    serverPaginated: true,
+    page: currentPage,
+    pageSize: PAGE_SIZE,
+    searchQuery: search,
+    role: filterRole || undefined,
+    isActive: filterStatus ? filterStatus === 'active' : undefined,
+  });
+  const { showNotification } = useUIStore();
+  const authUser = useAuthStore((s) => s.user);
+
   const [showCreate, setShowCreate] = useState(false);
   const [showResetPin, setShowResetPin] = useState(false);
   const [showBulkReset, setShowBulkReset] = useState(false);
@@ -63,19 +75,9 @@ export default function UserManagement() {
   const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: { nrp: string; error: string }[] } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
-  const filtered = users.filter((u) => {
-    const matchSearch =
-      !search ||
-      u.nama.toLowerCase().includes(search.toLowerCase()) ||
-      u.nrp.includes(search);
-    const matchRole = !filterRole || u.role === filterRole;
-    const matchStatus =
-      !filterStatus ||
-      (filterStatus === 'active' ? u.is_active : !u.is_active);
-    return matchSearch && matchRole && matchStatus;
-  });
-
-  const { currentPage, totalPages, totalItems, paginated, setPage } = usePagination(filtered, PAGE_SIZE);
+  useEffect(() => {
+    setSelectedUserIds(new Set());
+  }, [users, currentPage]);
 
   const handleCreate = async () => {
     if (!form.nrp || !form.nama || !form.pin || !form.satuan) {
@@ -240,12 +242,12 @@ export default function UserManagement() {
   };
 
   const exportFilteredCSV = () => {
-    if (filtered.length === 0) {
+    if (users.length === 0) {
       showNotification('Tidak ada data untuk diekspor', 'error');
       return;
     }
     const header = 'nrp,nama,pangkat,jabatan,satuan,role,status';
-    const rows = filtered.map((u) =>
+    const rows = users.map((u) =>
       [
         u.nrp,
         `"${u.nama.replace(/"/g, '""')}"`,
@@ -261,10 +263,10 @@ export default function UserManagement() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `personel_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `personel_export_halaman_${currentPage}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showNotification(`${filtered.length} personel berhasil diekspor`, 'success');
+    showNotification(`${users.length} personel di halaman ini berhasil diekspor`, 'success');
   };
 
   const handleUnlockUser = async () => {
@@ -292,10 +294,10 @@ export default function UserManagement() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedUserIds.size === paginated.length) {
+    if (selectedUserIds.size === users.length) {
       setSelectedUserIds(new Set());
     } else {
-      setSelectedUserIds(new Set(paginated.map((u) => u.id)));
+      setSelectedUserIds(new Set(users.map((u) => u.id)));
     }
   };
 
@@ -330,8 +332,8 @@ export default function UserManagement() {
           subtitle="Kelola akun, role, status aktif, reset PIN personel, dan impor data massal."
           meta={
             <>
-              <span>{users.length} personel terdaftar</span>
-              {filtered.length !== users.length && <span>{filtered.length} hasil pencarian</span>}
+              <span>{totalItems} personel terdaftar</span>
+              <span>Halaman {currentPage} dari {totalPages}</span>
             </>
           }
         />
@@ -428,7 +430,7 @@ export default function UserManagement() {
                 header: (
                   <input
                     type="checkbox"
-                    checked={paginated.length > 0 && selectedUserIds.size === paginated.length}
+                    checked={users.length > 0 && selectedUserIds.size === users.length}
                     onChange={toggleSelectAll}
                     className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
                     title="Pilih semua di halaman ini"
@@ -525,7 +527,7 @@ export default function UserManagement() {
                 },
               },
             ]}
-            data={paginated}
+            data={users}
             keyExtractor={(u) => u.id}
             isLoading={false}
             emptyMessage="Tidak ada personel ditemukan"

@@ -1,6 +1,17 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { fetchUsers as apiFetchUsers, fetchUserById as apiFetchUserById, createUserWithPin, patchUser, deleteUser as apiDeleteUser, resetUserPin as apiResetUserPin, updateOwnProfile as apiUpdateOwnProfile, type UpdateOwnProfileParams } from '../lib/api/users';
+import {
+  fetchUsers as apiFetchUsers,
+  fetchUsersPage as apiFetchUsersPage,
+  countUsers as apiCountUsers,
+  fetchUserById as apiFetchUserById,
+  createUserWithPin,
+  patchUser,
+  deleteUser as apiDeleteUser,
+  resetUserPin as apiResetUserPin,
+  updateOwnProfile as apiUpdateOwnProfile,
+  type UpdateOwnProfileParams,
+} from '../lib/api/users';
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import { supabase } from '../lib/supabase';
@@ -14,6 +25,10 @@ interface UseUsersOptions {
   isActive?: boolean;
   orderBy?: 'nama' | 'created_at';
   ascending?: boolean;
+  serverPaginated?: boolean;
+  page?: number;
+  pageSize?: number;
+  searchQuery?: string;
 }
 
 export function useUsers(options: UseUsersOptions = {}) {
@@ -21,14 +36,13 @@ export function useUsers(options: UseUsersOptions = {}) {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalItems, setTotalItems] = useState(0);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const sessionContext = readSessionContext();
   const callerId = user?.id ?? sessionContext?.user_id ?? '';
   const callerRole = user?.role ?? sessionContext?.role ?? '';
 
-  // Memoize requestParams so its reference only changes when actual values change,
-  // preventing useCallback/useEffect from re-running on every render.
   const requestParams = useMemo(() => ({
     callerId,
     callerRole,
@@ -37,30 +51,91 @@ export function useUsers(options: UseUsersOptions = {}) {
     isActive: options.isActive,
     orderBy: options.orderBy,
     ascending: options.ascending,
-  }), [callerId, callerRole, options.role, options.satuan, options.isActive, options.orderBy, options.ascending]);
+    serverPaginated: options.serverPaginated ?? false,
+    page: options.page ?? 1,
+    pageSize: options.pageSize ?? 50,
+    searchQuery: options.searchQuery ?? '',
+  }), [
+    callerId,
+    callerRole,
+    options.role,
+    options.satuan,
+    options.isActive,
+    options.orderBy,
+    options.ascending,
+    options.serverPaginated,
+    options.page,
+    options.pageSize,
+    options.searchQuery,
+  ]);
 
   const loadUsersData = useCallback(async () => {
     if (!callerId || !callerRole) return [] as User[];
-    return apiFetchUsers(requestParams);
+
+    if (!requestParams.serverPaginated) {
+      return apiFetchUsers({
+        callerId,
+        callerRole,
+        role: requestParams.role,
+        satuan: requestParams.satuan,
+        isActive: requestParams.isActive,
+        orderBy: requestParams.orderBy,
+        ascending: requestParams.ascending,
+      });
+    }
+
+    const page = Math.max(1, requestParams.page);
+    const offset = (page - 1) * requestParams.pageSize;
+    return apiFetchUsersPage({
+      callerId,
+      callerRole,
+      role: requestParams.role,
+      satuan: requestParams.satuan,
+      isActive: requestParams.isActive,
+      orderBy: requestParams.orderBy,
+      ascending: requestParams.ascending,
+      search: requestParams.searchQuery,
+      limit: requestParams.pageSize,
+      offset,
+    });
   }, [callerId, callerRole, requestParams]);
 
   const fetchUsers = useCallback(async () => {
     if (!callerId || !callerRole) {
       setUsers([]);
+      setTotalItems(0);
       setIsLoading(false);
       return;
     }
+
     setIsLoading(true);
     setError(null);
+
     try {
-      const data = await loadUsersData();
+      const countPromise = requestParams.serverPaginated
+        ? apiCountUsers({
+            callerId,
+            callerRole,
+            role: requestParams.role,
+            satuan: requestParams.satuan,
+            isActive: requestParams.isActive,
+            orderBy: requestParams.orderBy,
+            ascending: requestParams.ascending,
+            search: requestParams.searchQuery,
+            limit: requestParams.pageSize,
+            offset: 0,
+          })
+        : Promise.resolve(0);
+
+      const [data, total] = await Promise.all([loadUsersData(), countPromise]);
       setUsers(data);
+      setTotalItems(requestParams.serverPaginated ? total : data.length);
     } catch (err) {
       setError(handleError(err, 'Gagal memuat data user'));
     } finally {
       setIsLoading(false);
     }
-  }, [callerId, callerRole, loadUsersData]);
+  }, [callerId, callerRole, loadUsersData, requestParams]);
 
   useEffect(() => {
     void fetchUsers();
@@ -105,7 +180,6 @@ export function useUsers(options: UseUsersOptions = {}) {
       pangkat: rest.pangkat,
       jabatan: rest.jabatan,
     });
-    // Refresh list without masking successful mutation when read path is flaky.
     void fetchUsers();
     notifyDataChanged('users');
     return data;
@@ -114,7 +188,6 @@ export function useUsers(options: UseUsersOptions = {}) {
   const updateUser = async (id: string, updates: Partial<User>) => {
     if (!callerId || !callerRole) throw new Error('Not authenticated');
     await patchUser(callerId, callerRole, id, updates);
-    // Do not throw if refresh fails after a successful update.
     void fetchUsers();
     notifyDataChanged('users');
   };
@@ -127,6 +200,7 @@ export function useUsers(options: UseUsersOptions = {}) {
     if (!callerId || !callerRole) throw new Error('Not authenticated');
     await apiDeleteUser(callerId, callerRole, id);
     setUsers((prev) => prev.filter((u) => u.id !== id));
+    setTotalItems((prev) => Math.max(0, prev - 1));
     void fetchUsers();
     notifyDataChanged('users');
   };
@@ -145,5 +219,22 @@ export function useUsers(options: UseUsersOptions = {}) {
     notifyDataChanged('users');
   };
 
-  return { users, isLoading, error, refetch: fetchUsers, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById, updateOwnProfile };
+  const pageSize = options.pageSize ?? 50;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  return {
+    users,
+    isLoading,
+    error,
+    totalItems,
+    totalPages,
+    refetch: fetchUsers,
+    createUser,
+    updateUser,
+    toggleUserActive,
+    deleteUser,
+    resetUserPin,
+    getUserById,
+    updateOwnProfile,
+  };
 }
