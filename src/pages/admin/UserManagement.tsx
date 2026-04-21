@@ -23,7 +23,7 @@ import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKoma
 import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
-const MAX_IMPORT_ROWS = 500;
+const MAX_IMPORT_ROWS = 5000;
 const IMPORT_CHUNK_SIZE = 100;
 
 function normalizeImportedRole(value: string | undefined): Role {
@@ -110,6 +110,12 @@ export default function UserManagement() {
   const [showUnlock, setShowUnlock] = useState(false);
   const [detailUser, setDetailUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showRoleEdit, setShowRoleEdit] = useState(false);
+  const [roleEditUser, setRoleEditUser] = useState<User | null>(null);
+  const [roleEditForm, setRoleEditForm] = useState<{ role: Role; level_komando: '' | 'BATALION' | 'KOMPI' | 'PELETON' }>({
+    role: 'prajurit',
+    level_komando: '',
+  });
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
   // Form state
@@ -123,6 +129,7 @@ export default function UserManagement() {
   const [importRows, setImportRows] = useState<Record<string, string>[]>([]);
   const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: { nrp: string; error: string }[] } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
   const pageStats = useMemo(() => {
     const active = users.filter((u) => u.is_active).length;
@@ -272,12 +279,6 @@ export default function UserManagement() {
           return;
         }
 
-        if (rows.length > MAX_IMPORT_ROWS) {
-          showNotification(`Maksimal import ${MAX_IMPORT_ROWS} baris per file`, 'error');
-          setImportRows([]);
-          return;
-        }
-
         const first = rows[0] ?? {};
         const required = ['nrp', 'nama', 'role', 'satuan'];
         const missing = required.filter((key) => !(key in first));
@@ -314,6 +315,7 @@ export default function UserManagement() {
     }
 
     setIsImporting(true);
+    setImportProgress({ current: 0, total: Math.ceil(importRows.length / IMPORT_CHUNK_SIZE) });
     try {
       const authUser = useAuthStore.getState().user;
       if (!authUser) {
@@ -334,6 +336,7 @@ export default function UserManagement() {
 
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
         const batch = batches[batchIndex];
+        setImportProgress({ current: batchIndex + 1, total: batches.length });
         const payload = batch.map((r) => ({
           nrp: r.nrp ?? '',
           pin: r.pin ?? '123456',
@@ -352,10 +355,6 @@ export default function UserManagement() {
         totalFailed += result.failed;
         if (result.errors?.length) {
           allErrors.push(...result.errors);
-        }
-
-        if (batches.length > 1) {
-          showNotification(`Memproses import ${batchIndex + 1}/${batches.length}...`, 'info');
         }
       }
 
@@ -380,6 +379,39 @@ export default function UserManagement() {
       console.error('CSV Import error:', err);
     } finally {
       setIsImporting(false);
+      setImportProgress(null);
+    }
+  };
+
+  const openRoleEdit = (user: User) => {
+    setRoleEditUser(user);
+    setRoleEditForm({
+      role: user.role,
+      level_komando: user.level_komando ?? '',
+    });
+    setShowRoleEdit(true);
+  };
+
+  const handleRoleUpdate = async () => {
+    if (!roleEditUser) return;
+    if (isRoleKomandan(roleEditForm.role) && !roleEditForm.level_komando) {
+      showNotification('Tingkat komando wajib diisi untuk role Komandan', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateUser(roleEditUser.id, {
+        role: roleEditForm.role,
+        level_komando: isRoleKomandan(roleEditForm.role) ? roleEditForm.level_komando : undefined,
+      });
+      showNotification(`Role ${roleEditUser.nama} berhasil diubah`, 'success');
+      setShowRoleEdit(false);
+      setRoleEditUser(null);
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal mengubah role', 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -699,6 +731,13 @@ export default function UserManagement() {
                       >
                         Reset PIN
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openRoleEdit(u)}
+                      >
+                        Ubah Role
+                      </Button>
                       {isLocked && (
                         <Button
                           size="sm"
@@ -893,7 +932,7 @@ export default function UserManagement() {
                 <p>Kolom: <code className="font-mono text-xs bg-surface/50 px-1.5 py-0.5 rounded-md">nrp, nama, pin, role, satuan, pangkat, jabatan</code></p>
                 <p>• PIN default 6 digit angka (contoh: 123456)</p>
                 <p>• Role: <code className="font-mono text-xs">prajurit</code> / <code className="font-mono text-xs">staf</code> / <code className="font-mono text-xs">komandan</code> / <code className="font-mono text-xs">guard</code> / <code className="font-mono text-xs">admin</code></p>
-                <p>• Maksimum {MAX_IMPORT_ROWS} baris per file (diproses bertahap per {IMPORT_CHUNK_SIZE} data)</p>
+                  <p>• Maksimum {MAX_IMPORT_ROWS} baris per file (diproses bertahap per {IMPORT_CHUNK_SIZE} data)</p>
                 <p>• Unduh template di bawah untuk format yang tepat</p>
               </div>
 
@@ -913,6 +952,11 @@ export default function UserManagement() {
                   <p className="text-sm font-bold text-text-primary mb-2">
                     Preview — <span className="text-primary">{importRows.length}</span> baris ditemukan
                   </p>
+                  {isImporting && importProgress && (
+                    <p className="mb-2 text-xs text-text-muted">
+                      Memproses batch {importProgress.current} dari {importProgress.total}...
+                    </p>
+                  )}
                   <div className="overflow-x-auto max-h-40 overflow-y-auto">
                     <table className="w-full text-xs">
                       <thead>
@@ -962,6 +1006,53 @@ export default function UserManagement() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={showRoleEdit}
+        onClose={() => { setShowRoleEdit(false); setRoleEditUser(null); }}
+        title={`Ubah Role — ${roleEditUser?.nama ?? '-'}`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setShowRoleEdit(false); setRoleEditUser(null); }}>Batal</Button>
+            <Button onClick={handleRoleUpdate} isLoading={isSaving}>Simpan Role</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-surface/60 bg-surface/15 p-4 text-sm text-text-muted">
+            <p className="font-semibold text-text-primary">{roleEditUser?.nama ?? '-'}</p>
+            <p className="font-mono text-xs">NRP {roleEditUser?.nrp ?? '-'}</p>
+          </div>
+          <div>
+            <label className="text-sm font-semibold text-text-primary">Role *</label>
+            <select
+              className="form-control mt-1"
+              value={roleEditForm.role}
+              onChange={(e) => setRoleEditForm({ role: e.target.value as Role, level_komando: '' })}
+            >
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+          {isRoleKomandan(roleEditForm.role) && (
+            <div>
+              <label className="text-sm font-semibold text-text-primary">Tingkat Komando *</label>
+              <select
+                className="form-control mt-1"
+                value={roleEditForm.level_komando}
+                onChange={(e) => setRoleEditForm({ ...roleEditForm, level_komando: e.target.value as '' | 'BATALION' | 'KOMPI' | 'PELETON' })}
+              >
+                <option value="">— Pilih Tingkat —</option>
+                <option value="BATALION">Batalion (Danyon)</option>
+                <option value="KOMPI">Kompi (Danki)</option>
+                <option value="PELETON">Peleton (Danton)</option>
+              </select>
             </div>
           )}
         </div>
