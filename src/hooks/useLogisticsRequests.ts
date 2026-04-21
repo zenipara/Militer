@@ -77,12 +77,13 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
     return subscribeDataChanges('logistics_requests', () => {
       logisticsCache.invalidate(cacheKey);
       void fetchRequests(true);
-    });
+    }, { debounceMs: 220 });
   }, [cacheKey, fetchRequests]);
 
   // Realtime subscription
   // Gunakan ref agar tidak terjadi duplicate subscription
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelNonceRef = useRef(`logistics-${Math.random().toString(36).slice(2, 10)}`);
 
   useEffect(() => {
     if (!user) return;
@@ -91,7 +92,7 @@ export function useLogisticsRequests(options: UseLogisticsRequestsOptions = {}) 
       channelRef.current = null;
     }
 
-    const channel = supabase.channel('logistics-requests-changes');
+    const channel = supabase.channel(`logistics-requests-changes-${channelNonceRef.current}`);
     channel.on('postgres_changes', { event: '*', schema: 'public', table: 'logistics_requests' }, () => {
       logisticsCache.invalidate(cacheKey);
       void fetchRequests(true);

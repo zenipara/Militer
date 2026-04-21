@@ -57,7 +57,7 @@ export function useGatePass() {
   useEffect(() => {
     return subscribeDataChanges('gate_pass', () => {
       void fetchGatePasses();
-    });
+    }, { debounceMs: 220 });
   }, [fetchGatePasses]);
 
   async function createGatePass(input: Partial<GatePass>) {

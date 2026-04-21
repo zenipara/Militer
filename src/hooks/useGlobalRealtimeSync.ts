@@ -21,6 +21,7 @@ const realtimeTableMap: Array<{ table: string; resource: DataResource }> = [
 export function useGlobalRealtimeSync() {
   const hasUser = useAuthStore((s) => Boolean(s.user));
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelNonceRef = useRef(`global-sync-${Math.random().toString(36).slice(2, 10)}`);
   const pendingResourcesRef = useRef<Set<DataResource>>(new Set());
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,7 +53,7 @@ export function useGlobalRealtimeSync() {
       channelRef.current = null;
     }
 
-    const channel = supabase.channel('global-sync');
+    const channel = supabase.channel(channelNonceRef.current);
 
     for (const { table, resource } of realtimeTableMap) {
       channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
@@ -65,7 +66,11 @@ export function useGlobalRealtimeSync() {
       });
     }
 
-    channel.subscribe();
+    channel.subscribe((status) => {
+      if (status === 'CHANNEL_ERROR' && import.meta.env.DEV) {
+        console.warn('[Realtime] Global sync channel error');
+      }
+    });
     channelRef.current = channel;
 
     return () => {

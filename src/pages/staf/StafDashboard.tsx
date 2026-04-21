@@ -136,7 +136,7 @@ export default function StafDashboard() {
   useEffect(() => {
     return subscribeDataChanges(['users', 'attendance', 'tasks', 'logistics_items'], () => {
       void loadStats();
-    });
+    }, { debounceMs: 500 });
   }, [loadStats]);
 
   const modules = useMemo(() => BIDANG_MODULES[bidang].filter((m) => isPathEnabled(m.path, flags)), [bidang, flags]);

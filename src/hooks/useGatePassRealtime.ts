@@ -19,6 +19,7 @@ export function useGatePassRealtime() {
   const { user } = useAuthStore();
   const fetchGatePasses = useGatePassStore((s) => s.fetchGatePasses);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const channelNonceRef = useRef(`gate-pass-${Math.random().toString(36).slice(2, 10)}`);
   
   const debouncedFetch = useMemo(
     () => debounce(() => {
@@ -36,7 +37,7 @@ export function useGatePassRealtime() {
     }
 
     const channel = supabase
-      .channel(`gate-pass-realtime-${user.id}`)
+      .channel(`gate-pass-realtime-${user.id}-${channelNonceRef.current}`)
       .on(
         'postgres_changes',
         {

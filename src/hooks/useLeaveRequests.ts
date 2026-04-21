@@ -99,7 +99,7 @@ export function useLeaveRequests(options: UseLeaveRequestsOptions = {}) {
     return subscribeDataChanges('leave_requests', () => {
       leaveRequestsCache.invalidate(cacheKey);
       void fetchRequests(true);
-    });
+    }, { debounceMs: 220 });
   }, [cacheKey, fetchRequests]);
 
   useEffect(() => {

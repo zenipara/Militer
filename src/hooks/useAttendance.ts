@@ -71,7 +71,7 @@ export function useAttendance(userId?: string) {
     return subscribeDataChanges('attendance', () => {
       attendanceCache.invalidate(cacheKey);
       void fetchAttendance(true);
-    });
+    }, { debounceMs: 220 });
   }, [cacheKey, fetchAttendance]);
 
   useEffect(() => {

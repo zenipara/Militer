@@ -119,7 +119,7 @@ export function useAnnouncements() {
     return subscribeDataChanges('announcements', () => {
       announcementsCache.invalidate(cacheKey);
       void fetchAnnouncements(true);
-    });
+    }, { debounceMs: 220 });
   }, [cacheKey, fetchAnnouncements]);
 
   useEffect(() => {

@@ -104,7 +104,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     return subscribeDataChanges('tasks', () => {
       tasksCache.invalidate(cacheKey);
       void fetchTasks(true);
-    });
+    }, { debounceMs: 220 });
   }, [cacheKey, fetchTasks]);
 
   // Realtime subscription

@@ -100,7 +100,7 @@ export function useAuditLogs(options: UseAuditLogsOptions = {}) {
     return subscribeDataChanges(['audit_logs', 'users', 'tasks', 'gate_pass'], () => {
       auditLogsCache.invalidate(cacheKey);
       void fetchLogs(true);
-    });
+    }, { debounceMs: 260 });
   }, [cacheKey, fetchLogs]);
 
   useEffect(() => {

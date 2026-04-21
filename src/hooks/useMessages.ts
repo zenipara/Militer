@@ -63,7 +63,7 @@ export function useMessages() {
   useEffect(() => {
     return subscribeDataChanges('messages', () => {
       void fetchMessages();
-    });
+    }, { debounceMs: 220 });
   }, [fetchMessages]);
 
   // Realtime subscription for new messages

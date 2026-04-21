@@ -164,7 +164,7 @@ export function useUsers(options: UseUsersOptions = {}) {
   useEffect(() => {
     return subscribeDataChanges('users', () => {
       void fetchUsers();
-    });
+    }, { debounceMs: 220 });
   }, [fetchUsers]);
 
   useEffect(() => {
