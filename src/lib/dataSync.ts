@@ -40,7 +40,7 @@ export function subscribeDataChanges(
 
   const watched = normalizeResources(resources);
   const debounceMs = Math.max(0, options?.debounceMs ?? 0);
-  let timer: ReturnType<typeof setTimeout> | null = null;
+  let timer: number | null = null;
   const pending = new Set<DataResource>();
 
   const handler = (event: Event) => {

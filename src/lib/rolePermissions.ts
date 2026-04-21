@@ -93,7 +93,7 @@ const ROLE_CODE_TO_ROLE: Record<string, KnownRole> = Object.fromEntries(
 const ROLE_ALIASES: Record<string, KnownRole> = {
   superadmin: 'admin',
   super_admin: 'admin',
-  super-admin: 'admin',
+  'super-admin': 'admin',
   admin_super: 'admin',
   staff: 'staf',
   staf_operasional: 'staf',
@@ -102,7 +102,7 @@ const ROLE_ALIASES: Record<string, KnownRole> = {
   provos: 'guard',
   provost: 'guard',
   petugas_jaga: 'guard',
-  petugas-jaga: 'guard',
+  'petugas-jaga': 'guard',
 };
 
 const ROLE_ACCESS_MAP: Record<KnownRole, string> = {
