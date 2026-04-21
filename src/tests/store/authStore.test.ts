@@ -68,11 +68,12 @@ const mockUser = {
 describe('authStore', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     // Reset store state
     useAuthStore.setState({
       user: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true,
       error: null,
     });
     vi.clearAllMocks();
@@ -119,6 +120,28 @@ describe('authStore', () => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
       expect(useAuthStore.getState().user?.id).toBe('u1');
       // Verify get_user_by_id was called with the session user_id
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('get_user_by_id', {
+        p_user_id: 'u1',
+      });
+    });
+
+    it('restores a valid session from the persisted context when the crypto key is missing', async () => {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 8);
+      localStorage.setItem('karyo_session_context', JSON.stringify({
+        user_id: 'u1',
+        role: 'admin',
+        expires_at: expiresAt.toISOString(),
+      }));
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ iv: 'abc', data: 'def' }));
+      mockSupabase.rpc.mockReturnValue(buildRpcQuery({ data: mockUser, error: null }));
+
+      await act(async () => {
+        await useAuthStore.getState().restoreSession();
+      });
+
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+      expect(useAuthStore.getState().user?.id).toBe('u1');
       expect(mockSupabase.rpc).toHaveBeenCalledWith('get_user_by_id', {
         p_user_id: 'u1',
       });

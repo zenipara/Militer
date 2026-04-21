@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { clearSessionContext, writeSessionContext } from '../lib/sessionContext';
+import { clearSessionContext, readSessionContext, writeSessionContext } from '../lib/sessionContext';
 import { normalizeRole } from '../lib/rolePermissions';
 import type { User, KaryoSession } from '../types';
 
@@ -104,10 +104,25 @@ export const saveSession = async (session: KaryoSession): Promise<void> => {
 
 export const loadSession = async (): Promise<KaryoSession | null> => {
   const raw = localStorage.getItem(SESSION_KEY);
-  if (!raw) return null;
+  if (!raw) {
+    const fallbackSession = readSessionContext();
+    if (fallbackSession) {
+      writeSessionContext(fallbackSession);
+      return fallbackSession;
+    }
+    return null;
+  }
   const key = await loadStoredKey();
   if (!key) {
-    // Key missing (new tab or cleared storage) — treat session as gone
+    // If the encrypted key is unavailable, fall back to the plaintext session context.
+    // This keeps a valid session alive across reloads even when sessionStorage is not preserved.
+    const fallbackSession = readSessionContext();
+    if (fallbackSession) {
+      writeSessionContext(fallbackSession);
+      return fallbackSession;
+    }
+
+    // No recoverable session remains.
     localStorage.removeItem(SESSION_KEY);
     return null;
   }
@@ -222,7 +237,7 @@ async function restoreSessionWithRetry(
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
   isInitialized: false,
   error: null,
 

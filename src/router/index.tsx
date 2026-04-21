@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createHashRouter, Navigate } from 'react-router-dom';
+import { createHashRouter, Link, Navigate } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import { APP_ROUTE_PATHS, ROLE_ROUTE_PATHS, ROUTE_ROLE_GROUPS } from '../lib/rolePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -162,9 +162,9 @@ export const router = createHashRouter([
         <div className="text-center">
           <h1 className="text-6xl font-bold text-primary mb-4">404</h1>
           <p className="text-xl text-text-muted mb-6">Halaman tidak ditemukan</p>
-          <a href={`${import.meta.env.BASE_URL}#${APP_ROUTE_PATHS.login}`} className="btn-primary px-6 py-2 rounded-lg">
+          <Link to={APP_ROUTE_PATHS.login} className="btn-primary px-6 py-2 rounded-lg">
             Kembali ke Login
-          </a>
+          </Link>
         </div>
       </div>
     ),

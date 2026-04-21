@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface BreadcrumbItem {
   label: string;
@@ -28,9 +29,9 @@ export default function PageHeader({ title, subtitle, actions, meta, breadcrumbs
               <li key={index} className="flex items-center gap-1">
                 {index > 0 && <ChevronRight className="h-3 w-3 flex-shrink-0 text-text-muted/60" aria-hidden="true" />}
                 {crumb.href ? (
-                  <a href={crumb.href} className="hover:text-primary transition-colors">
+                  <Link to={crumb.href} className="hover:text-primary transition-colors">
                     {crumb.label}
-                  </a>
+                  </Link>
                 ) : (
                   <span className={index === breadcrumbs.length - 1 ? 'text-text-primary font-medium' : ''}>
                     {crumb.label}
