@@ -24,7 +24,7 @@ import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
 const MAX_IMPORT_ROWS = 5000;
-const IMPORT_CHUNK_SIZE = 100;
+const IMPORT_CHUNK_SIZE = 50;
 
 function normalizeImportedRole(value: string | undefined): Role {
   const normalized = normalizeRole(value ?? '') ?? 'prajurit';
@@ -347,15 +347,26 @@ export default function UserManagement() {
           jabatan: r.jabatan ?? '',
         }));
 
-        const { data, error } = await supabase.rpc('import_users_csv', { p_users: payload });
-        if (error) throw error;
+        try {
+          const { data, error } = await supabase.rpc('import_users_csv', { p_users: payload });
+          if (error) throw error;
 
-        const result = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
-        totalSuccess += result.success;
-        totalFailed += result.failed;
-        if (result.errors?.length) {
-          allErrors.push(...result.errors);
+          const result = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
+          totalSuccess += result.success;
+          totalFailed += result.failed;
+          if (result.errors?.length) {
+            allErrors.push(...result.errors);
+          }
+        } catch (batchError) {
+          totalFailed += batch.length;
+          const message = batchError instanceof Error ? batchError.message : 'Gagal memproses batch import';
+          allErrors.push({
+            nrp: batch[0]?.nrp ?? '-',
+            error: `Batch ${batchIndex + 1}/${batches.length}: ${message}`,
+          });
         }
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
 
       const aggregated = { success: totalSuccess, failed: totalFailed, errors: allErrors };
