@@ -7,6 +7,7 @@ import type { GatePass } from '../../types';
 
 vi.mock('../../lib/supabase', () => ({
   supabase: {
+    rpc: vi.fn(async () => ({ data: 20, error: null })),
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(async () => ({ count: 20, error: null })),

@@ -20,7 +20,9 @@ export function useGatePassRealtime() {
   const fetchGatePasses = useGatePassStore((s) => s.fetchGatePasses);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const channelNonceRef = useRef(`gate-pass-${Math.random().toString(36).slice(2, 10)}`);
-  
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptRef = useRef(0);
+
   const debouncedFetch = useMemo(
     () => debounce(() => {
       void fetchGatePasses();
@@ -29,36 +31,85 @@ export function useGatePassRealtime() {
   );
 
   useEffect(() => {
-    if (!user) return;
+    let disposed = false;
 
-    if (channelRef.current) {
+    const clearReconnectTimer = () => {
+      if (!reconnectTimerRef.current) return;
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    };
+
+    const removeCurrentChannel = () => {
+      if (!channelRef.current) return;
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
+    };
+
+    const scheduleReconnect = () => {
+      if (disposed || !user || reconnectTimerRef.current) return;
+
+      removeCurrentChannel();
+      const delay = Math.min(5000, 500 * (2 ** reconnectAttemptRef.current));
+      reconnectAttemptRef.current = Math.min(reconnectAttemptRef.current + 1, 6);
+
+      reconnectTimerRef.current = setTimeout(() => {
+        reconnectTimerRef.current = null;
+        subscribeChannel();
+      }, delay);
+    };
+
+    const subscribeChannel = () => {
+      if (disposed || !user) return;
+
+      removeCurrentChannel();
+
+      const channel = supabase
+        .channel(`gate-pass-realtime-${user.id}-${channelNonceRef.current}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'gate_pass',
+          },
+          () => {
+            // Use debounced fetch to prevent multiple rapid updates
+            debouncedFetch();
+          },
+        )
+        .subscribe((status) => {
+          if (disposed) return;
+
+          if (status === 'SUBSCRIBED') {
+            reconnectAttemptRef.current = 0;
+            return;
+          }
+
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            if (import.meta.env.DEV) {
+              console.warn('[Realtime] Gate pass reconnect triggered:', status);
+            }
+            scheduleReconnect();
+          }
+        });
+
+      channelRef.current = channel;
+    };
+
+    if (!user) {
+      clearReconnectTimer();
+      removeCurrentChannel();
+      return () => {
+        disposed = true;
+      };
     }
 
-    const channel = supabase
-      .channel(`gate-pass-realtime-${user.id}-${channelNonceRef.current}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'gate_pass',
-        },
-        () => {
-          // Use debounced fetch to prevent multiple rapid updates
-          debouncedFetch();
-        },
-      )
-      .subscribe();
-
-    channelRef.current = channel;
+    subscribeChannel();
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      disposed = true;
+      clearReconnectTimer();
+      removeCurrentChannel();
     };
   }, [user, debouncedFetch]);
 }

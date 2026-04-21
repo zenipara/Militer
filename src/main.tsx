@@ -26,6 +26,7 @@ export function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession);
   const updateOnlineStatus = useAuthStore((s) => s.updateOnlineStatus);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
   const hasUser = useAuthStore((s) => Boolean(s.user));
   const { loadPlatformBranding } = usePlatformStore();
   const { loadFeatureFlags } = useFeatureStore();
@@ -78,7 +79,10 @@ export function App() {
     });
   }, [loadFeatureFlags]);
 
-  if (isLoading) return <LoadingSpinner fullScreen />;
+  // Show loading spinner during auth initialization to prevent early navigation
+  if (isLoading || !isInitialized) {
+    return <LoadingSpinner fullScreen />;
+  }
 
   return <RouterProvider router={router} />;
 }

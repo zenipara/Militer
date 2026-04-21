@@ -220,13 +220,19 @@ export default function GatePassMonitorPage() {
       
       // Fetch total personil separately - non-blocking
       try {
-        const { data: totalCount, error: countError } = await supabase.rpc('api_count_active_users', {
-          p_satuan: null,
-        });
-        if (countError) throw countError;
-        setTotalPersonil((totalCount as number | null) ?? 0);
+        if (typeof supabase.rpc !== 'function') {
+          setTotalPersonil(0);
+        } else {
+          const { data: totalCount, error: countError } = await supabase.rpc('api_count_active_users', {
+            p_satuan: null,
+          });
+          if (countError) throw countError;
+          setTotalPersonil((totalCount as number | null) ?? 0);
+        }
       } catch (err) {
-        console.error('Error fetching total personil:', err);
+        if (import.meta.env.DEV) {
+          console.warn('Error fetching total personil:', err);
+        }
         setTotalPersonil(0);
       }
       

@@ -24,6 +24,8 @@ export function useGlobalRealtimeSync() {
   const channelNonceRef = useRef(`global-sync-${Math.random().toString(36).slice(2, 10)}`);
   const pendingResourcesRef = useRef<Set<DataResource>>(new Set());
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptRef = useRef(0);
 
   const flushPendingResources = () => {
     if (flushTimerRef.current) {
@@ -39,46 +41,85 @@ export function useGlobalRealtimeSync() {
   };
 
   useEffect(() => {
-    if (!hasUser) {
-      if (channelRef.current) {
-        void supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-      flushPendingResources();
-      return;
-    }
+    let disposed = false;
 
-    if (channelRef.current) {
+    const clearReconnectTimer = () => {
+      if (!reconnectTimerRef.current) return;
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    };
+
+    const removeCurrentChannel = () => {
+      if (!channelRef.current) return;
       void supabase.removeChannel(channelRef.current);
       channelRef.current = null;
-    }
+    };
 
-    const channel = supabase.channel(channelNonceRef.current);
+    const scheduleReconnect = () => {
+      if (disposed || !hasUser || reconnectTimerRef.current) return;
 
-    for (const { table, resource } of realtimeTableMap) {
-      channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-        pendingResourcesRef.current.add(resource);
-        if (flushTimerRef.current) return;
+      removeCurrentChannel();
+      const delay = Math.min(5000, 500 * (2 ** reconnectAttemptRef.current));
+      reconnectAttemptRef.current = Math.min(reconnectAttemptRef.current + 1, 6);
 
-        flushTimerRef.current = setTimeout(() => {
-          flushPendingResources();
-        }, 100);
-      });
-    }
+      reconnectTimerRef.current = setTimeout(() => {
+        reconnectTimerRef.current = null;
+        subscribeChannel();
+      }, delay);
+    };
 
-    channel.subscribe((status) => {
-      if (status === 'CHANNEL_ERROR' && import.meta.env.DEV) {
-        console.warn('[Realtime] Global sync channel error');
+    const subscribeChannel = () => {
+      if (disposed || !hasUser) return;
+
+      removeCurrentChannel();
+      const channel = supabase.channel(channelNonceRef.current);
+
+      for (const { table, resource } of realtimeTableMap) {
+        channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+          pendingResourcesRef.current.add(resource);
+          if (flushTimerRef.current) return;
+
+          flushTimerRef.current = setTimeout(() => {
+            flushPendingResources();
+          }, 100);
+        });
       }
-    });
-    channelRef.current = channel;
+
+      channel.subscribe((status) => {
+        if (disposed) return;
+
+        if (status === 'SUBSCRIBED') {
+          reconnectAttemptRef.current = 0;
+          return;
+        }
+
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (import.meta.env.DEV) {
+            console.warn('[Realtime] Global sync reconnect triggered:', status);
+          }
+          scheduleReconnect();
+        }
+      });
+
+      channelRef.current = channel;
+    };
+
+    if (!hasUser) {
+      clearReconnectTimer();
+      removeCurrentChannel();
+      flushPendingResources();
+      return () => {
+        disposed = true;
+      };
+    }
+
+    subscribeChannel();
 
     return () => {
+      disposed = true;
+      clearReconnectTimer();
       flushPendingResources();
-      if (channelRef.current) {
-        void supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      removeCurrentChannel();
     };
   }, [hasUser]);
 }

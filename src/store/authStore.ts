@@ -6,7 +6,9 @@ import type { User, KaryoSession } from '../types';
 
 const SESSION_KEY = 'karyo_session';
 const CRYPTO_KEY_SESSION = 'karyo_session_key';
-const SESSION_DURATION_HOURS = 8;
+const PLAINTEXT_SESSION_KEY = 'karyo_session_plain'; // Strong fallback (non-expiring for graceful degradation)
+const SESSION_DURATION_HOURS = 12; // Extended from 8 to 12 hours
+const SESSION_REFRESH_ATTEMPT_MAX = 6; // Increased from 3 to 6
 const AUTH_BROADCAST_CHANNEL = 'karyo_auth_sync';
 
 type AuthSyncMessage =
@@ -99,33 +101,79 @@ export const saveSession = async (session: KaryoSession): Promise<void> => {
     SESSION_KEY,
     JSON.stringify({ iv: encodeBase64(iv), data: encodeBase64(new Uint8Array(ciphertext)) }),
   );
+  
+  // Save plaintext backup (without expiry) for maximum resilience across browser tab/session storage edge cases
+  localStorage.setItem(PLAINTEXT_SESSION_KEY, JSON.stringify(session));
+  
   writeSessionContext(session);
 };
 
 export const loadSession = async (): Promise<KaryoSession | null> => {
   const raw = localStorage.getItem(SESSION_KEY);
   if (!raw) {
+    // If encrypted session not found, try plaintext backup
+    const plaintextSession = localStorage.getItem(PLAINTEXT_SESSION_KEY);
+    if (plaintextSession) {
+      try {
+        const session = JSON.parse(plaintextSession) as KaryoSession;
+        if (session.user_id && session.role && session.expires_at) {
+          // Allow session 1 hour past expiry before giving up (graceful degradation)
+          const expiryWithGrace = new Date(session.expires_at).getTime() + (60 * 60 * 1000);
+          if (Date.now() <= expiryWithGrace) {
+            writeSessionContext(session);
+            if (import.meta.env.DEV) console.log('[AUTH] Using plaintext session backup (encrypted not found)');
+            return session;
+          }
+        }
+      } catch {
+        // Invalid plaintext session, continue
+      }
+    }
+    
     const fallbackSession = readSessionContext();
     if (fallbackSession) {
       writeSessionContext(fallbackSession);
+      if (import.meta.env.DEV) console.log('[AUTH] Using session context fallback');
       return fallbackSession;
     }
     return null;
   }
+  
   const key = await loadStoredKey();
   if (!key) {
-    // If the encrypted key is unavailable, fall back to the plaintext session context.
-    // This keeps a valid session alive across reloads even when sessionStorage is not preserved.
+    // If crypto key is unavailable, try plaintext backup first
+    const plaintextSession = localStorage.getItem(PLAINTEXT_SESSION_KEY);
+    if (plaintextSession) {
+      try {
+        const session = JSON.parse(plaintextSession) as KaryoSession;
+        if (session.user_id && session.role && session.expires_at) {
+          // Allow session 1 hour past expiry before giving up
+          const expiryWithGrace = new Date(session.expires_at).getTime() + (60 * 60 * 1000);
+          if (Date.now() <= expiryWithGrace) {
+            writeSessionContext(session);
+            if (import.meta.env.DEV) console.log('[AUTH] Using plaintext backup (crypto key unavailable)');
+            return session;
+          }
+        }
+      } catch {
+        // Invalid plaintext session, try plain context
+      }
+    }
+
+    // Fall back to plain text session context
     const fallbackSession = readSessionContext();
     if (fallbackSession) {
       writeSessionContext(fallbackSession);
+      if (import.meta.env.DEV) console.log('[AUTH] Using session context (crypto key unavailable)');
       return fallbackSession;
     }
 
-    // No recoverable session remains.
+    // No recoverable session remains
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(PLAINTEXT_SESSION_KEY);
     return null;
   }
+  
   try {
     const { iv: ivStr, data: dataStr } = JSON.parse(raw) as { iv: string; data: string };
     const decrypted = await crypto.subtle.decrypt(
@@ -135,12 +183,49 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
     );
     const session = JSON.parse(new TextDecoder().decode(decrypted)) as KaryoSession;
     if (new Date(session.expires_at) < new Date()) {
+      // Session expired, try plaintext backup as last resort
+      const plaintextSession = localStorage.getItem(PLAINTEXT_SESSION_KEY);
+      if (plaintextSession) {
+        try {
+          const backupSession = JSON.parse(plaintextSession) as KaryoSession;
+          if (backupSession.user_id && backupSession.role && backupSession.expires_at) {
+            // Allow session 1 hour past expiry
+            const expiryWithGrace = new Date(backupSession.expires_at).getTime() + (60 * 60 * 1000);
+            if (Date.now() <= expiryWithGrace) {
+              writeSessionContext(backupSession);
+              if (import.meta.env.DEV) console.log('[AUTH] Using plaintext backup (crypted expired)');
+              return backupSession;
+            }
+          }
+        } catch {
+          // Invalid backup, proceed with cleanup
+        }
+      }
       clearSession();
       return null;
     }
     writeSessionContext(session);
     return session;
-  } catch {
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[AUTH] Failed to decrypt session:', err instanceof Error ? err.message : String(err));
+    
+    // Try plaintext backup on decrypt error
+    const plaintextSession = localStorage.getItem(PLAINTEXT_SESSION_KEY);
+    if (plaintextSession) {
+      try {
+        const session = JSON.parse(plaintextSession) as KaryoSession;
+        if (session.user_id && session.role && session.expires_at) {
+          const expiryWithGrace = new Date(session.expires_at).getTime() + (60 * 60 * 1000);
+          if (Date.now() <= expiryWithGrace) {
+            writeSessionContext(session);
+            if (import.meta.env.DEV) console.log('[AUTH] Recovery with plaintext backup (decrypt error)');
+            return session;
+          }
+        }
+      } catch {
+        // Invalid backup, cleanup
+      }
+    }
     clearSession();
     return null;
   }
@@ -148,6 +233,7 @@ export const loadSession = async (): Promise<KaryoSession | null> => {
 
 const clearSession = (): void => {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(PLAINTEXT_SESSION_KEY);
   sessionStorage.removeItem(CRYPTO_KEY_SESSION);
   clearSessionContext();
 };
@@ -181,11 +267,21 @@ async function restoreSessionWithRetry(
   session: KaryoSession,
   set: (partial: Partial<AuthStore>) => void,
 ): Promise<boolean> {
-  const maxRetries = 3;
-  const delays = [500, 1000, 2000];
+  const maxRetries = 6; // Increased from 3 to 6
+  const delays = [500, 1000, 2000, 4000, 5000, 5000]; // Exponential backoff capped at 5s
+
+  // Helper: check if error is transient (should retry) vs permanent (should fail-fast)
+  const isTransientError = (err: unknown): boolean => {
+    if (!(err instanceof Error)) return false;
+    const msg = err.message.toLowerCase();
+    // Retry on network/timeout errors only
+    return msg.includes('network') || msg.includes('timeout') || msg.includes('fetch') || msg.includes('connection');
+  };
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
+      if (import.meta.env.DEV) console.log(`[AUTH] Restore attempt ${attempt + 1}/${maxRetries}`);
+      
       await supabase.rpc('set_session_context', {
         p_user_id: session.user_id,
         p_role: normalizeRole(session.role) ?? session.role,
@@ -196,6 +292,7 @@ async function restoreSessionWithRetry(
         .single();
 
       if (error || !userData) {
+        if (import.meta.env.DEV) console.error('[AUTH] get_user_by_id failed:', error);
         clearSession();
         set({ isLoading: false, isInitialized: true });
         return false;
@@ -206,7 +303,13 @@ async function restoreSessionWithRetry(
         role: (normalizeRole((userData as User).role) ?? (userData as User).role) as User['role'],
       };
 
-      // Keep presence in sync when a valid encrypted session is restored.
+      // Automatically refresh session expiry on successful restore
+      const refreshedSession: KaryoSession = {
+        ...session,
+        expires_at: makeSessionExpiry(),
+      };
+
+      // Try to update presence (non-critical failure)
       try {
         await supabase.rpc('update_user_login', {
           p_user_id: session.user_id,
@@ -214,19 +317,37 @@ async function restoreSessionWithRetry(
         });
       } catch (presenceErr) {
         if (import.meta.env.DEV) {
-          console.warn('Failed to refresh online presence on restore:', presenceErr);
+          console.warn('[AUTH] Failed to refresh online presence on restore:', presenceErr);
         }
       }
 
+      // Re-save session with refreshed expiry
+      await saveSession(refreshedSession);
+
       set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
+      if (import.meta.env.DEV) console.log('[AUTH] Session restored successfully and refreshed');
       return true;
     } catch (err) {
-      if (attempt < maxRetries - 1) {
-        await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
-      } else {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      if (import.meta.env.DEV) console.warn(`[AUTH] Restore attempt ${attempt + 1} failed: ${errorMsg}`);
+      
+      // Fail-fast on permanent errors (e.g., user not found, RLS policy denial)
+      if (!isTransientError(err)) {
+        if (import.meta.env.DEV) console.error('[AUTH] Permanent error during restore, giving up:', errorMsg);
         clearSession();
-        const errorMsg = err instanceof Error ? err.message : 'Session restore failed';
-        set({ isLoading: false, isInitialized: true, error: errorMsg });
+        set({ isLoading: false, isInitialized: true, error: `Session restore failed: ${errorMsg}` });
+        return false;
+      }
+      
+      if (attempt < maxRetries - 1) {
+        const delay = delays[attempt];
+        if (import.meta.env.DEV) console.log(`[AUTH] Transient error, retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        // All retries exhausted
+        if (import.meta.env.DEV) console.error('[AUTH] All restore attempts failed');
+        clearSession();
+        set({ isLoading: false, isInitialized: true, error: `Session restore failed: ${errorMsg}` });
       }
     }
   }
@@ -246,13 +367,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   login: async (nrp: string, pin: string) => {
     set({ isLoading: true, error: null });
     try {
+      if (import.meta.env.DEV) console.log('[AUTH] Login attempt for NRP:', nrp);
+      
       // Step 1: Verify PIN and get user_id, user_role
       const { data, error } = await supabase.rpc('verify_user_pin', { p_nrp: nrp, p_pin: pin }).maybeSingle();
-      if (error) throw new Error('Terjadi kesalahan sistem. Coba lagi nanti.');
+      if (error) {
+        const msg = 'Terjadi kesalahan sistem. Coba lagi nanti.';
+        if (import.meta.env.DEV) console.error('[AUTH] verify_user_pin error:', error);
+        throw new Error(msg);
+      }
       const row = data as VerifyUserPinRow | null;
       if (!row) throw new Error('NRP atau PIN salah. Periksa kembali dan coba lagi.');
 
       const { user_id, user_role } = row;
+      if (import.meta.env.DEV) console.log('[AUTH] PIN verified for user_id:', user_id);
 
       // Step 1b: Bind role/user context for RLS-based queries.
       const normalizedRole = normalizeRole(user_role) ?? user_role;
@@ -263,7 +391,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       // Step 2: Get user data via RPC (not direct select)
       const { data: userData, error: userError } = await supabase.rpc('get_user_by_id', { p_user_id: user_id }).single();
-      if (userError || !userData) throw new Error('Data pengguna tidak ditemukan.');
+      if (userError || !userData) {
+        if (import.meta.env.DEV) console.error('[AUTH] get_user_by_id error:', userError);
+        throw new Error('Data pengguna tidak ditemukan.');
+      }
 
       const user = {
         ...(userData as User),
@@ -277,13 +408,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         p_is_online: true
       });
 
-      // Step 4: Log the login action via RPC
-      await supabase.rpc('insert_audit_log', {
-        p_user_id: user_id,
-        p_action: 'LOGIN',
-        p_resource: 'auth',
-        p_detail: JSON.stringify({ nrp, role: user_role })
-      });
+      // Step 4: Log the login action via RPC (non-critical, don't fail on error)
+      try {
+        await supabase.rpc('insert_audit_log', {
+          p_user_id: user_id,
+          p_action: 'LOGIN',
+          p_resource: 'auth',
+          p_detail: JSON.stringify({ nrp, role: user_role })
+        });
+      } catch (auditErr) {
+        if (import.meta.env.DEV) console.warn('[AUTH] Failed to insert audit log:', auditErr);
+      }
 
       const sessionPayload: KaryoSession = {
         user_id,
@@ -296,8 +431,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         type: 'LOGIN',
         session: sessionPayload,
       });
+      if (import.meta.env.DEV) console.log('[AUTH] Login successful');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan sistem. Coba lagi nanti.';
+      if (import.meta.env.DEV) console.error('[AUTH] Login failed:', message);
       set({ isLoading: false, error: message, isAuthenticated: false, user: null });
       throw err;
     }
@@ -374,8 +511,16 @@ if (typeof window !== 'undefined') {
     globalWindow[AUTH_LISTENERS_INITIALIZED_KEY] = true;
 
     window.addEventListener('storage', (event) => {
-      if (event.key === SESSION_KEY && event.newValue === null) {
+      // Monitor both encrypted and plaintext session keys
+      if ((event.key === SESSION_KEY || event.key === PLAINTEXT_SESSION_KEY) && event.newValue === null) {
+        if (import.meta.env.DEV) console.log('[AUTH] Session cleared from storage event, cleaning up local state');
         cleanupLocalAuthState();
+      }
+      // Also handle explicit logout trigger via storage
+      if (event.key === 'KARYO_FORCE_LOGOUT' && event.newValue === 'true') {
+        if (import.meta.env.DEV) console.log('[AUTH] Force logout signal received');
+        cleanupLocalAuthState();
+        localStorage.removeItem('KARYO_FORCE_LOGOUT');
       }
     });
 
@@ -386,16 +531,19 @@ if (typeof window !== 'undefined') {
         if (!message) return;
 
         if (message.type === 'LOGOUT') {
+          if (import.meta.env.DEV) console.log('[AUTH] Logout broadcast received');
           cleanupLocalAuthState();
           return;
         }
 
         if (message.type === 'LOGIN') {
+          if (import.meta.env.DEV) console.log('[AUTH] Login broadcast received, syncing session');
           void (async () => {
             try {
               await saveSession(message.session);
               await useAuthStore.getState().restoreSession();
-            } catch {
+            } catch (err) {
+              if (import.meta.env.DEV) console.error('[AUTH] Failed to sync login broadcast:', err);
               cleanupLocalAuthState();
             }
           })();
