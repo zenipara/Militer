@@ -17,6 +17,7 @@ import { RoleBadge } from './Badge';
 import { useUIStore } from '../../store/uiStore';
 import { fetchUserPersonalStats, fetchUserDisciplineNotes, type UserPersonalStats } from '../../lib/api/users';
 import { ROLE_OPTIONS, getOperationalRoleLabel, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan } from '../../lib/rolePermissions';
+import { validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
 import type { User, Role, DisciplineNote, CommandLevel } from '../../types';
 
 type Tab = 'info' | 'personal' | 'stats' | 'disiplin';
@@ -126,9 +127,26 @@ export default function UserDetailModal({
 
   const handleSave = async () => {
     if (!user || !onSave) return;
+
+    const roleErrors = validateRoleEditForm({
+      role: editForm.role as Role,
+      level_komando: editForm.level_komando as CommandLevel | undefined,
+    });
+
+    if (roleErrors.length > 0) {
+      showNotification(getFirstErrorMessage(roleErrors) || 'Validasi role gagal', 'error');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      await onSave(user.id, editForm);
+      await onSave(user.id, {
+        ...editForm,
+        role: editForm.role as Role,
+        level_komando: isRoleKomandan(editForm.role)
+          ? (editForm.level_komando as CommandLevel | undefined)
+          : undefined,
+      });
       showNotification('Data personel berhasil disimpan', 'success');
       setIsEditing(false);
     } catch (err) {

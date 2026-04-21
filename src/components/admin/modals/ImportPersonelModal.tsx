@@ -91,6 +91,9 @@ export default function ImportPersonelModal({
           <p className="text-xs text-info-dark mt-2">
             <strong>Contoh:</strong> 123456,Budi Santoso,Sertu,Komando I,komandan,KOMPI
           </p>
+          <p className="text-xs text-info-dark mt-2">
+            File juga bisa memakai pemisah titik koma atau tab dari Excel/Spreadsheet.
+          </p>
         </div>
 
         <div>

@@ -42,7 +42,7 @@ function normalizeImportedRole(value: string | undefined): Role {
     : 'prajurit';
 }
 
-function splitCsvLine(line: string): string[] {
+function splitCsvLine(line: string, delimiter: string): string[] {
   const out: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -61,7 +61,7 @@ function splitCsvLine(line: string): string[] {
       continue;
     }
 
-    if (ch === ',' && !inQuotes) {
+    if (ch === delimiter && !inQuotes) {
       out.push(current.trim());
       current = '';
       continue;
@@ -74,15 +74,41 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
+function detectCsvDelimiter(headerLine: string): ',' | ';' | '\t' {
+  const candidates: Array<',' | ';' | '\t'> = [',', ';', '\t'];
+  let bestDelimiter: ',' | ';' | '\t' = ',';
+  let bestCount = -1;
+
+  for (const delimiter of candidates) {
+    const count = splitCsvLine(headerLine, delimiter).length;
+    if (count > bestCount) {
+      bestCount = count;
+      bestDelimiter = delimiter;
+    }
+  }
+
+  return bestDelimiter;
+}
+
+function normalizeCsvHeader(value: string): string {
+  return value
+    .trim()
+    .replace(/^"|"$/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
 /** Parse CSV text into array of objects keyed by header row. */
 function parseCSV(text: string): Record<string, string>[] {
   const normalized = text.replace(/^\uFEFF/, '').trim();
   if (!normalized) return [];
   const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length < 2) return [];
-  const headers = splitCsvLine(lines[0]).map((h) => h.trim().replace(/^"|"$/g, '').toLowerCase());
+  const delimiter = detectCsvDelimiter(lines[0]);
+  const headers = splitCsvLine(lines[0], delimiter).map((h) => normalizeCsvHeader(h));
   return lines.slice(1).map((line) => {
-    const values = splitCsvLine(line).map((v) => v.trim().replace(/^"|"$/g, ''));
+    const values = splitCsvLine(line, delimiter).map((v) => v.trim().replace(/^"|"$/g, ''));
     return Object.fromEntries(headers.map((h, i) => [h, values[i] ?? '']));
   });
 }
