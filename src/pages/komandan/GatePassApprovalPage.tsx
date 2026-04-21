@@ -22,11 +22,6 @@ export default function GatePassApprovalPage() {
     void fetchGatePasses();
   }, [fetchGatePasses]);
 
-  const pendingGatePasses = useMemo(
-    () => gatePasses.filter((gp) => gp.status === 'pending'),
-    [gatePasses],
-  );
-
   const visibleGatePasses = useMemo(
     () => gatePasses.filter((gp) => ['pending', 'approved', 'checked_in', 'completed', 'overdue', 'rejected'].includes(gp.status)),
     [gatePasses],

@@ -19,7 +19,7 @@ import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
 import { notifyDataChanged } from '../../lib/dataSync';
 import { ensureSessionContext } from '../../lib/api/sessionContext';
-import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
+import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
 import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
