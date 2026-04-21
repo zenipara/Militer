@@ -125,7 +125,9 @@ $$;
 
 
 -- Enhanced api_insert_gate_pass with validation & auto-approval
-CREATE OR REPLACE FUNCTION public.api_insert_gate_pass(
+DROP FUNCTION IF EXISTS public.api_insert_gate_pass(UUID, TEXT, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, TEXT);
+
+CREATE FUNCTION public.api_insert_gate_pass(
   p_user_id       UUID,
   p_caller_role   TEXT,
   p_keperluan     TEXT,
@@ -252,12 +254,13 @@ BEGIN
 END;
 $$;
 
--- Revoke old signature to ensure new one is used
 GRANT EXECUTE ON FUNCTION public.api_insert_gate_pass(UUID, TEXT, TEXT, TEXT, TIMESTAMPTZ, TIMESTAMPTZ, TEXT) TO anon;
 
 
 -- Enhanced gate pass approval with validation
-CREATE OR REPLACE FUNCTION public.api_update_gate_pass_status(
+DROP FUNCTION IF EXISTS public.api_update_gate_pass_status(UUID, TEXT, UUID, TEXT, UUID, TEXT);
+
+CREATE FUNCTION public.api_update_gate_pass_status(
   p_caller_id     UUID,
   p_caller_role   TEXT,
   p_id            UUID,
