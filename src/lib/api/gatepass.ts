@@ -49,9 +49,20 @@ export async function fetchGatePassByQrToken(callerId: string, callerRole: strin
   return (data as GatePass) ?? null;
 }
 
-export async function insertGatePass(callerId: string, callerRole: string, payload: Partial<GatePass> & { user_id: string; qr_token: string }): Promise<void> {
+export interface InsertGatePassResponse {
+  gate_pass_id: string;
+  auto_approved: boolean;
+  status: 'approved' | 'pending';
+  approval_reason: string;
+}
+
+export async function insertGatePass(
+  callerId: string,
+  callerRole: string,
+  payload: Partial<GatePass> & { user_id: string; qr_token: string }
+): Promise<InsertGatePassResponse> {
   await ensureSessionContext(callerId, callerRole);
-  const { error } = await supabase.rpc('api_insert_gate_pass', {
+  const { data, error } = await supabase.rpc('api_insert_gate_pass', {
     p_user_id: payload.user_id,
     p_caller_role: callerRole,
     p_keperluan: payload.keperluan ?? '',
@@ -61,6 +72,13 @@ export async function insertGatePass(callerId: string, callerRole: string, paylo
     p_qr_token: payload.qr_token,
   });
   if (error) throw error;
+  return (data as InsertGatePassResponse) ?? { gate_pass_id: '', auto_approved: false, status: 'pending', approval_reason: '' };
+}
+
+export interface UpdateGatePassStatusResponse {
+  gate_pass_id: string;
+  status: string;
+  message: string;
 }
 
 export async function patchGatePassStatus(
@@ -69,16 +87,19 @@ export async function patchGatePassStatus(
   id: string,
   status: GatePass['status'],
   approvedBy?: string,
-): Promise<void> {
+  approvalReason?: string,
+): Promise<UpdateGatePassStatusResponse> {
   await ensureSessionContext(callerId, callerRole);
-  const { error } = await supabase.rpc('api_update_gate_pass_status', {
+  const { data, error } = await supabase.rpc('api_update_gate_pass_status', {
     p_caller_id: callerId,
     p_caller_role: callerRole,
     p_id: id,
     p_status: status,
     p_approved_by: approvedBy ?? null,
+    p_approval_reason: approvalReason ?? null,
   });
   if (error) throw error;
+  return (data as UpdateGatePassStatusResponse) ?? { gate_pass_id: id, status, message: 'Updated' };
 }
 
 /** Response shape returned by the `server_scan_gate_pass` Supabase RPC. */
@@ -91,4 +112,22 @@ export async function rpcScanGatePass(callerId: string, callerRole: string, qrTo
   const { data, error } = await supabase.rpc('server_scan_gate_pass', { p_qr_token: qrToken });
   if (error || !data) throw new Error(error?.message ?? 'QR tidak valid');
   return (data as ScanGatePassResponse).message ?? 'Scan berhasil';
+}
+
+export interface ApprovalStats {
+  total_gate_passes: number;
+  completed: number;
+  pending: number;
+  rejected: number;
+  auto_approved: number;
+  approval_rate: number;
+}
+
+export async function fetchApprovalStats(callerId: string, userId: string): Promise<ApprovalStats | null> {
+  await ensureSessionContext(callerId, 'prajurit');
+  const { data, error } = await supabase.rpc('api_get_approval_stats', {
+    p_user_id: userId,
+  });
+  if (error) return null;
+  return (data?.[0] as ApprovalStats) ?? null;
 }

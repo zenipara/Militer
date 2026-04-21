@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchGatePassesByUser, fetchAllGatePasses, fetchGatePassByQrToken, insertGatePass, patchGatePassStatus, rpcScanGatePass } from '../lib/api/gatepass';
+import { fetchGatePassesByUser, fetchAllGatePasses, fetchGatePassByQrToken, insertGatePass, patchGatePassStatus, rpcScanGatePass, type InsertGatePassResponse } from '../lib/api/gatepass';
 import { GatePass, GatePassStatus } from '../types';
 import { isRoleAdmin, isRoleGuard, isRolePrajurit } from '../lib/rolePermissions';
 import { generateQrToken, normalizeScannedQrToken } from '../utils/gatepass';
@@ -9,7 +9,7 @@ import { notifyDataChanged } from '../lib/dataSync';
 interface GatePassState {
   gatePasses: GatePass[];
   fetchGatePasses: () => Promise<void>;
-  createGatePass: (payload: Partial<GatePass>) => Promise<void>;
+  createGatePass: (payload: Partial<GatePass>) => Promise<InsertGatePassResponse>;
   approveGatePass: (id: string, approved: boolean) => Promise<void>;
   approvePendingGatePasses: (ids: string[]) => Promise<{ approved: number; failed: number }>;
   /**
@@ -53,9 +53,10 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     const user = useAuthStore.getState().user;
     if (!user) throw new Error('User tidak ditemukan');
     const qr_token = generateQrToken();
-    await insertGatePass(user.id, user.role, { ...payload, user_id: user.id, qr_token });
+    const response = await insertGatePass(user.id, user.role, { ...payload, user_id: user.id, qr_token });
     await get().fetchGatePasses();
     notifyDataChanged('gate_pass');
+    return response;
   },
 
   async approveGatePass(id, approved) {
