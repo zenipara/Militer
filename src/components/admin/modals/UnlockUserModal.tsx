@@ -1,6 +1,6 @@
-import Button from '../common/Button';
-import Modal from '../common/Modal';
-import type { User } from '../../types';
+import Button from '../../common/Button';
+import Modal from '../../common/Modal';
+import type { User } from '../../../types';
 
 export interface UnlockUserModalProps {
   isOpen: boolean;
@@ -47,7 +47,7 @@ export default function UnlockUserModal({
           <Button variant="ghost" onClick={onClose} disabled={isSaving}>
             Batal
           </Button>
-          <Button onClick={handleUnlock} variant="warning" isLoading={isSaving}>
+          <Button onClick={handleUnlock} variant="secondary" isLoading={isSaving}>
             Buka Kunci
           </Button>
         </>
@@ -58,9 +58,9 @@ export default function UnlockUserModal({
           <p className="text-sm text-warning-dark">
             Anda akan membuka kunci akun {user?.nama} sehingga akun dapat digunakan kembali.
           </p>
-          {user?.locked_reason && (
+          {user?.locked_until && (
             <p className="text-sm text-warning-dark mt-2">
-              <strong>Alasan:</strong> {user.locked_reason}
+              <strong>Terkunci sampai:</strong> {user.locked_until}
             </p>
           )}
         </div>

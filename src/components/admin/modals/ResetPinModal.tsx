@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import Button from '../common/Button';
-import Modal from '../common/Modal';
-import Input from '../common/Input';
-import { validatePin, getFirstErrorMessage } from '../../lib/validation/personelValidation';
-import type { User } from '../../types';
+import Button from '../../common/Button';
+import Modal from '../../common/Modal';
+import Input from '../../common/Input';
+import { validatePin, getFirstErrorMessage } from '../../../lib/validation/personelValidation';
+import type { User } from '../../../types';
 
 export interface ResetPinModalProps {
   isOpen: boolean;

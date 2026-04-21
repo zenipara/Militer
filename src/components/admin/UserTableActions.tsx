@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { ICONS } from '../../icons';
 import Button from '../common/Button';
 import type { User } from '../../types';
-import { isRoleKomandan } from '../../lib/rolePermissions';
 
 interface TableActionMenuItem {
   id: string;

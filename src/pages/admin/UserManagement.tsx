@@ -2,9 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
-import Modal from '../../components/common/Modal';
-import Input from '../../components/common/Input';
-import SatuanSelector from '../../components/common/SatuanSelector';
 import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
@@ -31,7 +28,7 @@ import { supabase } from '../../lib/supabase';
 import { notifyDataChanged } from '../../lib/dataSync';
 import { ensureSessionContext } from '../../lib/api/sessionContext';
 import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
-import { validateNewUserForm, validatePin, validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
+import { validatePin, validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
 import type { User, Role, CommandLevel } from '../../types';
 
 const PAGE_SIZE = 50;
@@ -126,17 +123,11 @@ export default function UserManagement() {
   const [roleEditUser, setRoleEditUser] = useState<User | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
-  // Form state
-  const [form, setForm] = useState({ nrp: '', nama: '', pin: '', role: 'prajurit' as Role, satuan: '', pangkat: '', level_komando: '' as '' | 'BATALION' | 'KOMPI' | 'PELETON' });
-  const [newPin, setNewPin] = useState('');
   const [bulkPin, setBulkPin] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // CSV import state
-  const [importRows, setImportRows] = useState<Record<string, string>[]>([]);
-  const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: { nrp: string; error: string }[] } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Batch operations state
   const [batchOperation, setBatchOperation] = useState<'delete' | 'toggle-active' | 'role-change' | null>(null);
@@ -158,67 +149,6 @@ export default function UserManagement() {
   useEffect(() => {
     setSelectedUserIds(new Set());
   }, [users, currentPage]);
-
-  const handleCreate = async () => {
-    // Validate form data
-    const errors = validateNewUserForm({
-      nrp: form.nrp,
-      nama: form.nama,
-      pin: form.pin,
-      role: form.role as Role,
-      satuan: form.satuan,
-      level_komando: form.level_komando || undefined,
-    });
-
-    if (errors.length > 0) {
-      showNotification(getFirstErrorMessage(errors) || 'Validasi gagal', 'error');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const { level_komando: rawLevelKomando, ...formRest } = form;
-      const payload: Parameters<typeof createUser>[0] = {
-        ...formRest,
-        is_active: true,
-        level_komando: (rawLevelKomando || undefined) as CommandLevel | undefined,
-      };
-      await createUser(payload);
-      showNotification('Personel berhasil ditambahkan', 'success');
-      setPage(1);
-      setShowCreate(false);
-      setForm({ nrp: '', nama: '', pin: '', role: 'prajurit', satuan: '', pangkat: '', level_komando: '' });
-    } catch (err) {
-      const message = err instanceof Error
-        ? err.message.replace(/menabah/gi, 'menambah')
-        : 'Gagal menambah personel';
-      showNotification(message, 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleResetPin = async () => {
-    if (!selectedUser) return;
-
-    const pinError = validatePin(newPin);
-    if (pinError) {
-      showNotification(pinError.message, 'error');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await resetUserPin(selectedUser.id, newPin);
-      showNotification(`PIN ${selectedUser.nama} berhasil direset`, 'success');
-      setShowResetPin(false);
-      setNewPin('');
-    } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal reset PIN', 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleBulkResetPin = async () => {
     if (selectedUserIds.size === 0) {
@@ -311,10 +241,7 @@ export default function UserManagement() {
     let rows: Record<string, string>[];
     try {
       rows = await readImportRowsFromFile(file);
-      setImportRows(rows);
-      setImportResult(null);
     } catch (err) {
-      setImportRows([]);
       const message = err instanceof Error ? err.message : 'Gagal membaca CSV. Pastikan file valid UTF-8.';
       showNotification(message, 'error');
       throw err;
@@ -331,7 +258,6 @@ export default function UserManagement() {
     }
 
     setIsImporting(true);
-    setImportProgress({ current: 0, total: Math.ceil(rows.length / IMPORT_CHUNK_SIZE) });
     try {
       const authUser = useAuthStore.getState().user;
       if (!authUser) {
@@ -352,7 +278,6 @@ export default function UserManagement() {
 
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
         const batch = batches[batchIndex];
-        setImportProgress({ current: batchIndex + 1, total: batches.length });
         const payload = batch.map((r) => ({
           nrp: r.nrp ?? '',
           pin: r.pin ?? '123456',
@@ -386,8 +311,6 @@ export default function UserManagement() {
       }
 
       const aggregated = { success: totalSuccess, failed: totalFailed, errors: allErrors };
-      setImportResult(aggregated);
-
       if (aggregated.success > 0) {
         showNotification(`${aggregated.success} personel berhasil diimpor`, 'success');
         setPage(1);
@@ -406,7 +329,6 @@ export default function UserManagement() {
       console.error('CSV Import error:', err);
     } finally {
       setIsImporting(false);
-      setImportProgress(null);
     }
   };
 
@@ -443,17 +365,6 @@ export default function UserManagement() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const downloadTemplate = () => {
-    const csv = 'nrp,nama,pin,role,satuan,pangkat,jabatan\n3000099,Contoh Prajurit,123456,prajurit,Batalyon 1,Prajurit Dua,Anggota Regu\n';
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'template_import_personel.csv';
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const exportFilteredCSV = () => {
@@ -903,8 +814,6 @@ export default function UserManagement() {
             showNotification('Personel berhasil ditambahkan', 'success');
             setPage(1);
             setShowCreate(false);
-          } catch (err) {
-            throw err;
           } finally {
             setIsSaving(false);
           }

@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import Button from '../common/Button';
-import Modal from '../common/Modal';
-import Input from '../common/Input';
-import SatuanSelector from '../common/SatuanSelector';
-import { ROLE_OPTIONS, isRoleKomandan } from '../../lib/rolePermissions';
-import { validateNewUserForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
-import type { User, Role, CommandLevel } from '../../types';
+import Button from '../../common/Button';
+import Modal from '../../common/Modal';
+import Input from '../../common/Input';
+import SatuanSelector from '../../common/SatuanSelector';
+import { ROLE_OPTIONS, isRoleKomandan } from '../../../lib/rolePermissions';
+import { validateNewUserForm, getFirstErrorMessage } from '../../../lib/validation/personelValidation';
+import type { Satuan, Role, CommandLevel } from '../../../types';
 
 export interface CreateUserModalProps {
   isOpen: boolean;
   isSaving: boolean;
-  satuans: Array<{ id: string; name: string; is_active: boolean }>;
+  satuans: Satuan[];
   isSatuansLoading: boolean;
   onSave: (data: {
     nrp: string;

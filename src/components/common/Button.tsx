@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
@@ -23,19 +23,23 @@ const sizes = {
   lg: 'px-6 py-3 text-base min-h-[48px]',
 };
 
-export default function Button({
-  variant = 'primary',
-  size = 'md',
-  isLoading,
-  leftIcon,
-  rightIcon,
-  children,
-  className = '',
-  disabled,
-  ...props
-}: ButtonProps) {
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = 'primary',
+    size = 'md',
+    isLoading,
+    leftIcon,
+    rightIcon,
+    children,
+    className = '',
+    disabled,
+    ...props
+  },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       className={`
         inline-flex items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap
         transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-2 focus:ring-offset-transparent
@@ -59,4 +63,6 @@ export default function Button({
       )}
     </button>
   );
-}
+});
+
+export default Button;

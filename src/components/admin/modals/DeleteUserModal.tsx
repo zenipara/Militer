@@ -1,6 +1,6 @@
-import Button from '../common/Button';
-import Modal from '../common/Modal';
-import type { User } from '../../types';
+import Button from '../../common/Button';
+import Modal from '../../common/Modal';
+import type { User } from '../../../types';
 
 export interface DeleteUserModalProps {
   isOpen: boolean;

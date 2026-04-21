@@ -3,8 +3,6 @@
  * Centralized, reusable validation logic.
  */
 
-import type { GatePass } from '../../types';
-
 export interface ValidationError {
   field: string;
   message: string;
@@ -233,7 +231,6 @@ export function validateScanQrToken(qrToken: unknown): ScanValidationResult {
 export function validateStatusTransition(
   fromStatus: string,
   toStatus: string,
-  userRole?: string
 ): ScanValidationResult {
   const validTransitions: Record<string, string[]> = {
     pending: ['approved', 'rejected'],

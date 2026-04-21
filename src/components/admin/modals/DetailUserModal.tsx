@@ -1,8 +1,19 @@
-import Button from '../common/Button';
-import Modal from '../common/Modal';
-import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
-import type { User } from '../../types';
+import Button from '../../common/Button';
+import Modal from '../../common/Modal';
+import type { User } from '../../../types';
+
+function formatDateTime(value?: string) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export interface DetailUserModalProps {
   isOpen: boolean;
@@ -62,10 +73,10 @@ export default function DetailUserModal({
                 {user.is_active ? 'Aktif' : 'Nonaktif'}
               </p>
             </div>
-            {user.is_locked && (
+            {user.locked_until && (
               <div>
-                <p className="text-xs font-semibold text-text-secondary uppercase">Terkunci</p>
-                <p className="text-sm font-medium text-danger">Ya</p>
+                <p className="text-xs font-semibold text-text-secondary uppercase">Terkunci Sampai</p>
+                <p className="text-sm font-medium text-danger">{formatDateTime(user.locked_until)}</p>
               </div>
             )}
           </div>
@@ -75,13 +86,13 @@ export default function DetailUserModal({
               <div>
                 <p className="text-xs font-semibold text-text-secondary uppercase">Dibuat</p>
                 <p className="text-sm text-text-primary">
-                  {user.created_at && format(new Date(user.created_at), 'dd MMMM yyyy HH:mm', { locale: idLocale })}
+                  {formatDateTime(user.created_at)}
                 </p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-text-secondary uppercase">Diubah</p>
                 <p className="text-sm text-text-primary">
-                  {user.updated_at && format(new Date(user.updated_at), 'dd MMMM yyyy HH:mm', { locale: idLocale })}
+                  {formatDateTime(user.updated_at)}
                 </p>
               </div>
             </div>

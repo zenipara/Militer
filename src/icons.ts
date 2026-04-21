@@ -65,6 +65,10 @@ import {
   PieChart,
   Activity,
   Clock,
+  Key,
+  Shield,
+  Trash,
+  MoreVertical,
 } from 'lucide-react';
 
 
@@ -135,6 +139,10 @@ export const ICONS = {
   PieChart,
   Activity,
   Clock,
+  Key,
+  Shield,
+  Trash,
+  MoreVertical,
 } as const;
 
 export type IconName = keyof typeof ICONS;

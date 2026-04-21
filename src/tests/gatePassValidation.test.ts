@@ -3,7 +3,7 @@
  * Tests all validation scenarios and edge cases
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   validateKeperluan,
   validateTujuan,
@@ -14,7 +14,7 @@ import {
   canAutoApprove,
   validateScanQrToken,
   validateStatusTransition,
-} from '../gatePassValidation';
+} from '../lib/validation/gatePassValidation';
 
 describe('Gate Pass Validation Functions', () => {
   describe('validateKeperluan', () => {

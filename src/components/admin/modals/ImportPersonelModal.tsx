@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
-import Button from '../common/Button';
-import Modal from '../common/Modal';
-import Input from '../common/Input';
+import Button from '../../common/Button';
+import Modal from '../../common/Modal';
 
 export interface ImportPersonelModalProps {
   isOpen: boolean;

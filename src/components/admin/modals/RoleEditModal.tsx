@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import Button from '../common/Button';
-import Modal from '../common/Modal';
-import { ROLE_OPTIONS, isRoleKomandan } from '../../lib/rolePermissions';
-import { validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
-import type { User, Role, CommandLevel } from '../../types';
+import Button from '../../common/Button';
+import Modal from '../../common/Modal';
+import { ROLE_OPTIONS, isRoleKomandan } from '../../../lib/rolePermissions';
+import { validateRoleEditForm, getFirstErrorMessage } from '../../../lib/validation/personelValidation';
+import type { User, Role, CommandLevel } from '../../../types';
 
 export interface RoleEditModalProps {
   isOpen: boolean;

@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
-import Input from '../common/Input';
-import { ICONS } from '../../icons';
 import { ROLE_OPTIONS, isRoleKomandan } from '../../lib/rolePermissions';
 import type { User, Role, CommandLevel } from '../../types';
 

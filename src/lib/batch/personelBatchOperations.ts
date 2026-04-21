@@ -3,9 +3,9 @@
  * Provides consistent UI and logic for batch operations.
  */
 
-import type { User, Role, CommandLevel } from '../../types';
+import type { User } from '../../types';
 
-export interface BatchOperation<T = unknown> {
+export interface BatchOperation {
   id: string;
   label: string;
   description?: string;
