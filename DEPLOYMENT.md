@@ -1,6 +1,44 @@
-# 🚀 Panduan Deployment KARYO OS
+# 🚀 Panduan Deployment KARYO OS v1.5.0
 
-Panduan lengkap untuk setup, konfigurasi, dan deploy **KARYO OS** ke Supabase + GitHub Pages.
+**Rilis Terbaru**: 21 April 2026
+**Status**: Production Ready ✓
+
+## 📋 Update v1.5.0 - Bug Fixes & Features
+
+### ✅ Perbaikan Kritis
+1. **Auto-Approve Gate Pass** - Komandan dapat bulk approve dengan tombol "Setujui Semua"
+2. **CSV Import** - Fixed session context validation untuk super admin
+3. **Barcode Print** - Fixed window handling dan dialog pop-up
+4. **Real-time Sync** - Verified across all dashboards
+5. **Role System** - Semua 5 role berfungsi dengan baik
+
+### 🔧 Konfigurasi Supabase
+```
+URL: https://upvrcaivdzuxozdwzvdq.supabase.co
+Project Ref: upvrcaivdzuxozdwzvdq
+Auth Token: sbp_e24e011e9b8b16a2f522e569a1b83252b70ed2fa
+DB Password: Kedinasan2020
+```
+
+### 🚀 Quick Deploy Commands
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Type check & lint
+npm run type-check && npm run lint
+
+# 3. Build production
+npm run build
+
+# 4. Deploy (Choose one)
+npx netlify deploy --prod --dir=dist      # Netlify
+vercel deploy --prod                      # Vercel
+```
+
+---
+
+# Panduan Deployment KARYO OS
 
 ---
 

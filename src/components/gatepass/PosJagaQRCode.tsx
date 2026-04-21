@@ -15,34 +15,84 @@ export default function PosJagaQRCode({ posJaga }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
-    const win = window.open('', '_blank');
-    if (!win || !printRef.current) return;
+    if (!printRef.current) return;
+    
+    const printWindow = window.open('', '', 'height=600,width=600');
+    if (!printWindow) {
+      alert('Tolong izinkan pop-up untuk fitur cetak');
+      return;
+    }
+
     // Escape user-supplied name to prevent XSS in the document.write context
     const safeName = posJaga.nama
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
-    win.document.write(`
+
+    const qrContent = printRef.current.innerHTML;
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="UTF-8">
           <title>QR Pos Jaga — ${safeName}</title>
           <style>
-            body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; }
-            .wrap { text-align: center; padding: 32px; border: 2px solid #ccc; border-radius: 12px; }
-            h2 { margin: 0 0 16px; font-size: 1.5rem; }
-            p { margin: 12px 0 0; font-size: 0.85rem; color: #555; }
+            body { 
+              margin: 0; 
+              padding: 20px;
+              display: flex; 
+              flex-direction: column; 
+              align-items: center; 
+              justify-content: center; 
+              min-height: 100vh; 
+              font-family: Arial, sans-serif; 
+              background: white;
+            }
+            .wrap { 
+              text-align: center; 
+              padding: 32px; 
+              border: 2px solid #333; 
+              border-radius: 12px; 
+              page-break-inside: avoid;
+            }
+            h2 { 
+              margin: 0 0 24px; 
+              font-size: 1.5rem; 
+              color: #333;
+            }
+            img {
+              display: block;
+              margin: 0 auto;
+            }
+            p { 
+              margin: 12px 0 0; 
+              font-size: 0.85rem; 
+              color: #666; 
+            }
+            @media print {
+              body { padding: 0; }
+              .wrap { border: none; padding: 20px; }
+            }
           </style>
         </head>
         <body>
           <div class="wrap">
-            ${printRef.current.innerHTML}
+            ${qrContent}
           </div>
-          <script>window.onload = () => { window.print(); window.close(); }</script>
+          <script>
+            window.addEventListener('load', function() {
+              setTimeout(function() {
+                window.print();
+                window.close();
+              }, 250);
+            });
+          </script>
         </body>
       </html>
     `);
-    win.document.close();
+    printWindow.document.close();
   };
 
   return (

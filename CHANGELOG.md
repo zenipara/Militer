@@ -5,6 +5,30 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), versi
 
 ---
 
+## [1.5.0] - 2026-04-21
+
+### 🐛 Perbaikan Bug Kritis
+- **Gate Pass Auto-Approve**: Tambahkan tombol "Setujui Semua" untuk komandan bulk approve pending gate pass dengan konfirmasi dialog
+- **CSV Import**: Fix session context validation - komandan dapat mengimpor data anggota dari file CSV di super admin tanpa error authentication
+- **Barcode Print**: Perbaiki window.open() handling dengan proper null check dan user-friendly error message untuk popup yang terblokir
+- **Real-time Sync**: Verify useGlobalRealtimeSync() aktif di semua dashboard untuk update data real-time
+- **Role System**: Pastikan semua 5 role berfungsi dengan baik (admin, komandan, staf, guard, prajurit)
+- **UI/UX Glitches**: Perbaiki component error handling dan missing prop validations
+
+### 🔧 Config Update
+- Update `.env` dengan Supabase production credentials
+- Create `.env.production` untuk optimasi build
+- Database endpoint: `https://upvrcaivdzuxozdwzvdq.supabase.co`
+
+### ✅ Testing
+- Semua role dapat login dan akses dashboard yang sesuai
+- CSV import memproses file dengan proper error reporting
+- Barcode print tidak mengalami error dengan popup yang terblokir
+- Real-time data sync working untuk gate pass, tasks, announcements, messages
+- Gate pass approval dengan bulk action berfungsi sempurna
+
+---
+
 ## [Unreleased]
 
 ### Diubah

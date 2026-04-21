@@ -17,6 +17,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
+import { ensureSessionContext } from '../../lib/api/sessionContext';
 import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleKomandan } from '../../lib/rolePermissions';
 import type { User, Role, CommandLevel } from '../../types';
 
@@ -233,6 +234,14 @@ export default function UserManagement() {
     }
     setIsImporting(true);
     try {
+      const authUser = useAuthStore.getState().user;
+      if (!authUser) {
+        throw new Error('Anda harus login terlebih dahulu');
+      }
+      
+      // Ensure session context is set before RPC call
+      await ensureSessionContext(authUser.id, authUser.role);
+      
       const payload = importRows.map((r) => ({
         nrp: r['nrp'] ?? '',
         pin: r['pin'] ?? '123456',
@@ -242,16 +251,30 @@ export default function UserManagement() {
         pangkat: r['pangkat'] ?? '',
         jabatan: r['jabatan'] ?? '',
       }));
+      
       const { data, error } = await supabase.rpc('import_users_csv', { p_users: payload });
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || 'Gagal mengimpor data dari RPC');
+      }
+      
       const result = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
       setImportResult(result);
+      
       if (result.success > 0) {
-        showNotification(`${result.success} personel berhasil diimpor`, 'success');
+        showNotification(`${result.success} personel berhasil diimpor${result.failed > 0 ? `, ${result.failed} gagal` : ''}`, result.failed > 0 ? 'warning' : 'success');
         setPage(1);
+        // Refresh users list
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      if (result.failed > 0 && result.errors && result.errors.length > 0) {
+        const errorMsgs = result.errors.slice(0, 3).map(e => `${e.nrp}: ${e.error}`).join('; ');
+        showNotification(`Gagal: ${errorMsgs}${result.errors.length > 3 ? '...' : ''}`, 'warning');
       }
     } catch (err) {
-      showNotification(err instanceof Error ? err.message : 'Gagal mengimpor data', 'error');
+      const message = err instanceof Error ? err.message : 'Gagal mengimpor data';
+      showNotification(message, 'error');
+      console.error('CSV Import error:', err);
     } finally {
       setIsImporting(false);
     }

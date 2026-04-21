@@ -59,8 +59,8 @@ BEGIN
     p_waktu_keluar,
     p_waktu_kembali,
     p_qr_token,
-    'pending',
-    NULL
+    CASE WHEN p_caller_role = 'komandan' THEN 'approved'::public.gate_pass_status ELSE 'pending'::public.gate_pass_status END,
+    CASE WHEN p_caller_role = 'komandan' THEN v_caller_id ELSE NULL END
   );
 END;
 $$;
