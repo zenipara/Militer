@@ -410,3 +410,37 @@ export interface LogisticsRequest {
   requester?: User;
   reviewer?: User;
 }
+
+// ============================================================
+// Sprint (Surat Perintah)
+// ============================================================
+
+export type SprintStatus = 'draft' | 'approved' | 'active' | 'selesai' | 'dibatalkan';
+
+export interface Sprint {
+  id: string;
+  nomor_surat: string;
+  satuan: string;
+  judul: string;
+  dasar?: string;
+  tujuan: string;
+  tempat_tujuan: string;
+  tanggal_berangkat: string;
+  tanggal_kembali: string;
+  status: SprintStatus;
+  dibuat_oleh?: string;
+  disetujui_oleh?: string;
+  disetujui_at?: string;
+  created_at: string;
+  pembuat?: Pick<User, 'id' | 'nama' | 'nrp' | 'pangkat'>;
+  jumlah_personel: number;
+}
+
+export interface SprintPersonel {
+  sprint_id: string;
+  user_id: string;
+  jabatan_dalam_sprint?: string;
+  laporan_kembali?: string;
+  kembali_at?: string;
+  user_info?: Pick<User, 'id' | 'nama' | 'nrp' | 'pangkat' | 'jabatan'>;
+}

@@ -83,9 +83,9 @@ const BIDANG_MODULES: Record<string, { path: string; label: string; icon: string
   ],
   ops: [
     { path: '/komandan/tasks',    label: 'Manajemen Tugas',     icon: '✅', color: 'border-green-500/30 bg-green-500/5' },
+    { path: '/staf/sprint',       label: 'Surat Perintah',      icon: '📜', color: 'border-cyan-500/30 bg-cyan-500/5' },
     { path: '/admin/pos-jaga',    label: 'Pos Jaga',            icon: '🛡️', color: 'border-red-500/30 bg-red-500/5' },
     { path: '/admin/users',       label: 'Data Personel',       icon: '👥', color: 'border-blue-500/30 bg-blue-500/5' },
-    { path: '/staf/messages',     label: 'Pesan',               icon: '💬', color: 'border-purple-500/30 bg-purple-500/5' },
   ],
   umum: [
     { path: '/admin/users',       label: 'Data Personel',       icon: '👥', color: 'border-blue-500/30 bg-blue-500/5' },

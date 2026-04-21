@@ -31,6 +31,7 @@ const Evaluation = lazy(() => import('../pages/komandan/Evaluation'));
 const KomandanAttendance = lazy(() => import('../pages/komandan/KomandanAttendance'));
 const KomandanApel = lazy(() => import('../pages/komandan/Apel'));
 const KomandanLaporanOps = lazy(() => import('../pages/komandan/LaporanOps'));
+const KomandanSprint = lazy(() => import('../pages/komandan/Sprint'));
 const LogisticsRequest = lazy(() => import('../pages/komandan/LogisticsRequest'));
 const PrajuritDashboard = lazy(() => import('../pages/prajurit/PrajuritDashboard'));
 const MyTasks = lazy(() => import('../pages/prajurit/MyTasks'));
@@ -49,6 +50,7 @@ const PosJagaPage = lazy(() => import('../pages/admin/PosJagaPage'));
 const StafDashboard = lazy(() => import('../pages/staf/StafDashboard'));
 const StafMessages = lazy(() => import('../pages/staf/StafMessages'));
 const StafLaporanOps = lazy(() => import('../pages/staf/LaporanOps'));
+const StafSprint = lazy(() => import('../pages/staf/Sprint'));
 const Analytics = lazy(() => import('../pages/admin/Analytics'));
 const GuardDisciplineNotes = lazy(() => import('../pages/guard/DisciplineNotes'));
 const StafLeaveReview = lazy(() => import('../pages/staf/LeaveReview'));
@@ -107,6 +109,7 @@ export const router = createHashRouter([
       { path: ROLE_ROUTE_PATHS.komandan.apel,            element: wrap(<KomandanApel />) },
       { path: ROLE_ROUTE_PATHS.komandan.kegiatan,        element: wrap(<AdminKegiatan />) },
       { path: ROLE_ROUTE_PATHS.komandan.laporanOps,      element: wrap(<KomandanLaporanOps />) },
+      { path: ROLE_ROUTE_PATHS.komandan.sprint,          element: wrap(<KomandanSprint />) },
       { path: ROLE_ROUTE_PATHS.komandan.logisticsRequest,element: wrap(<LogisticsRequest />) },
       { path: ROLE_ROUTE_PATHS.komandan.gatePassApproval,element: wrap(<GatePassApprovalPage />) },
       { path: ROLE_ROUTE_PATHS.komandan.gatePassMonitor, element: wrap(<GatePassMonitorPage />) },
@@ -145,6 +148,7 @@ export const router = createHashRouter([
       { path: ROLE_ROUTE_PATHS.staf.messages,   element: wrap(<StafMessages />) },
       { path: ROLE_ROUTE_PATHS.staf.leaveReview,element: wrap(<StafLeaveReview />) },
       { path: ROLE_ROUTE_PATHS.staf.laporanOps, element: wrap(<StafLaporanOps />) },
+      { path: ROLE_ROUTE_PATHS.staf.sprint,     element: wrap(<StafSprint />) },
     ],
   },
   {

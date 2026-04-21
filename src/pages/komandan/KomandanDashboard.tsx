@@ -62,6 +62,7 @@ export default function KomandanDashboard() {
   const canOpenReports = isPathEnabled('/komandan/reports', flags);
   const canOpenAttendance = isPathEnabled('/komandan/attendance', flags);
   const canOpenPersonnel = isPathEnabled('/komandan/personnel', flags);
+  const canOpenSprint = isPathEnabled('/komandan/sprint', flags);
   const canOpenGatePass = isPathEnabled('/komandan/gatepass-approval', flags);
   const canOpenGatePassMonitor = isPathEnabled('/komandan/gatepass-monitor', flags);
 
@@ -149,6 +150,7 @@ export default function KomandanDashboard() {
               {canOpenTasks && <Link to="/komandan/tasks" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Buka tugas</Link>}
               {canOpenAttendance && <Link to="/komandan/attendance" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Absensi</Link>}
               {canOpenPersonnel && <Link to="/komandan/personnel" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Personel</Link>}
+              {canOpenSprint && <Link to="/komandan/sprint" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Sprint</Link>}
               {canOpenGatePass && <Link to="/komandan/gatepass-approval" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Gate Pass</Link>}
             </div>
           </div>

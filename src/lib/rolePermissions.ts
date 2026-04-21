@@ -49,6 +49,7 @@ export const ROLE_ROUTE_PATHS = {
     dashboard: '/komandan/dashboard',
     tasks: '/komandan/tasks',
     personnel: '/komandan/personnel',
+    sprint: '/komandan/sprint',
     reports: '/komandan/reports',
     evaluation: '/komandan/evaluation',
     attendance: '/komandan/attendance',
@@ -81,6 +82,7 @@ export const ROLE_ROUTE_PATHS = {
     messages: '/staf/messages',
     leaveReview: '/staf/leave-review',
     laporanOps: '/staf/laporan-ops',
+    sprint: '/staf/sprint',
   },
 } as const;
 

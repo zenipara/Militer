@@ -8,6 +8,7 @@ export type FeatureKey =
   | 'apel_digital'
   | 'kalender_kegiatan'
   | 'laporan_ops'
+  | 'sprint'
   | 'gate_pass'
   | 'pos_jaga'
   | 'audit_log'
@@ -79,6 +80,12 @@ export const FEATURE_DEFINITIONS: FeatureDefinition[] = [
     label: 'Laporan Operasional',
     description: 'Laporan harian dan insidentil dari Staf S-3 dengan alur review komandan.',
     paths: ['/staf/laporan-ops', '/komandan/laporan-ops'],
+  },
+  {
+    key: 'sprint',
+    label: 'Surat Perintah',
+    description: 'Pembuatan, persetujuan, dan tracking Surat Perintah dinas luar.',
+    paths: ['/komandan/sprint', '/staf/sprint'],
   },
   {
     key: 'gate_pass',
