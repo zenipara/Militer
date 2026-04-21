@@ -11,6 +11,16 @@ import { TableSkeleton } from '../../components/common/Skeleton';
 import Pagination from '../../components/ui/Pagination';
 import UserDetailModal from '../../components/common/UserDetailModal';
 import UserTableActions from '../../components/admin/UserTableActions';
+import BatchOperationModals from '../../components/admin/BatchOperationModals';
+import {
+  CreateUserModal,
+  ResetPinModal,
+  BulkResetPinModal,
+  RoleEditModal,
+  DeleteUserModal,
+  UnlockUserModal,
+  ImportPersonelModal,
+} from '../../components/admin/modals';
 import { useUsers } from '../../hooks/useUsers';
 import { useSatuans } from '../../hooks/useSatuans';
 import { useUIStore } from '../../store/uiStore';
@@ -132,6 +142,10 @@ export default function UserManagement() {
   const [importResult, setImportResult] = useState<{ success: number; failed: number; errors: { nrp: string; error: string }[] } | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
+
+  // Batch operations state
+  const [batchOperation, setBatchOperation] = useState<'delete' | 'toggle-active' | 'role-change' | null>(null);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
   const pageStats = useMemo(() => {
     const active = users.filter((u) => u.is_active).length;
@@ -498,6 +512,107 @@ export default function UserManagement() {
     }
   };
 
+  // Batch operations handlers
+  const handleBatchDelete = async () => {
+    if (selectedUserIds.size === 0) return;
+    
+    setIsBatchProcessing(true);
+    try {
+      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
+      
+      // Filter out current user (can't delete self)
+      const toDelete = selectedList.filter((u) => u.id !== authUser?.id);
+      
+      if (toDelete.length === 0) {
+        showNotification('Tidak ada personel yang bisa dihapus', 'error');
+        return;
+      }
+
+      let deleted = 0;
+      for (const user of toDelete) {
+        try {
+          await deleteUser(user.id);
+          deleted++;
+        } catch (e) {
+          if (import.meta.env.DEV) console.warn(`Failed to delete ${user.nama}:`, e);
+        }
+      }
+
+      showNotification(`${deleted} personel berhasil dihapus`, 'success');
+      setSelectedUserIds(new Set());
+      setBatchOperation(null);
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal menghapus personel', 'error');
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
+  const handleBatchToggleActive = async (action: 'activate' | 'deactivate' | 'toggle') => {
+    if (selectedUserIds.size === 0) return;
+
+    setIsBatchProcessing(true);
+    try {
+      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
+      let updated = 0;
+
+      for (const user of selectedList) {
+        let newStatus: boolean;
+        if (action === 'toggle') {
+          newStatus = !user.is_active;
+        } else {
+          newStatus = action === 'activate';
+        }
+
+        try {
+          await updateUser(user.id, { is_active: newStatus });
+          updated++;
+        } catch (e) {
+          if (import.meta.env.DEV) console.warn(`Failed to update ${user.nama}:`, e);
+        }
+      }
+
+      const actionLabel = action === 'activate' ? 'diaktifkan' : action === 'deactivate' ? 'dinonaktifkan' : 'diubah statusnya';
+      showNotification(`${updated} personel berhasil ${actionLabel}`, 'success');
+      setSelectedUserIds(new Set());
+      setBatchOperation(null);
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal mengubah status personel', 'error');
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
+  const handleBatchRoleChange = async (role: Role, levelKomando?: CommandLevel) => {
+    if (selectedUserIds.size === 0) return;
+
+    setIsBatchProcessing(true);
+    try {
+      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
+      let updated = 0;
+
+      for (const user of selectedList) {
+        try {
+          await updateUser(user.id, {
+            role,
+            level_komando: isRoleKomandan(role) ? levelKomando : undefined,
+          });
+          updated++;
+        } catch (e) {
+          if (import.meta.env.DEV) console.warn(`Failed to update ${user.nama}:`, e);
+        }
+      }
+
+      showNotification(`Role ${updated} personel berhasil diubah ke ${role}`, 'success');
+      setSelectedUserIds(new Set());
+      setBatchOperation(null);
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal mengubah role personel', 'error');
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
   const toggleSelectUser = (id: string) => {
     setSelectedUserIds((prev) => {
       const next = new Set(prev);
@@ -675,10 +790,25 @@ export default function UserManagement() {
             </span>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="secondary" onClick={() => setShowBulkReset(true)}>
-                Reset PIN Massal
+                <ICONS.Key className="h-3.5 w-3.5" aria-hidden="true" />
+                Reset PIN
               </Button>
+              <Button size="sm" variant="secondary" onClick={() => setBatchOperation('toggle-active')}>
+                <ICONS.ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
+                Toggle Status
+              </Button>
+              <Button size="sm" variant="secondary" onClick={() => setBatchOperation('role-change')}>
+                <ICONS.Shield className="h-3.5 w-3.5" aria-hidden="true" />
+                Ubah Role
+              </Button>
+              {isRoleAdmin(authUser?.role) && (
+                <Button size="sm" variant="danger" onClick={() => setBatchOperation('delete')}>
+                  <ICONS.Trash className="h-3.5 w-3.5" aria-hidden="true" />
+                  Hapus
+                </Button>
+              )}
               <Button size="sm" variant="ghost" onClick={() => setSelectedUserIds(new Set())}>
-                Batal Pilih
+                Batal
               </Button>
             </div>
           </div>
@@ -773,276 +903,90 @@ export default function UserManagement() {
         )}
       </div>
 
-      {/* Create User Modal */}
-      <Modal
+      <CreateUserModal
         isOpen={showCreate}
         onClose={() => setShowCreate(false)}
-        title="Tambah Personel Baru"
-        size="md"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setShowCreate(false)}>Batal</Button>
-            <Button onClick={handleCreate} isLoading={isSaving}>Simpan</Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <Input label="NRP *" type="text" inputMode="numeric" maxLength={20} value={form.nrp} onChange={(e) => setForm({ ...form, nrp: e.target.value.replace(/\D/g, '') })} required />
-          <Input label="Nama Lengkap *" type="text" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} required />
-          <Input label="Pangkat" type="text" value={form.pangkat} onChange={(e) => setForm({ ...form, pangkat: e.target.value })} />
-          {satuans.length > 0 ? (
-            <SatuanSelector
-              label="Satuan"
-              required
-              value={form.satuan}
-              onChange={(value) => setForm({ ...form, satuan: value })}
-              satuans={satuans}
-              disabled={isSatuansLoading}
-            />
-          ) : (
-            <Input label="Satuan *" type="text" value={form.satuan} onChange={(e) => setForm({ ...form, satuan: e.target.value })} required />
-          )}
-          <div>
-            <label className="text-sm font-semibold text-text-primary">Role *</label>
-            <select className="form-control mt-1" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role, level_komando: '' })}>
-              {ROLE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-          {isRoleKomandan(form.role) && (
-            <div>
-              <label className="text-sm font-semibold text-text-primary">Tingkat Komando *</label>
-              <select
-                className="form-control mt-1"
-                value={form.level_komando}
-                onChange={(e) => setForm({ ...form, level_komando: e.target.value as '' | 'BATALION' | 'KOMPI' | 'PELETON' })}
-              >
-                <option value="">— Pilih Tingkat —</option>
-                <option value="BATALION">Batalion (Danyon)</option>
-                <option value="KOMPI">Kompi (Danki)</option>
-                <option value="PELETON">Peleton (Danton)</option>
-              </select>
-            </div>
-          )}
-          <Input label="PIN Awal *" type="password" inputMode="numeric" maxLength={6} helpText="6 digit angka" value={form.pin} onChange={(e) => setForm({ ...form, pin: e.target.value.replace(/\D/g, '').slice(0, 6) })} required />
-        </div>
-      </Modal>
+        isSaving={isSaving}
+        satuans={satuans}
+        isSatuansLoading={isSatuansLoading}
+        onSave={async (data) => {
+          setIsSaving(true);
+          try {
+            await createUser({ ...data, is_active: true });
+            showNotification('Personel berhasil ditambahkan', 'success');
+            setPage(1);
+            setShowCreate(false);
+          } catch (err) {
+            throw err;
+          } finally {
+            setIsSaving(false);
+          }
+        }}
+        onError={(msg) => showNotification(msg, 'error')}
+        onSuccess={(msg) => showNotification(msg, 'success')}
+      />
 
-      {/* Reset PIN Modal */}
-      <Modal
+      <ResetPinModal
         isOpen={showResetPin}
-        onClose={() => { setShowResetPin(false); setNewPin(''); }}
-        title={`Reset PIN — ${selectedUser?.nama}`}
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setShowResetPin(false)}>Batal</Button>
-            <Button onClick={handleResetPin} isLoading={isSaving}>Reset PIN</Button>
-          </>
-        }
-      >
-        <Input
-          label="PIN Baru *"
-          type="password"
-          inputMode="numeric"
-          maxLength={6}
-          helpText="6 digit angka"
-          value={newPin}
-          onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          required
-        />
-      </Modal>
+        onClose={() => setShowResetPin(false)}
+        isSaving={isSaving}
+        user={selectedUser}
+        onSave={async (userId, pin) => {
+          setIsSaving(true);
+          try {
+            await resetUserPin(userId, pin);
+          } finally {
+            setIsSaving(false);
+          }
+        }}
+        onError={(msg) => showNotification(msg, 'error')}
+        onSuccess={(msg) => {
+          showNotification(msg, 'success');
+          setShowResetPin(false);
+          setSelectedUser(null);
+        }}
+      />
 
-      {/* Bulk PIN Reset Modal */}
-      <Modal
+      <BulkResetPinModal
         isOpen={showBulkReset}
-        onClose={() => { setShowBulkReset(false); setBulkPin(''); }}
-        title={`Reset PIN Massal — ${selectedUserIds.size} Personel`}
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => setShowBulkReset(false)}>Batal</Button>
-            <Button onClick={handleBulkResetPin} isLoading={isSaving} variant="danger">
-              Reset {selectedUserIds.size} PIN
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div className="flex items-start gap-3 rounded-2xl border border-accent-gold/30 bg-gradient-to-r from-amber-50/80 to-transparent p-4 dark:from-amber-900/10">
-            <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-accent-gold/15 text-accent-gold text-xs font-bold">⚠</span>
-            <p className="text-xs text-text-muted leading-relaxed">
-              Semua <span className="font-semibold text-accent-gold">{selectedUserIds.size}</span> personel yang dipilih akan mendapat PIN yang sama. Pastikan PIN disebarkan dengan aman.
-            </p>
-          </div>
-          <Input
-            label="PIN Baru untuk Semua *"
-            type="password"
-            inputMode="numeric"
-            maxLength={6}
-            helpText="6 digit angka"
-            value={bulkPin}
-            onChange={(e) => setBulkPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            required
-          />
-        </div>
-      </Modal>
+        onClose={() => setShowBulkReset(false)}
+        isSaving={isSaving}
+        selectedUsers={users.filter((u) => selectedUserIds.has(u.id))}
+        onSave={handleBulkResetPin}
+        onError={(msg) => showNotification(msg, 'error')}
+        onSuccess={(msg) => {
+          showNotification(msg, 'success');
+          setShowBulkReset(false);
+          setSelectedUserIds(new Set());
+        }}
+      />
 
-      {/* Import CSV Modal */}
-      <Modal
+      <ImportPersonelModal
         isOpen={showImport}
-        onClose={() => { setShowImport(false); setImportRows([]); setImportResult(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-        title="Import Personel dari CSV"
-        size="lg"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => { setShowImport(false); setImportRows([]); setImportResult(null); }}>Tutup</Button>
-            <Button variant="secondary" onClick={downloadTemplate}>⬇ Unduh Template</Button>
-            {importRows.length > 0 && !importResult && (
-              <Button onClick={handleImport} isLoading={isImporting} disabled={!isRoleAdmin(authUser?.role)}>
-                Import {importRows.length} Personel
-              </Button>
-            )}
-          </>
-        }
-      >
-        <div className="space-y-4">
-          {!importResult ? (
-            <>
-              <div className="rounded-2xl border border-surface/60 bg-surface/15 p-4 text-sm text-text-muted space-y-1.5">
-                <p className="font-bold text-text-primary flex items-center gap-2">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary text-xs">📋</span>
-                  Format CSV yang diperlukan:
-                </p>
-                <p>Kolom: <code className="font-mono text-xs bg-surface/50 px-1.5 py-0.5 rounded-md">nrp, nama, pin, role, satuan, pangkat, jabatan</code></p>
-                <p>• PIN default 6 digit angka (contoh: 123456)</p>
-                <p>• Role: <code className="font-mono text-xs">prajurit</code> / <code className="font-mono text-xs">staf</code> / <code className="font-mono text-xs">komandan</code> / <code className="font-mono text-xs">guard</code> / <code className="font-mono text-xs">admin</code></p>
-                  <p>• Maksimum {MAX_IMPORT_ROWS} baris per file (diproses bertahap per {IMPORT_CHUNK_SIZE} data)</p>
-                <p>• Unduh template di bawah untuk format yang tepat</p>
-              </div>
+        onClose={() => setShowImport(false)}
+        isSaving={isImporting}
+        onImport={handleImportFile}
+        onError={(msg) => showNotification(msg, 'error')}
+        onSuccess={(msg) => {
+          showNotification(msg, 'success');
+          setShowImport(false);
+          setPage(1);
+        }}
+      />
 
-              <div>
-                <label className="text-sm font-semibold text-text-primary">Pilih File CSV</label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={handleFileChange}
-                  className="mt-1 block w-full text-sm text-text-muted file:mr-4 file:rounded-lg file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary hover:file:bg-primary/20 cursor-pointer"
-                />
-              </div>
-
-              {importRows.length > 0 && (
-                <div className="rounded-2xl border border-surface/60 bg-surface/15 p-4">
-                  <p className="text-sm font-bold text-text-primary mb-2">
-                    Preview — <span className="text-primary">{importRows.length}</span> baris ditemukan
-                  </p>
-                  {isImporting && importProgress && (
-                    <p className="mb-2 text-xs text-text-muted">
-                      Memproses batch {importProgress.current} dari {importProgress.total}...
-                    </p>
-                  )}
-                  <div className="overflow-x-auto max-h-40 overflow-y-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-surface/70">
-                          {Object.keys(importRows[0]).map((h) => (
-                            <th key={h} className="text-left py-1 pr-3 text-text-muted font-medium">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {importRows.slice(0, 5).map((row, i) => (
-                          <tr key={i} className="border-b border-surface/40">
-                            {Object.values(row).map((v, j) => (
-                              <td key={j} className="py-1 pr-3 text-text-primary">{v}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {importRows.length > 5 && (
-                      <p className="mt-1 text-xs text-text-muted">... dan {importRows.length - 5} baris lainnya</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-success/30 bg-gradient-to-br from-success/10 to-emerald-500/5 p-5 text-center">
-                  <p className="text-3xl font-black text-success">{importResult.success}</p>
-                  <p className="mt-1 text-xs font-semibold text-text-muted">Berhasil diimpor</p>
-                </div>
-                <div className={`rounded-2xl border p-5 text-center ${importResult.failed > 0 ? 'border-accent-red/30 bg-gradient-to-br from-accent-red/10 to-rose-500/5' : 'border-surface/60 bg-surface/15'}`}>
-                  <p className={`text-3xl font-black ${importResult.failed > 0 ? 'text-accent-red' : 'text-text-muted'}`}>{importResult.failed}</p>
-                  <p className="mt-1 text-xs font-semibold text-text-muted">Gagal diimpor</p>
-                </div>
-              </div>
-              {importResult.errors.length > 0 && (
-                <div className="rounded-2xl border border-accent-red/20 bg-accent-red/10 p-4 space-y-1 max-h-40 overflow-y-auto">
-                  <p className="text-xs font-bold text-accent-red mb-2">Detail Error:</p>
-                  {importResult.errors.map((e, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs">
-                      <span className="font-mono font-bold text-accent-red/80">{e.nrp}</span>
-                      <span className="text-text-muted">{e.error}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </Modal>
-
-      <Modal
+      <RoleEditModal
         isOpen={showRoleEdit}
-        onClose={() => { setShowRoleEdit(false); setRoleEditUser(null); }}
-        title={`Ubah Role — ${roleEditUser?.nama ?? '-'}`}
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => { setShowRoleEdit(false); setRoleEditUser(null); }}>Batal</Button>
-            <Button onClick={handleRoleUpdate} isLoading={isSaving}>Simpan Role</Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-surface/60 bg-surface/15 p-4 text-sm text-text-muted">
-            <p className="font-semibold text-text-primary">{roleEditUser?.nama ?? '-'}</p>
-            <p className="font-mono text-xs">NRP {roleEditUser?.nrp ?? '-'}</p>
-          </div>
-          <div>
-            <label className="text-sm font-semibold text-text-primary">Role *</label>
-            <select
-              className="form-control mt-1"
-              value={roleEditForm.role}
-              onChange={(e) => setRoleEditForm({ role: e.target.value as Role, level_komando: '' })}
-            >
-              {ROLE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </div>
-          {isRoleKomandan(roleEditForm.role) && (
-            <div>
-              <label className="text-sm font-semibold text-text-primary">Tingkat Komando *</label>
-              <select
-                className="form-control mt-1"
-                value={roleEditForm.level_komando}
-                onChange={(e) => setRoleEditForm({ ...roleEditForm, level_komando: e.target.value as '' | 'BATALION' | 'KOMPI' | 'PELETON' })}
-              >
-                <option value="">— Pilih Tingkat —</option>
-                <option value="BATALION">Batalion (Danyon)</option>
-                <option value="KOMPI">Kompi (Danki)</option>
-                <option value="PELETON">Peleton (Danton)</option>
-              </select>
-            </div>
-          )}
-        </div>
-      </Modal>
+        onClose={() => setShowRoleEdit(false)}
+        isSaving={isSaving}
+        user={roleEditUser}
+        onSave={handleRoleUpdate}
+        onError={(msg) => showNotification(msg, 'error')}
+        onSuccess={(msg) => {
+          showNotification(msg, 'success');
+          setShowRoleEdit(false);
+          setRoleEditUser(null);
+        }}
+      />
 
       {/* User Detail Modal */}
       <UserDetailModal
@@ -1054,67 +998,46 @@ export default function UserManagement() {
         onSave={handleSaveDetail}
       />
 
-      <Modal
+      <DeleteUserModal
         isOpen={showDelete}
-        onClose={() => { setShowDelete(false); setSelectedUser(null); }}
-        title="Hapus Data Anggota"
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => { setShowDelete(false); setSelectedUser(null); }}>Batal</Button>
-            <Button variant="danger" onClick={() => void handleDeleteUser()} isLoading={isSaving}>Ya, Hapus</Button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-accent-red/20 bg-accent-red/5 p-4">
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-red/20 to-rose-500/10 text-accent-red text-sm font-black">
-              {selectedUser?.nama.charAt(0).toUpperCase() ?? '?'}
-            </span>
-            <div className="min-w-0">
-              <p className="font-semibold text-text-primary truncate">{selectedUser?.nama ?? '-'}</p>
-              <p className="text-xs text-text-muted">NRP {selectedUser?.nrp ?? '-'} · {selectedUser?.role}</p>
-            </div>
-          </div>
-          <p className="text-sm text-text-muted">
-            Data anggota ini akan dihapus secara permanen. Tindakan ini <span className="font-semibold text-accent-red">tidak dapat dibatalkan</span>.
-          </p>
-        </div>
-      </Modal>
+        onClose={() => setShowDelete(false)}
+        isSaving={isSaving}
+        user={selectedUser}
+        isCurrentUser={authUser?.id === selectedUser?.id}
+        onDelete={handleDeleteUser}
+        onError={(msg) => showNotification(msg, 'error')}
+        onSuccess={(msg) => {
+          showNotification(msg, 'success');
+          setShowDelete(false);
+          setSelectedUser(null);
+        }}
+      />
 
-      {/* Unlock Modal */}
-      <Modal
+      <UnlockUserModal
         isOpen={showUnlock}
-        onClose={() => { setShowUnlock(false); setSelectedUser(null); }}
-        title="Buka Kunci Akun"
-        size="sm"
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => { setShowUnlock(false); setSelectedUser(null); }}>Batal</Button>
-            <Button onClick={() => void handleUnlockUser()} isLoading={isSaving}>
-              <span className="flex items-center gap-1.5">
-                <ICONS.Unlock className="h-3.5 w-3.5" aria-hidden="true" />
-                Buka Kunci
-              </span>
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-accent-gold/20 bg-accent-gold/5 p-4">
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-gold/20 to-amber-500/10 text-accent-gold">
-              <ICONS.Lock className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="font-semibold text-text-primary truncate">{selectedUser?.nama ?? '-'}</p>
-              <p className="text-xs text-text-muted">NRP {selectedUser?.nrp ?? '-'} · {selectedUser?.login_attempts ?? 0}× percobaan gagal</p>
-            </div>
-          </div>
-          <p className="text-sm text-text-muted">
-            Akun ini terkunci karena terlalu banyak percobaan login gagal. Membuka kunci akan mengizinkan personel login kembali.
-          </p>
-        </div>
-      </Modal>
+        onClose={() => setShowUnlock(false)}
+        isSaving={isSaving}
+        user={selectedUser}
+        onUnlock={handleUnlockUser}
+        onError={(msg) => showNotification(msg, 'error')}
+        onSuccess={(msg) => {
+          showNotification(msg, 'success');
+          setShowUnlock(false);
+          setSelectedUser(null);
+        }}
+      />
+
+      {/* Batch Operation Modals */}
+      <BatchOperationModals
+        isOpen={!!batchOperation}
+        operationType={batchOperation}
+        selectedUsers={users.filter((u) => selectedUserIds.has(u.id))}
+        isSaving={isBatchProcessing}
+        onDelete={handleBatchDelete}
+        onToggleActive={handleBatchToggleActive}
+        onRoleChange={handleBatchRoleChange}
+        onClose={() => setBatchOperation(null)}
+      />
     </DashboardLayout>
   );
 }
