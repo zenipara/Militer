@@ -119,6 +119,7 @@ export default function AuditLogPage() {
               totalPages={totalPages}
               totalItems={totalItems}
               pageSize={PAGE_SIZE}
+              compactOnMobile
               onPageChange={setPage}
             />
           </>

@@ -5,7 +5,6 @@ import Button from '../../components/common/Button';
 import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
 import { TableSkeleton } from '../../components/common/Skeleton';
-import Pagination from '../../components/ui/Pagination';
 import UserDetailModal from '../../components/common/UserDetailModal';
 import UserTableActions from '../../components/admin/UserTableActions';
 import BatchOperationModals from '../../components/admin/BatchOperationModals';
@@ -31,7 +30,6 @@ import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKoma
 import { validatePin, validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
 import type { User, Role, CommandLevel } from '../../types';
 
-const PAGE_SIZE = 50;
 const MAX_IMPORT_ROWS = 5000;
 const IMPORT_CHUNK_SIZE = 50;
 const DEFAULT_IMPORT_PIN = '123456';
@@ -367,21 +365,17 @@ function getErrorMessage(error: unknown, fallback = 'Gagal memproses data import
 }
 
 export default function UserManagement() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const setPage = (page: number) => setCurrentPage(Math.max(1, page));
+  const setPage = (_page: number) => undefined;
 
   const [searchRaw, setSearchRaw] = useState('');
   const search = useDebounce(searchRaw, 300);
   const [filterRole, setFilterRole] = useState<Role | ''>('');
   const [filterStatus, setFilterStatus] = useState<'active' | 'inactive' | ''>('');
 
-  const { users, isLoading, error, totalItems, totalPages, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({
+  const { users, isLoading, error, totalItems, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({
     orderBy: 'created_at',
     ascending: false,
-    serverPaginated: true,
-    page: currentPage,
-    pageSize: PAGE_SIZE,
-    searchQuery: search,
+    serverPaginated: false,
     role: filterRole || undefined,
     isActive: filterStatus ? filterStatus === 'active' : undefined,
   });
@@ -420,26 +414,39 @@ export default function UserManagement() {
   const [batchOperation, setBatchOperation] = useState<'delete' | 'toggle-active' | 'role-change' | null>(null);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
 
+  const filteredUsers = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return users;
+
+    return users.filter((u) =>
+      u.nama.toLowerCase().includes(query) ||
+      u.nrp.includes(search.trim()) ||
+      (u.pangkat?.toLowerCase().includes(query) ?? false) ||
+      (u.jabatan?.toLowerCase().includes(query) ?? false) ||
+      (u.satuan?.toLowerCase().includes(query) ?? false),
+    );
+  }, [users, search]);
+
   const pageStats = useMemo(() => {
-    const active = users.filter((u) => u.is_active).length;
-    const inactive = users.length - active;
-    const online = users.filter((u) => u.is_online).length;
+    const active = filteredUsers.filter((u) => u.is_active).length;
+    const inactive = filteredUsers.length - active;
+    const online = filteredUsers.filter((u) => u.is_online).length;
     return {
-      pageCount: users.length,
+      pageCount: filteredUsers.length,
       active,
       inactive,
       online,
     };
-  }, [users]);
+  }, [filteredUsers]);
   const hasFilters = searchRaw.trim().length > 0 || filterRole !== '' || filterStatus !== '';
   const selectedUsers = useMemo(
-    () => users.filter((u) => selectedUserIds.has(u.id)),
-    [users, selectedUserIds],
+    () => filteredUsers.filter((u) => selectedUserIds.has(u.id)),
+    [filteredUsers, selectedUserIds],
   );
 
   useEffect(() => {
     setSelectedUserIds(new Set());
-  }, [users, currentPage]);
+  }, [filteredUsers]);
 
   const loadRegistrationForms = async () => {
     if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
@@ -841,12 +848,12 @@ export default function UserManagement() {
   };
 
   const exportFilteredCSV = () => {
-    if (users.length === 0) {
+    if (filteredUsers.length === 0) {
       showNotification('Tidak ada data untuk diekspor', 'error');
       return;
     }
     const header = 'nrp,nama,pangkat,jabatan,satuan,role,status';
-    const rows = users.map((u) =>
+    const rows = filteredUsers.map((u) =>
       [
         u.nrp,
         `"${u.nama.replace(/"/g, '""')}"`,
@@ -862,10 +869,10 @@ export default function UserManagement() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `personel_export_halaman_${currentPage}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `personel_export_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    showNotification(`${users.length} personel di halaman ini berhasil diekspor`, 'success');
+    showNotification(`${filteredUsers.length} personel berhasil diekspor`, 'success');
   };
 
   const handleUnlockUser = async () => {
@@ -994,10 +1001,10 @@ export default function UserManagement() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedUserIds.size === users.length) {
+    if (selectedUserIds.size === filteredUsers.length) {
       setSelectedUserIds(new Set());
     } else {
-      setSelectedUserIds(new Set(users.map((u) => u.id)));
+      setSelectedUserIds(new Set(filteredUsers.map((u) => u.id)));
     }
   };
 
@@ -1037,8 +1044,8 @@ export default function UserManagement() {
           meta={
             <>
               <span>{totalItems} personel terdaftar</span>
-              <span>Halaman {currentPage} dari {totalPages}</span>
               <span>{pageStats.pageCount} data tampil</span>
+              <span>Mode tampil: Semua user</span>
             </>
           }
         />
@@ -1059,7 +1066,7 @@ export default function UserManagement() {
           <div className="app-card border border-surface/70 p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-wide text-text-muted">Aktif (Halaman)</p>
+                <p className="text-xs uppercase tracking-wide text-text-muted">Aktif (Tampil)</p>
                 <p className="mt-2 text-2xl font-bold text-success">{pageStats.active}</p>
               </div>
               <span className="h-2.5 w-2.5 rounded-full bg-success animate-pulse" aria-hidden="true" />
@@ -1069,7 +1076,7 @@ export default function UserManagement() {
           <div className="app-card border border-surface/70 p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-wide text-text-muted">Nonaktif (Halaman)</p>
+                <p className="text-xs uppercase tracking-wide text-text-muted">Nonaktif (Tampil)</p>
                 <p className="mt-2 text-2xl font-bold text-accent-red">{pageStats.inactive}</p>
               </div>
               <span className="h-2.5 w-2.5 rounded-full bg-accent-red" aria-hidden="true" />
@@ -1111,13 +1118,13 @@ export default function UserManagement() {
                 type="text"
                 placeholder="Cari nama atau NRP..."
                 value={searchRaw}
-                onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
+                  onChange={(e) => { setSearchRaw(e.target.value); }}
                 className="form-control w-full bg-bg-card pl-9"
               />
             </div>
               <select
                 value={filterRole}
-                onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
+                onChange={(e) => { setFilterRole(e.target.value as Role | ''); }}
                 className="form-control w-full bg-bg-card"
               >
                 <option value="">Semua Role</option>
@@ -1127,7 +1134,7 @@ export default function UserManagement() {
               </select>
               <select
                 value={filterStatus}
-                onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); setPage(1); }}
+                onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); }}
                 className="form-control w-full bg-bg-card"
               >
                 <option value="">Semua Status</option>
@@ -1157,7 +1164,6 @@ export default function UserManagement() {
                     setSearchRaw('');
                     setFilterRole('');
                     setFilterStatus('');
-                    setPage(1);
                   }}
                   className="w-full sm:w-auto"
                 >
@@ -1187,7 +1193,7 @@ export default function UserManagement() {
                 <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/20 text-xs font-bold">{selectedUserIds.size}</span>
                 <span>personel dipilih</span>
                 <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary/90">
-                  dari {users.length} data halaman ini
+                  dari {filteredUsers.length} data saat ini
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -1341,10 +1347,10 @@ export default function UserManagement() {
                 header: (
                   <input
                     type="checkbox"
-                    checked={users.length > 0 && selectedUserIds.size === users.length}
+                      checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length}
                     onChange={toggleSelectAll}
                     className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
-                    title="Pilih semua di halaman ini"
+                      title="Pilih semua data yang tampil"
                   />
                 ),
                 render: (u) => (
@@ -1426,20 +1432,12 @@ export default function UserManagement() {
                 ),
               },
             ]}
-            data={users}
+            data={filteredUsers}
             keyExtractor={(u) => u.id}
             isLoading={false}
             minTableWidthClass="min-w-[540px]"
             caption="Tabel manajemen personel berdasarkan filter role, status, dan pencarian"
             emptyMessage="Tidak ada personel ditemukan"
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            pageSize={PAGE_SIZE}
-            compactOnMobile
-            onPageChange={setPage}
           />
           </>
         )}

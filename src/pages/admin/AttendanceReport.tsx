@@ -308,6 +308,7 @@ export default function AttendanceReport() {
               totalPages={totalPages}
               totalItems={totalItems}
               pageSize={PAGE_SIZE}
+              compactOnMobile
               onPageChange={setPage}
             />
           </>
