@@ -29,7 +29,7 @@ export default function GatePassPage() {
 
   return (
     <DashboardLayout title="Gate Pass">
-      <div className="mx-auto max-w-xl space-y-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6">
         <PageHeader
           title="Gate Pass"
           subtitle="Ajukan izin keluar batalion dan pantau status persetujuan serta riwayat perjalanan Anda."

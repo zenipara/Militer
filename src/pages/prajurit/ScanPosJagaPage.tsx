@@ -134,7 +134,7 @@ export default function ScanPosJagaPage() {
 
   return (
     <DashboardLayout title="Scan Pos Jaga">
-      <div className="mx-auto max-w-md space-y-5">
+      <div className="mx-auto w-full max-w-4xl space-y-5">
         <PageHeader
           title="Scan Pos Jaga"
           subtitle="Pindai QR statis di pos jaga, lalu masukkan NRP dan PIN untuk mencatat izin keluar/kembali."

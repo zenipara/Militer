@@ -404,7 +404,7 @@ export default function Settings() {
 
   return (
     <DashboardLayout title="Pengaturan Sistem">
-      <div className="space-y-6 max-w-4xl">
+      <div className="mx-auto w-full max-w-6xl space-y-6">
         <PageHeader
           title="Pengaturan Sistem"
           subtitle="Atur tampilan, notifikasi, dan perilaku dashboard agar lebih sesuai kebutuhan operasional."

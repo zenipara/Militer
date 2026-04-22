@@ -148,7 +148,7 @@ export default function Profile() {
 
   return (
     <DashboardLayout title="Profil Saya">
-      <div className="max-w-lg space-y-6">
+      <div className="mx-auto w-full max-w-4xl space-y-6">
         <PageHeader
           title="Profil Saya"
           subtitle="Kelola informasi pribadi, statistik performa, dan keamanan akun Anda."

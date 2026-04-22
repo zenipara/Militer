@@ -52,7 +52,7 @@ export default function GatePassApprovalPage() {
 
   return (
     <DashboardLayout title="Persetujuan Gate Pass">
-      <div className="mx-auto max-w-4xl space-y-5">
+      <div className="mx-auto w-full max-w-5xl space-y-5">
         <PageHeader
           title="Persetujuan Gate Pass Komandan"
           subtitle="Gate Pass komandan disetujui otomatis oleh backend. Daftar pending lama tetap bisa diproses manual bila masih ada data historis."
