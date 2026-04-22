@@ -23,6 +23,8 @@ export function useAnnouncements() {
   const isFetchingRef = useRef(false);
   const refreshQueuedRef = useRef(false);
   const fetchAnnouncementsRef = useRef<((force?: boolean) => Promise<void>) | null>(null);
+  const hasLoadedRef = useRef(false);
+  const channelNonceRef = useRef(`ann-${Math.random().toString(36).slice(2, 10)}`);
 
   const cacheKey = useMemo(() => `${user?.id ?? ''}:${user?.role ?? ''}`, [user?.id, user?.role]);
 
@@ -30,6 +32,16 @@ export function useAnnouncements() {
   const [isLoading, setIsLoading] = useState(() => !announcementsCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+
+  const setAnnouncementsIfChanged = useCallback((next: Announcement[]) => {
+    setAnnouncements((prev) => {
+      if (prev.length === next.length) {
+        const unchanged = prev.every((item, idx) => item.id === next[idx]?.id && item.updated_at === next[idx]?.updated_at);
+        if (unchanged) return prev;
+      }
+      return next;
+    });
+  }, []);
 
   const fetchAnnouncements = useCallback(async (force = false) => {
     if (isFetchingRef.current) {
@@ -44,18 +56,22 @@ export function useAnnouncements() {
     if (!force) {
       const cached = announcementsCache.get(cacheKey);
       if (cached) {
-        setAnnouncements(cached);
+        setAnnouncementsIfChanged(cached);
+        hasLoadedRef.current = true;
         setIsLoading(false);
         return;
       }
     }
     isFetchingRef.current = true;
-    setIsLoading(true);
+    if (!hasLoadedRef.current) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const data = await apiFetchAnnouncements(user.id, user.role);
       announcementsCache.set(cacheKey, data);
-      setAnnouncements(data);
+      setAnnouncementsIfChanged(data);
+      hasLoadedRef.current = true;
     } catch (err) {
       setError(handleError(err, 'Gagal memuat pengumuman'));
     } finally {
@@ -67,7 +83,7 @@ export function useAnnouncements() {
         setIsLoading(false);
       }
     }
-  }, [user, cacheKey]);
+  }, [user, cacheKey, setAnnouncementsIfChanged]);
 
   const fetchAnnouncementsOrThrow = useCallback(async (force = false) => {
     if (isFetchingRef.current) {
@@ -78,18 +94,22 @@ export function useAnnouncements() {
     if (!force) {
       const cached = announcementsCache.get(cacheKey);
       if (cached) {
-        setAnnouncements(cached);
+        setAnnouncementsIfChanged(cached);
+        hasLoadedRef.current = true;
         setIsLoading(false);
         return;
       }
     }
     isFetchingRef.current = true;
-    setIsLoading(true);
+    if (!hasLoadedRef.current) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const data = await apiFetchAnnouncements(user.id, user.role);
       announcementsCache.set(cacheKey, data);
-      setAnnouncements(data);
+      setAnnouncementsIfChanged(data);
+      hasLoadedRef.current = true;
     } catch (err) {
       const message = handleError(err, 'Gagal memuat pengumuman');
       setError(message);
@@ -109,7 +129,7 @@ export function useAnnouncements() {
     } else {
       setIsLoading(false);
     }
-  }, [user, cacheKey]);
+  }, [user, cacheKey, setAnnouncementsIfChanged]);
 
   useEffect(() => {
     void fetchAnnouncements();
@@ -129,7 +149,7 @@ export function useAnnouncements() {
       channelRef.current = null;
     }
 
-    const channel = supabase.channel(`announcements-changes-${user.id}`);
+    const channel = supabase.channel(`announcements-changes-${user.id}-${channelNonceRef.current}`);
     channel.on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
       announcementsCache.invalidate(cacheKey);
       void fetchAnnouncements(true);

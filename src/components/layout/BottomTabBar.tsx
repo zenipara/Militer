@@ -62,7 +62,7 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
 export default function BottomTabBar() {
   const { user } = useAuthStore();
   const { flags } = useFeatureStore();
-  const { unreadCount } = useMessages({ includeSent: false, enableDirectRealtime: false });
+  const { unreadCount } = useMessages({ includeSent: false, enableDirectRealtime: false, subscribeToDataChanges: false });
 
   if (!user) return null;
 

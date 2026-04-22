@@ -38,6 +38,8 @@ export function useTasks(options: UseTasksOptions = {}) {
   const isFetchingRef = useRef(false);
   const refreshQueuedRef = useRef(false);
   const fetchTasksRef = useRef<(() => Promise<void>) | null>(null);
+  const hasLoadedRef = useRef(false);
+  const channelNonceRef = useRef(`tasks-${Math.random().toString(36).slice(2, 10)}`);
 
   // Stabilize cacheKey so it only changes when the option values change (not object references)
   const cacheKey = useMemo(
@@ -50,6 +52,16 @@ export function useTasks(options: UseTasksOptions = {}) {
   const [tasks, setTasks] = useState<Task[]>(() => tasksCache.get(cacheKey) ?? []);
   const [isLoading, setIsLoading] = useState(() => !tasksCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
+
+  const setTasksIfChanged = useCallback((next: Task[]) => {
+    setTasks((prev) => {
+      if (prev.length === next.length) {
+        const unchanged = prev.every((item, idx) => item.id === next[idx]?.id && item.updated_at === next[idx]?.updated_at);
+        if (unchanged) return prev;
+      }
+      return next;
+    });
+  }, []);
 
   const fetchTasks = useCallback(async (force = false) => {
     if (isFetchingRef.current) {
@@ -64,13 +76,16 @@ export function useTasks(options: UseTasksOptions = {}) {
     if (!force) {
       const cached = tasksCache.get(cacheKey);
       if (cached) {
-        setTasks(cached);
+        setTasksIfChanged(cached);
+        hasLoadedRef.current = true;
         setIsLoading(false);
         return;
       }
     }
     isFetchingRef.current = true;
-    setIsLoading(true);
+    if (!hasLoadedRef.current) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const data = await apiFetchTasks({
@@ -82,7 +97,8 @@ export function useTasks(options: UseTasksOptions = {}) {
         satuan: options.satuan,
       });
       tasksCache.set(cacheKey, data);
-      setTasks(data);
+      setTasksIfChanged(data);
+      hasLoadedRef.current = true;
     } catch (err) {
       setError(handleError(err, 'Gagal memuat data tugas'));
     } finally {
@@ -94,7 +110,7 @@ export function useTasks(options: UseTasksOptions = {}) {
         setIsLoading(false);
       }
     }
-  }, [user, cacheKey, options.assignedTo, options.assignedBy, options.status, options.satuan]);
+  }, [user, cacheKey, options.assignedTo, options.assignedBy, options.status, options.satuan, setTasksIfChanged]);
 
   useEffect(() => {
     void fetchTasks();
@@ -111,7 +127,7 @@ export function useTasks(options: UseTasksOptions = {}) {
   useEffect(() => {
     if (!user) return;
     const filter = options.assignedTo ? `assigned_to=eq.${options.assignedTo}` : undefined;
-    const channel = supabase.channel('tasks-changes');
+    const channel = supabase.channel(`tasks-changes-${channelNonceRef.current}`);
     channel.on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter }, () => {
       tasksCache.invalidate(cacheKey);
       void fetchTasks(true);

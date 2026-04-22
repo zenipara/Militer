@@ -20,6 +20,12 @@ export function useAttendance(userId?: string) {
   const { user } = useAuthStore();
   const targetUserId = userId ?? user?.id;
 
+  const isFetchingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
+  const fetchAttendanceRef = useRef<((force?: boolean) => Promise<void>) | null>(null);
+  const hasLoadedRef = useRef(false);
+  const channelNonceRef = useRef(`att-${Math.random().toString(36).slice(2, 10)}`);
+
   const cacheKey = useMemo(() => targetUserId ?? '', [targetUserId]);
 
   const today = new Date().toISOString().split('T')[0];
@@ -33,7 +39,40 @@ export function useAttendance(userId?: string) {
   const [error, setError] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
+  const setAttendanceStateIfChanged = useCallback((next: Attendance[]) => {
+    setAttendances((prev) => {
+      if (prev.length === next.length) {
+        const unchanged = prev.every((item, idx) => (
+          item.id === next[idx]?.id
+          && item.created_at === next[idx]?.created_at
+          && item.status === next[idx]?.status
+          && item.check_in === next[idx]?.check_in
+          && item.check_out === next[idx]?.check_out
+        ));
+        if (unchanged) return prev;
+      }
+      return next;
+    });
+    const nextToday = next.find((a) => a.tanggal === today) ?? null;
+    setTodayAttendance((prev) => {
+      if (!prev && !nextToday) return prev;
+      if (
+        prev?.id === nextToday?.id
+        && prev?.status === nextToday?.status
+        && prev?.check_in === nextToday?.check_in
+        && prev?.check_out === nextToday?.check_out
+      ) {
+        return prev;
+      }
+      return nextToday;
+    });
+  }, [today]);
+
   const fetchAttendance = useCallback(async (force = false) => {
+    if (isFetchingRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
     if (!user || !targetUserId) {
       setAttendances([]);
       setTodayAttendance(null);
@@ -43,25 +82,34 @@ export function useAttendance(userId?: string) {
     if (!force) {
       const cached = attendanceCache.get(cacheKey);
       if (cached) {
-        setAttendances(cached);
-        setTodayAttendance(cached.find((a) => a.tanggal === today) ?? null);
+        setAttendanceStateIfChanged(cached);
+        hasLoadedRef.current = true;
         setIsLoading(false);
         return;
       }
     }
-    setIsLoading(true);
+    isFetchingRef.current = true;
+    if (!hasLoadedRef.current) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const list = await apiFetchAttendance(user.id, user.role, targetUserId);
       attendanceCache.set(cacheKey, list);
-      setAttendances(list);
-      setTodayAttendance(list.find((a) => a.tanggal === today) ?? null);
+      setAttendanceStateIfChanged(list);
+      hasLoadedRef.current = true;
     } catch (err) {
       setError(handleError(err, 'Gagal memuat absensi'));
     } finally {
-      setIsLoading(false);
+      isFetchingRef.current = false;
+      if (refreshQueuedRef.current) {
+        refreshQueuedRef.current = false;
+        await fetchAttendanceRef.current?.(true);
+      } else {
+        setIsLoading(false);
+      }
     }
-  }, [user, targetUserId, cacheKey, today]);
+  }, [user, targetUserId, cacheKey, setAttendanceStateIfChanged]);
 
   useEffect(() => {
     void fetchAttendance();
@@ -81,7 +129,7 @@ export function useAttendance(userId?: string) {
       channelRef.current = null;
     }
 
-    const channel = supabase.channel(`attendance-changes-${user.id}`);
+    const channel = supabase.channel(`attendance-changes-${user.id}-${channelNonceRef.current}`);
     channel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
         attendanceCache.invalidate(cacheKey);
@@ -91,7 +139,6 @@ export function useAttendance(userId?: string) {
         if (status === 'SUBSCRIBED') {
           if (import.meta.env.DEV) console.log('[Realtime] Attendance subscription active');
         } else if (status === 'CHANNEL_ERROR') {
-          setError('Koneksi realtime terputus. Refresh otomatis...');
           attendanceCache.invalidate(cacheKey);
           void fetchAttendance(true);
         } else if (status === 'CLOSED') {
@@ -107,6 +154,10 @@ export function useAttendance(userId?: string) {
       }
     };
   }, [user, cacheKey, fetchAttendance]);
+
+  useEffect(() => {
+    fetchAttendanceRef.current = fetchAttendance;
+  }, [fetchAttendance]);
 
   const checkIn = async () => {
     if (!targetUserId) throw new Error('User tidak ditemukan');
