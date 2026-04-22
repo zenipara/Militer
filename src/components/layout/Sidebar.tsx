@@ -268,18 +268,13 @@ export default function Sidebar() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `group relative flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200
-                      ${
-                        isActive
-                          ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-md shadow-primary/25'
-                          : 'text-text-muted hover:bg-slate-100/80 hover:text-text-primary dark:hover:bg-surface/50'
-                      }`
+                      `group sidebar-link ${isActive ? 'sidebar-link--active' : ''}`
                     }
                     onClick={() => {
                       if (window.innerWidth < 1024) setSidebarOpen(false);
                     }}
                   >
-                    <span className="grid h-6 w-6 place-items-center rounded-lg bg-black/[0.06] text-center transition-colors duration-200 dark:bg-white/[0.08]">
+                    <span className="sidebar-link__icon text-center">
                       {Icon ? <Icon className="w-4 h-4" aria-hidden="true" /> : null}
                     </span>
                     {item.label}

@@ -181,14 +181,14 @@ export default function AdminDashboard() {
         />
 
         {enabledQuickLinks.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className="dashboard-quick-strip">
             {enabledQuickLinks.slice(0, 3).map((item) => {
               const Icon = ICONS[item.icon];
               return (
                 <Link
                   key={`primary-${item.href}`}
                   to={item.href}
-                  className="group inline-flex min-h-[44px] items-center gap-2.5 rounded-2xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md hover:text-primary"
+                  className="dashboard-quick-link group"
                 >
                   <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-105">
                     <Icon className="h-4 w-4" aria-hidden="true" />
@@ -228,10 +228,10 @@ export default function AdminDashboard() {
         <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-4">
             <div className="app-card p-5">
-              <div className="flex items-center justify-between gap-3">
+              <div className="panel-heading">
                 <div>
-                  <h3 className="text-lg font-bold text-text-primary">Pusat Tindakan Cepat</h3>
-                  <p className="text-sm text-text-muted">Akses langsung ke modul yang paling sering dipakai admin.</p>
+                  <h3 className="panel-heading__title">Pusat Tindakan Cepat</h3>
+                  <p className="panel-heading__desc">Akses langsung ke modul yang paling sering dipakai admin.</p>
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2.5 md:grid-cols-3">
@@ -264,10 +264,10 @@ export default function AdminDashboard() {
             </div>
 
             <div className="app-card p-5">
-              <div className="flex items-center justify-between gap-3">
+              <div className="panel-heading">
                 <div>
-                  <h3 className="text-lg font-bold text-text-primary">Pantauan Operasional</h3>
-                  <p className="text-sm text-text-muted">Ringkasan yang langsung berguna untuk pengambilan keputusan.</p>
+                  <h3 className="panel-heading__title">Pantauan Operasional</h3>
+                  <p className="panel-heading__desc">Ringkasan yang langsung berguna untuk pengambilan keputusan.</p>
                 </div>
               </div>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
@@ -316,10 +316,10 @@ export default function AdminDashboard() {
 
             {isUserManagementEnabled && (
               <div className="app-card p-5">
-                <div className="flex items-center justify-between gap-3">
+                <div className="panel-heading">
                   <div>
-                    <h3 className="text-lg font-bold text-text-primary">Hapus Anggota Cepat</h3>
-                    <p className="text-sm text-text-muted">Kelola anggota terbaru langsung dari dashboard admin.</p>
+                    <h3 className="panel-heading__title">Hapus Anggota Cepat</h3>
+                    <p className="panel-heading__desc">Kelola anggota terbaru langsung dari dashboard admin.</p>
                   </div>
                   <Link to="/admin/users" className="text-xs text-primary hover:underline">Kelola lengkap →</Link>
                 </div>
@@ -438,7 +438,7 @@ export default function AdminDashboard() {
                 { label: 'Task throughput', value: `${stats?.tugasAktif ?? 0}/${stats?.totalTugas ?? 0}`, accent: 'text-primary' },
                 { label: 'Online coverage', value: `${stats?.totalOnline ?? 0}/${stats?.totalPersonel ?? 0}`, accent: 'text-primary' },
               ].map((metric) => (
-                <div key={metric.label} className="flex items-center justify-between rounded-2xl border border-surface/70 bg-surface/15 px-4 py-3 transition-colors hover:border-surface/90 hover:bg-surface/20">
+                <div key={metric.label} className="metric-row">
                   <p className="text-sm text-text-muted">{metric.label}</p>
                   <p className={`text-xl font-bold ${metric.accent}`}>{metric.value}</p>
                 </div>

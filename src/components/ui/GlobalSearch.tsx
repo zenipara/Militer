@@ -161,7 +161,7 @@ export default function GlobalSearch() {
       {/* Search trigger button */}
       <button
         onClick={openSearch}
-        className="flex items-center gap-2 rounded-xl border border-surface bg-slate-50 px-3 py-2 text-sm text-text-muted transition-colors hover:bg-slate-100 hover:text-text-primary dark:bg-surface/35 dark:hover:bg-surface/65"
+        className="search-trigger text-sm"
         aria-label="Cari (Ctrl+K)"
         aria-haspopup="listbox"
         aria-expanded={isOpen}

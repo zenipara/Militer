@@ -93,20 +93,12 @@ export default function BottomTabBar() {
               key={tab.path}
               to={tab.path}
               className={({ isActive }) =>
-                `relative flex flex-col items-center justify-center gap-0.5 rounded-2xl min-h-[56px] py-1.5 px-1 text-xs font-medium transition-all duration-200
-                ${isActive
-                  ? 'text-primary'
-                  : 'text-text-muted hover:text-text-primary'
-                }`
+                `bottom-tab-item ${isActive ? 'bottom-tab-item--active' : ''}`
               }
               aria-label={showBadge ? `${tab.label} — ${unreadCount} belum dibaca` : tab.label}
             >
               {({ isActive }) => (
                 <>
-                  {/* Active background pill */}
-                  {isActive && (
-                    <span className="absolute inset-x-1.5 inset-y-1 rounded-xl bg-primary/10 animate-scale-in" aria-hidden="true" />
-                  )}
                   <span className="relative text-[22px] leading-none">
                     {tab.icon}
                     {showBadge && (

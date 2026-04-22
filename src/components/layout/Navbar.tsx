@@ -70,7 +70,7 @@ export default function Navbar({ title }: NavbarProps) {
   }, [requestSync]);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-surface/60 bg-bg-card/90 px-4 backdrop-blur-2xl sm:px-5 lg:px-8" data-print-hide>
+    <header className="nav-header-shell sticky top-0 z-20 px-4 sm:px-5 lg:px-8" data-print-hide>
       <div className="flex h-16 items-center gap-3">
         <button
           onClick={toggleSidebar}
