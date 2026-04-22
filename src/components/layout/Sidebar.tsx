@@ -7,6 +7,7 @@ import { usePlatformStore } from '../../store/platformStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { isPathEnabled } from '../../lib/featureFlags';
 import { APP_ROUTE_PATHS, getRoleDisplayLabel, ROLE_ROUTE_PATHS } from '../../lib/rolePermissions';
+import { getBottomTabPaths } from './BottomTabBar';
 import type { Role } from '../../types';
 
 interface NavItem {
@@ -95,6 +96,9 @@ const NAV_ITEMS: Record<Role, NavItem[]> = {
   ],
 };
 
+export const getSidebarNavPaths = (role: Role): string[] =>
+  (NAV_ITEMS[role] ?? []).map((item) => item.path);
+
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
@@ -103,6 +107,9 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [isMobileViewport, setIsMobileViewport] = useState(
+    () => (typeof window !== 'undefined' ? window.innerWidth < 1024 : false),
+  );
 
   // Swipe-to-close: track touch start X position
   const touchStartX = useRef<number | null>(null);
@@ -130,13 +137,38 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    const updateViewport = () => {
+      setIsMobileViewport(window.innerWidth < 1024);
+    };
+
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     if (window.innerWidth < 1024) setSidebarOpen(false);
   }, [location.pathname, setSidebarOpen]);
 
   const navItems = useMemo(() => {
     if (!user) return [] as NavItem[];
-    return (NAV_ITEMS[user.role] ?? []).filter((item) => isPathEnabled(item.path, flags));
-  }, [user, flags]);
+
+    const roleNavItems = (NAV_ITEMS[user.role] ?? []).filter((item) => isPathEnabled(item.path, flags));
+
+    if (!isMobileViewport) return roleNavItems;
+
+    const bottomTabPaths = new Set(getBottomTabPaths(user.role));
+    return roleNavItems.filter((item) => !bottomTabPaths.has(item.path));
+  }, [user, flags, isMobileViewport]);
+
+  useEffect(() => {
+    if (!isMobileViewport) return;
+    if (!sidebarOpen) return;
+    if (navItems.length > 0) return;
+    setSidebarOpen(false);
+  }, [isMobileViewport, sidebarOpen, navItems.length, setSidebarOpen]);
 
   const filteredNavItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();

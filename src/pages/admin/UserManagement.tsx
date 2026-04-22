@@ -351,6 +351,31 @@ interface ImportRowsResult {
   duplicateRows: number;
 }
 
+async function runWithConcurrency<T>(
+  items: T[],
+  worker: (item: T) => Promise<void>,
+  concurrency = 5,
+): Promise<number> {
+  const queue = [...items];
+  let successCount = 0;
+
+  const runners = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (queue.length > 0) {
+      const item = queue.shift();
+      if (!item) break;
+      try {
+        await worker(item);
+        successCount += 1;
+      } catch {
+        // Skip failed row and continue processing the remaining queue.
+      }
+    }
+  });
+
+  await Promise.all(runners);
+  return successCount;
+}
+
 export default function UserManagement() {
   const nrpInputRef = useRef<HTMLInputElement | null>(null);
   const namaInputRef = useRef<HTMLInputElement | null>(null);
@@ -664,14 +689,14 @@ export default function UserManagement() {
     }
   };
 
-  const handleToggleActive = async (u: User) => {
+  const handleToggleActive = useCallback(async (u: User) => {
     try {
       await toggleUserActive(u.id, !u.is_active);
       showNotification(`Akun ${u.nama} ${!u.is_active ? 'diaktifkan' : 'dinonaktifkan'}`, 'success');
     } catch {
       showNotification('Gagal mengubah status akun', 'error');
     }
-  };
+  }, [toggleUserActive, showNotification]);
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
@@ -843,10 +868,10 @@ export default function UserManagement() {
     }
   };
 
-  const openRoleEdit = (user: User) => {
+  const openRoleEdit = useCallback((user: User) => {
     setRoleEditUser(user);
     setShowRoleEdit(true);
-  };
+  }, []);
 
   const handleRoleUpdate = async (userId: string, role: Role, levelKomando?: CommandLevel) => {
     if (!userId) return;
@@ -927,25 +952,17 @@ export default function UserManagement() {
     
     setIsBatchProcessing(true);
     try {
-      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
-      
       // Filter out current user (can't delete self)
-      const toDelete = selectedList.filter((u) => u.id !== authUser?.id);
+      const toDelete = selectedUsersOnPage.filter((u) => u.id !== authUser?.id);
       
       if (toDelete.length === 0) {
         showNotification('Tidak ada personel yang bisa dihapus', 'error');
         return;
       }
 
-      let deleted = 0;
-      for (const user of toDelete) {
-        try {
-          await deleteUser(user.id);
-          deleted++;
-        } catch (e) {
-          if (import.meta.env.DEV) console.warn(`Failed to delete ${user.nama}:`, e);
-        }
-      }
+      const deleted = await runWithConcurrency(toDelete, async (user) => {
+        await deleteUser(user.id);
+      });
 
       showNotification(`${deleted} personel berhasil dihapus`, 'success');
       setSelectedUserIds(new Set());
@@ -962,24 +979,15 @@ export default function UserManagement() {
 
     setIsBatchProcessing(true);
     try {
-      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
-      let updated = 0;
-
-      for (const user of selectedList) {
+      const updated = await runWithConcurrency(selectedUsersOnPage, async (user) => {
         let newStatus: boolean;
         if (action === 'toggle') {
           newStatus = !user.is_active;
         } else {
           newStatus = action === 'activate';
         }
-
-        try {
-          await updateUser(user.id, { is_active: newStatus });
-          updated++;
-        } catch (e) {
-          if (import.meta.env.DEV) console.warn(`Failed to update ${user.nama}:`, e);
-        }
-      }
+        await updateUser(user.id, { is_active: newStatus });
+      });
 
       const actionLabel = action === 'activate' ? 'diaktifkan' : action === 'deactivate' ? 'dinonaktifkan' : 'diubah statusnya';
       showNotification(`${updated} personel berhasil ${actionLabel}`, 'success');
@@ -997,20 +1005,12 @@ export default function UserManagement() {
 
     setIsBatchProcessing(true);
     try {
-      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
-      let updated = 0;
-
-      for (const user of selectedList) {
-        try {
-          await updateUser(user.id, {
-            role,
-            level_komando: isRoleKomandan(role) ? levelKomando : undefined,
-          });
-          updated++;
-        } catch (e) {
-          if (import.meta.env.DEV) console.warn(`Failed to update ${user.nama}:`, e);
-        }
-      }
+      const updated = await runWithConcurrency(selectedUsersOnPage, async (user) => {
+        await updateUser(user.id, {
+          role,
+          level_komando: isRoleKomandan(role) ? levelKomando : undefined,
+        });
+      });
 
       showNotification(`Role ${updated} personel berhasil diubah ke ${role}`, 'success');
       setSelectedUserIds(new Set());
@@ -1022,24 +1022,24 @@ export default function UserManagement() {
     }
   };
 
-  const toggleSelectUser = (id: string) => {
+  const toggleSelectUser = useCallback((id: string) => {
     setSelectedUserIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
+  }, []);
 
-  const toggleSelectAll = () => {
+  const toggleSelectAll = useCallback(() => {
     if (selectedUserIds.size === users.length) {
       setSelectedUserIds(new Set());
     } else {
       setSelectedUserIds(new Set(users.map((u) => u.id)));
     }
-  };
+  }, [selectedUserIds.size, users]);
 
-  const handleOpenDetail = async (u: User) => {
+  const handleOpenDetail = useCallback(async (u: User) => {
     // Fetch full detail (including extended fields) before opening modal
     try {
       const full = await getUserById(u.id);
@@ -1049,7 +1049,7 @@ export default function UserManagement() {
       setDetailUser(u);
     }
     setShowDetail(true);
-  };
+  }, [getUserById]);
 
   const handleSaveDetail = async (id: string, updates: Partial<User>) => {
     await updateUser(id, updates);
@@ -1061,6 +1061,82 @@ export default function UserManagement() {
       setDetailUser((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev));
     }
   };
+
+  const tableColumns = useMemo(() => ([
+    {
+      key: 'select',
+      header: (
+        <input
+          type="checkbox"
+          checked={users.length > 0 && selectedUserIds.size === users.length}
+          onChange={toggleSelectAll}
+          className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
+          title="Pilih semua di halaman ini"
+        />
+      ),
+      render: (u: User) => (
+        <input
+          type="checkbox"
+          checked={selectedUserIds.has(u.id)}
+          onChange={() => toggleSelectUser(u.id)}
+          className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+    },
+    { key: 'nrp', header: 'NRP', render: (u: User) => <span className="font-mono text-sm">{u.nrp}</span> },
+    { key: 'nama', header: 'Nama' },
+    { key: 'pangkat', header: 'Pangkat', render: (u: User) => u.pangkat ?? '—' },
+    { key: 'jabatan', header: 'Jabatan', render: (u: User) => u.jabatan ?? '—' },
+    { key: 'satuan', header: 'Satuan' },
+    { key: 'role', header: 'Role', render: (u: User) => <RoleBadge role={u.role} /> },
+    {
+      key: 'is_online', header: 'Status', render: (u: User) => {
+        const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <div className={`h-2 w-2 rounded-full ${u.is_online ? 'bg-success' : 'bg-text-muted'}`} />
+              <span className="text-xs text-text-muted">{u.is_online ? 'Online' : 'Offline'}</span>
+            </div>
+            {isLocked && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-red/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-red">
+                <ICONS.Lock className="h-2.5 w-2.5" aria-hidden="true" />
+                Terkunci
+              </span>
+            )}
+            {!u.is_active && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface/50 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
+                Nonaktif
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'actions', header: 'Aksi', render: (u: User) => (
+        <UserTableActions
+          user={u}
+          currentUserId={authUser?.id}
+          onDetail={() => handleOpenDetail(u)}
+          onResetPin={() => { setSelectedUser(u); setShowResetPin(true); }}
+          onRoleEdit={() => openRoleEdit(u)}
+          onToggleActive={() => handleToggleActive(u)}
+          onUnlock={() => { setSelectedUser(u); setShowUnlock(true); }}
+          onDelete={() => { setSelectedUser(u); setShowDelete(true); }}
+        />
+      ),
+    },
+  ]), [
+    users.length,
+    selectedUserIds,
+    toggleSelectAll,
+    toggleSelectUser,
+    authUser?.id,
+    handleOpenDetail,
+    handleToggleActive,
+  ]);
 
   return (
     <DashboardLayout title="Manajemen Personel">
@@ -1496,73 +1572,7 @@ export default function UserManagement() {
         ) : (
           <>
           <VirtualizedTable
-            columns={[
-              {
-                key: 'select',
-                header: (
-                  <input
-                    type="checkbox"
-                    checked={users.length > 0 && selectedUserIds.size === users.length}
-                    onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
-                    title="Pilih semua di halaman ini"
-                  />
-                ),
-                render: (u) => (
-                  <input
-                    type="checkbox"
-                    checked={selectedUserIds.has(u.id)}
-                    onChange={() => toggleSelectUser(u.id)}
-                    className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ),
-              },
-              { key: 'nrp', header: 'NRP', render: (u) => <span className="font-mono text-sm">{u.nrp}</span> },
-              { key: 'nama', header: 'Nama' },
-              { key: 'pangkat', header: 'Pangkat', render: (u) => u.pangkat ?? '—' },
-              { key: 'jabatan', header: 'Jabatan', render: (u) => u.jabatan ?? '—' },
-              { key: 'satuan', header: 'Satuan' },
-              { key: 'role', header: 'Role', render: (u) => <RoleBadge role={u.role} /> },
-              {
-                key: 'is_online', header: 'Status', render: (u) => {
-                  const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
-                  return (
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5">
-                        <div className={`h-2 w-2 rounded-full ${u.is_online ? 'bg-success' : 'bg-text-muted'}`} />
-                        <span className="text-xs text-text-muted">{u.is_online ? 'Online' : 'Offline'}</span>
-                      </div>
-                      {isLocked && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-accent-red/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-red">
-                          <ICONS.Lock className="h-2.5 w-2.5" aria-hidden="true" />
-                          Terkunci
-                        </span>
-                      )}
-                      {!u.is_active && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-surface/50 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
-                          Nonaktif
-                        </span>
-                      )}
-                    </div>
-                  );
-                },
-              },
-              {
-                key: 'actions', header: 'Aksi', render: (u) => (
-                  <UserTableActions
-                    user={u}
-                    currentUserId={authUser?.id}
-                    onDetail={() => handleOpenDetail(u)}
-                    onResetPin={() => { setSelectedUser(u); setShowResetPin(true); }}
-                    onRoleEdit={() => openRoleEdit(u)}
-                    onToggleActive={() => handleToggleActive(u)}
-                    onUnlock={() => { setSelectedUser(u); setShowUnlock(true); }}
-                    onDelete={() => { setSelectedUser(u); setShowDelete(true); }}
-                  />
-                ),
-              },
-            ]}
+            columns={tableColumns}
             data={users}
             keyExtractor={(u) => u.id}
             isLoading={false}
@@ -1649,7 +1659,7 @@ export default function UserManagement() {
         isOpen={showBulkReset}
         onClose={() => setShowBulkReset(false)}
         isSaving={isSaving}
-        selectedUsers={users.filter((u) => selectedUserIds.has(u.id))}
+        selectedUsers={selectedUsersOnPage}
         onSave={handleBulkResetPin}
         onError={(msg) => showNotification(msg, 'error')}
         onSuccess={(msg) => {
@@ -1725,7 +1735,7 @@ export default function UserManagement() {
       <BatchOperationModals
         isOpen={!!batchOperation}
         operationType={batchOperation}
-        selectedUsers={users.filter((u) => selectedUserIds.has(u.id))}
+        selectedUsers={selectedUsersOnPage}
         isSaving={isBatchProcessing}
         onDelete={handleBatchDelete}
         onToggleActive={handleBatchToggleActive}

@@ -54,6 +54,9 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
   ],
 };
 
+export const getBottomTabPaths = (role: Role): string[] =>
+  (BOTTOM_TABS[role] ?? []).map((tab) => tab.path);
+
 /**
  * Mobile-only bottom tab bar (visible only on < lg screens).
  * Provides quick navigation to up to 5 primary destinations per role.

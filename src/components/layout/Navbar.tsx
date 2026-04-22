@@ -8,6 +8,8 @@ import { useMessages } from '../../hooks/useMessages';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { usePWAInstall } from '../../hooks/usePWAInstall';
 import { isPathEnabled } from '../../lib/featureFlags';
+import { getBottomTabPaths } from './BottomTabBar';
+import { getSidebarNavPaths } from './Sidebar';
 import {
   APP_ROUTE_PATHS,
   getRoleDisplayLabel,
@@ -61,6 +63,16 @@ export default function Navbar({ title }: NavbarProps) {
   const messagePath = getRoleMessagesPath(user?.role);
   const canOpenMessages = Boolean(messagePath && isPathEnabled(messagePath, flags));
   const profilePath = getRoleProfilePath(user?.role);
+  const showSidebarToggleOnMobile = useMemo(() => {
+    if (!user) return false;
+
+    const bottomPaths = new Set(
+      getBottomTabPaths(user.role).filter((path) => isPathEnabled(path, flags)),
+    );
+    const enabledSidebarPaths = getSidebarNavPaths(user.role).filter((path) => isPathEnabled(path, flags));
+
+    return enabledSidebarPaths.some((path) => !bottomPaths.has(path));
+  }, [user, flags]);
   const currentDateLabel = useMemo(
     () => new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }),
     [],
@@ -72,19 +84,21 @@ export default function Navbar({ title }: NavbarProps) {
   return (
     <header className="nav-header-shell sticky top-0 z-20 px-4 sm:px-5 lg:px-8" data-print-hide>
       <div className="flex h-16 items-center gap-3">
-        <button
-          onClick={toggleSidebar}
-          className="icon-btn lg:hidden h-11 w-11"
-          aria-label="Toggle sidebar"
-        >
-          {ICONS.Menu ? (
-            <ICONS.Menu className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          )}
-        </button>
+        {showSidebarToggleOnMobile && (
+          <button
+            onClick={toggleSidebar}
+            className="icon-btn lg:hidden h-11 w-11"
+            aria-label="Toggle sidebar"
+          >
+            {ICONS.Menu ? (
+              <ICONS.Menu className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        )}
 
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-sm font-bold text-text-primary sm:text-base leading-tight">{title}</h1>

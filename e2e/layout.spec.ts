@@ -36,6 +36,23 @@ test.describe('Layout — Responsive', () => {
     await loginAsAdmin(page);
     await expect(page.getByRole('heading').first()).toBeVisible();
   });
+
+  test('menu shortcut mobile tidak diduplikasi di sidebar', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loginAsAdmin(page);
+
+    const bottomNav = page.locator('nav[aria-label="Bottom navigation"]');
+    await expect(bottomNav).toBeVisible();
+    await expect(bottomNav.getByRole('link', { name: /Personel/i })).toBeVisible();
+
+    await page.locator('button[aria-label="Toggle sidebar"]').click();
+
+    const sidebarNav = page.locator('aside nav');
+    await expect(sidebarNav).toBeVisible();
+    await expect(sidebarNav.getByRole('link', { name: /Personel/i })).toHaveCount(0);
+    await expect(sidebarNav.getByRole('link', { name: /Pengumuman/i })).toHaveCount(0);
+    await expect(sidebarNav.getByRole('link', { name: /Pengaturan|Setelan/i })).toHaveCount(0);
+  });
 });
 
 test.describe('Layout — Aksesibilitas dasar', () => {
