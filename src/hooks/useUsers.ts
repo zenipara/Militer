@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import {
   fetchUsers as apiFetchUsers,
   fetchUsersPage as apiFetchUsersPage,
@@ -15,7 +14,6 @@ import {
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import { isRoleKomandan } from '../lib/rolePermissions';
-import { supabase } from '../lib/supabase';
 import { readSessionContext } from '../lib/sessionContext';
 import { globalRequestCoalescer, createRequestKey } from '../lib/requestCoalescer600';
 import { userSearchCache, createUserSearchCacheKey } from '../lib/cacheWithTTL600';
@@ -43,7 +41,6 @@ export function useUsers(options: UseUsersOptions = {}) {
   const isFetchingRef = useRef(false);
   const refreshQueuedRef = useRef(false);
   const fetchUsersRef = useRef<(() => Promise<void>) | null>(null);
-  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const sessionContext = readSessionContext();
   const callerId = user?.id ?? sessionContext?.user_id ?? '';
@@ -218,42 +215,6 @@ export function useUsers(options: UseUsersOptions = {}) {
       void fetchUsers();
     }, { debounceMs: 220 });
   }, [fetchUsers]);
-
-  useEffect(() => {
-    if (!user) return;
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    // Create unique nonce to prevent StrictMode double-subscription issues
-    const nonce = Math.random().toString(36).slice(2);
-    const channel = supabase.channel(`users-changes-${user.id}-${nonce}`);
-    
-    // Debounced fetch to prevent cascade on realtime updates
-    let fetchTimeout: NodeJS.Timeout | null = null;
-    const debouncedFetch = () => {
-      if (fetchTimeout) clearTimeout(fetchTimeout);
-      fetchTimeout = setTimeout(() => {
-        void fetchUsers();
-      }, 300); // 300ms debounce for realtime channel
-    };
-
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => {
-      debouncedFetch();
-    });
-    
-    channel.subscribe();
-    channelRef.current = channel;
-
-    return () => {
-      if (fetchTimeout) clearTimeout(fetchTimeout);
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [user, fetchUsers]);
 
   const createUser = async (userData: Omit<User, 'id' | 'created_at' | 'updated_at' | 'is_online' | 'login_attempts'> & { pin: string }) => {
     const { pin, ...rest } = userData;

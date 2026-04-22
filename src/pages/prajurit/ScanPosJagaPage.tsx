@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
 import { usePosJagaStore } from '../../store/posJagaStore';
 import { useGatePassStore } from '../../store/gatePassStore';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -17,23 +16,37 @@ function PosJagaScanner({ onScan }: { onScan: (token: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const containerWidth = containerRef.current.offsetWidth || window.innerWidth;
-    const qrBoxSize = Math.min(Math.floor(containerWidth * 0.7), 250);
-    const scanner = new Html5QrcodeScanner(
-      containerRef.current.id,
-      { fps: 10, qrbox: qrBoxSize },
-      false,
-    );
-    scanner.render(
-      (decodedText: string) => {
-        onScan(decodedText);
-        scanner.clear();
-      },
-      () => {},
-    );
+    let disposed = false;
+    let scanner: { clear: () => Promise<void> } | null = null;
+
+    const startScanner = async () => {
+      if (!containerRef.current) return;
+      const { Html5QrcodeScanner } = await import('html5-qrcode');
+      if (disposed || !containerRef.current) return;
+
+      const containerWidth = containerRef.current.offsetWidth || window.innerWidth;
+      const qrBoxSize = Math.min(Math.floor(containerWidth * 0.7), 250);
+      const nextScanner = new Html5QrcodeScanner(
+        containerRef.current.id,
+        { fps: 10, qrbox: qrBoxSize },
+        false,
+      );
+      scanner = nextScanner;
+
+      nextScanner.render(
+        (decodedText: string) => {
+          onScan(decodedText);
+          void nextScanner.clear();
+        },
+        () => {},
+      );
+    };
+
+    void startScanner();
+
     return () => {
-      scanner.clear().catch(() => {});
+      disposed = true;
+      void scanner?.clear().catch(() => {});
     };
   }, [onScan]);
 

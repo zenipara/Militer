@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import { fetchAttendance as apiFetchAttendance, rpcCheckIn, rpcCheckOut } from '../lib/api/attendance';
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
-import { supabase } from '../lib/supabase';
 import { SimpleCache } from '../lib/cache';
 import type { Attendance } from '../types';
 import { useAuthStore } from '../store/authStore';
@@ -24,7 +22,6 @@ export function useAttendance(userId?: string) {
   const refreshQueuedRef = useRef(false);
   const fetchAttendanceRef = useRef<((force?: boolean) => Promise<void>) | null>(null);
   const hasLoadedRef = useRef(false);
-  const channelNonceRef = useRef(`att-${Math.random().toString(36).slice(2, 10)}`);
 
   const cacheKey = useMemo(() => targetUserId ?? '', [targetUserId]);
 
@@ -37,7 +34,6 @@ export function useAttendance(userId?: string) {
   });
   const [isLoading, setIsLoading] = useState(() => !attendanceCache.has(cacheKey));
   const [error, setError] = useState<string | null>(null);
-  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const setAttendanceStateIfChanged = useCallback((next: Attendance[]) => {
     setAttendances((prev) => {
@@ -121,39 +117,6 @@ export function useAttendance(userId?: string) {
       void fetchAttendance(true);
     }, { debounceMs: 220 });
   }, [cacheKey, fetchAttendance]);
-
-  useEffect(() => {
-    if (!user) return;
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    const channel = supabase.channel(`attendance-changes-${user.id}-${channelNonceRef.current}`);
-    channel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
-        attendanceCache.invalidate(cacheKey);
-        void fetchAttendance(true);
-      })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          if (import.meta.env.DEV) console.log('[Realtime] Attendance subscription active');
-        } else if (status === 'CHANNEL_ERROR') {
-          attendanceCache.invalidate(cacheKey);
-          void fetchAttendance(true);
-        } else if (status === 'CLOSED') {
-          if (import.meta.env.DEV) console.warn('[Realtime] Attendance channel closed');
-        }
-      });
-    channelRef.current = channel;
-
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [user, cacheKey, fetchAttendance]);
 
   useEffect(() => {
     fetchAttendanceRef.current = fetchAttendance;

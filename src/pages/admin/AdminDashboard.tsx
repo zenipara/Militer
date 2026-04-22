@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -64,6 +64,7 @@ export default function AdminDashboard() {
   });
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [confirmMember, setConfirmMember] = useState<{ id: string; nama: string } | null>(null);
+  const pendingRefreshWhileHiddenRef = useRef(false);
   const {
     snapshot,
     isLoading,
@@ -87,6 +88,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!dashboardAutoRefreshEnabled) return undefined;
     const intervalId = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
       void refreshDashboard();
     }, dashboardAutoRefreshMinutes * 60 * 1000);
 
@@ -94,9 +96,27 @@ export default function AdminDashboard() {
   }, [dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, refreshDashboard]);
 
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!pendingRefreshWhileHiddenRef.current) return;
+      pendingRefreshWhileHiddenRef.current = false;
+      void refreshDashboard();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshDashboard]);
+
+  useEffect(() => {
     return subscribeDataChanges(
       ['users', 'tasks', 'leave_requests', 'attendance', 'announcements', 'logistics_items', 'audit_logs', 'gate_pass'],
       () => {
+        if (document.visibilityState !== 'visible') {
+          pendingRefreshWhileHiddenRef.current = true;
+          return;
+        }
         void refreshDashboard();
       },
       { debounceMs: 450 },

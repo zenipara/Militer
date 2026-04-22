@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { supabase } from '../lib/supabase';
 import { fetchTasks as apiFetchTasks, insertTask, patchTaskStatus, insertTaskReport, fetchLatestTaskReport } from '../lib/api/tasks';
 import { handleError } from '../lib/handleError';
 import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
@@ -39,7 +38,6 @@ export function useTasks(options: UseTasksOptions = {}) {
   const refreshQueuedRef = useRef(false);
   const fetchTasksRef = useRef<(() => Promise<void>) | null>(null);
   const hasLoadedRef = useRef(false);
-  const channelNonceRef = useRef(`tasks-${Math.random().toString(36).slice(2, 10)}`);
 
   // Stabilize cacheKey so it only changes when the option values change (not object references)
   const cacheKey = useMemo(
@@ -122,19 +120,6 @@ export function useTasks(options: UseTasksOptions = {}) {
       void fetchTasks(true);
     }, { debounceMs: 220 });
   }, [cacheKey, fetchTasks]);
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!user) return;
-    const filter = options.assignedTo ? `assigned_to=eq.${options.assignedTo}` : undefined;
-    const channel = supabase.channel(`tasks-changes-${channelNonceRef.current}`);
-    channel.on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter }, () => {
-      tasksCache.invalidate(cacheKey);
-      void fetchTasks(true);
-    });
-    channel.subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [user, options.assignedTo, cacheKey, fetchTasks]);
 
   /**
    * Sync the current fetchTasks function to the ref so queued refreshes

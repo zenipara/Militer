@@ -1,5 +1,4 @@
-import { useRef } from 'react';
-import QRCode from 'react-qr-code';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import Button from '../common/Button';
 import { Printer } from 'lucide-react';
 import { useUIStore } from '../../store/uiStore';
@@ -8,6 +7,11 @@ interface Props {
   posJaga: { nama: string; qr_token: string };
 }
 
+type QRCodeLikeProps = {
+  value: string;
+  size?: number;
+};
+
 /**
  * Menampilkan QR statis pos jaga lengkap dengan nama pos.
  * Tombol cetak tersedia untuk admin mencetak dan menempelnya di pos jaga.
@@ -15,8 +19,31 @@ interface Props {
 export default function PosJagaQRCode({ posJaga }: Props) {
   const printRef = useRef<HTMLDivElement>(null);
   const showNotification = useUIStore((s) => s.showNotification);
+  const [QRCodeComponent, setQRCodeComponent] = useState<ComponentType<QRCodeLikeProps> | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+
+    const load = async () => {
+      const mod = await import('react-qr-code');
+      if (!disposed) {
+        setQRCodeComponent(() => mod.default as ComponentType<QRCodeLikeProps>);
+      }
+    };
+
+    void load();
+
+    return () => {
+      disposed = true;
+    };
+  }, []);
 
   const handlePrint = () => {
+    if (!QRCodeComponent) {
+      showNotification('QR belum siap, tunggu sebentar lalu coba cetak lagi', 'error');
+      return;
+    }
+
     const printWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (!printWindow || !printRef.current) {
       showNotification('Browser memblokir jendela cetak QR', 'error');
@@ -100,12 +127,22 @@ export default function PosJagaQRCode({ posJaga }: Props) {
     <div className="flex flex-col items-center gap-4">
       <div ref={printRef} className="flex flex-col items-center gap-3 p-6 rounded-2xl border border-surface bg-white">
         <h2 className="text-xl font-bold text-gray-900 text-center">{posJaga.nama}</h2>
-        <QRCode value={posJaga.qr_token} size={200} />
+        {QRCodeComponent ? (
+          <QRCodeComponent value={posJaga.qr_token} size={200} />
+        ) : (
+          <div className="h-[200px] w-[200px] animate-pulse rounded-xl border border-surface bg-surface/40" aria-hidden="true" />
+        )}
         <p className="text-xs text-gray-500 text-center max-w-[200px]">
           Pindai QR ini menggunakan aplikasi KARYO OS untuk mencatat waktu keluar / kembali
         </p>
       </div>
-      <Button variant="secondary" size="sm" leftIcon={<Printer className="w-4 h-4" />} onClick={handlePrint}>
+      <Button
+        variant="secondary"
+        size="sm"
+        leftIcon={<Printer className="w-4 h-4" />}
+        onClick={handlePrint}
+        disabled={!QRCodeComponent}
+      >
         Cetak QR
       </Button>
     </div>
