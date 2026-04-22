@@ -209,16 +209,16 @@ export default function StafDashboard() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Quick Access Modules */}
-          <div className="lg:col-span-1">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-muted">
-              Modul Akses Cepat
-            </h3>
+          <div className="app-card p-4 lg:col-span-1">
+            <div className="panel-heading mb-3">
+              <h3 className="panel-heading__title">Modul Akses Cepat</h3>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               {modules.map((mod) => (
                 <Link
                   key={mod.path}
                   to={mod.path}
-                  className={`flex flex-col items-center gap-2 rounded-2xl border p-4 text-center text-sm font-medium text-text-primary transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${mod.color}`}
+                  className={`dashboard-module-tile ${mod.color}`}
                 >
                   <span className="text-2xl">{mod.icon}</span>
                   <span className="text-xs leading-snug">{mod.label}</span>
@@ -228,10 +228,10 @@ export default function StafDashboard() {
           </div>
 
           {/* Announcements */}
-          <div className="lg:col-span-2">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-muted">
-              Pengumuman Terpinit
-            </h3>
+          <div className="app-card p-4 lg:col-span-2">
+            <div className="panel-heading mb-3">
+              <h3 className="panel-heading__title">Pengumuman Terpinit</h3>
+            </div>
             <div className="space-y-3">
               {announcementsLoading ? (
                 <CardListSkeleton count={2} />
@@ -245,7 +245,7 @@ export default function StafDashboard() {
                 pinnedAnnouncements.map((ann) => (
                   <div
                     key={ann.id}
-                    className="app-card rounded-2xl border border-surface/70 p-4"
+                    className="rounded-2xl border border-surface/70 bg-surface/10 p-4"
                   >
                     <div className="flex items-start gap-3">
                       <span className="mt-0.5 text-accent-gold text-base" aria-hidden="true">📌</span>

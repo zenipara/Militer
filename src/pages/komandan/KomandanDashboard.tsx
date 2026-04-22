@@ -158,16 +158,16 @@ export default function KomandanDashboard() {
               ))}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              {canOpenTasks && <Link to="/komandan/tasks" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Buka tugas</Link>}
-              {canOpenAttendance && <Link to="/komandan/attendance" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Absensi</Link>}
-              {canOpenPersonnel && <Link to="/komandan/personnel" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Personel</Link>}
-              {canOpenSprint && <Link to="/komandan/sprint" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Sprint</Link>}
-              {canOpenGatePass && <Link to="/komandan/gatepass-approval" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-surface/70 bg-bg-card px-3.5 py-2 text-sm font-medium text-text-primary transition-all hover:border-primary/40 hover:text-primary">Gate Pass</Link>}
+              {canOpenTasks && <Link to="/komandan/tasks" className="dashboard-quick-link">Buka tugas</Link>}
+              {canOpenAttendance && <Link to="/komandan/attendance" className="dashboard-quick-link">Absensi</Link>}
+              {canOpenPersonnel && <Link to="/komandan/personnel" className="dashboard-quick-link">Personel</Link>}
+              {canOpenSprint && <Link to="/komandan/sprint" className="dashboard-quick-link">Sprint</Link>}
+              {canOpenGatePass && <Link to="/komandan/gatepass-approval" className="dashboard-quick-link">Gate Pass</Link>}
             </div>
           </div>
 
           <div className="app-card p-5">
-            <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="panel-heading mb-4">
               <div className="flex items-center gap-2.5">
                 <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent-gold/15 text-accent-gold">
                   <ICONS.Pin className="h-4 w-4" aria-hidden="true" />

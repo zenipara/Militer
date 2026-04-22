@@ -186,9 +186,9 @@ export default function PrajuritDashboard() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap">
+        <div className="dashboard-quick-strip">
           {canOpenGatePass && (
-            <Link to="/prajurit/gatepass" className="group flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-surface/70 bg-bg-card px-3 py-2.5 text-sm font-medium text-text-primary hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:scale-[0.97] transition-all duration-200">
+            <Link to="/prajurit/gatepass" className="dashboard-quick-link group">
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-105">
                 {ICONS.ClipboardCheck ? <ICONS.ClipboardCheck className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
@@ -196,7 +196,7 @@ export default function PrajuritDashboard() {
             </Link>
           )}
           {canOpenScanPos && (
-            <Link to="/prajurit/scan-pos" className="group flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-surface/70 bg-bg-card px-3 py-2.5 text-sm font-medium text-text-primary hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:scale-[0.97] transition-all duration-200">
+            <Link to="/prajurit/scan-pos" className="dashboard-quick-link group">
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-success transition-transform group-hover:scale-105">
                 {ICONS.ScanLine ? <ICONS.ScanLine className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
@@ -204,7 +204,7 @@ export default function PrajuritDashboard() {
             </Link>
           )}
           {canOpenTasks && (
-            <Link to="/prajurit/tasks" className="group flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-surface/70 bg-bg-card px-3 py-2.5 text-sm font-medium text-text-primary hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:scale-[0.97] transition-all duration-200">
+            <Link to="/prajurit/tasks" className="dashboard-quick-link group">
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-amber-500/10 text-accent-gold transition-transform group-hover:scale-105">
                 {ICONS.CheckSquare ? <ICONS.CheckSquare className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
@@ -212,7 +212,7 @@ export default function PrajuritDashboard() {
             </Link>
           )}
           {canOpenMessages && (
-            <Link to="/prajurit/messages" className="group flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-surface/70 bg-bg-card px-3 py-2.5 text-sm font-medium text-text-primary hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:scale-[0.97] transition-all duration-200">
+            <Link to="/prajurit/messages" className="dashboard-quick-link group">
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 transition-transform group-hover:scale-105">
                 {ICONS.Megaphone ? <ICONS.Megaphone className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
@@ -220,7 +220,7 @@ export default function PrajuritDashboard() {
             </Link>
           )}
           {canOpenLeave && (
-            <Link to="/prajurit/leave" className="group flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-surface/70 bg-bg-card px-3 py-2.5 text-sm font-medium text-text-primary hover:border-primary/40 hover:bg-primary/5 hover:text-primary active:scale-[0.97] transition-all duration-200">
+            <Link to="/prajurit/leave" className="dashboard-quick-link group">
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-rose-500/10 text-accent-red transition-transform group-hover:scale-105">
                 {ICONS.UserCheck ? <ICONS.UserCheck className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
@@ -274,7 +274,7 @@ export default function PrajuritDashboard() {
 
         {/* Announcements */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="panel-heading mb-3">
             <h3 className="flex items-center gap-2 font-bold text-text-primary">
               <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
                 <ICONS.Megaphone className="h-4 w-4" aria-hidden="true" />
@@ -326,7 +326,7 @@ export default function PrajuritDashboard() {
         {/* My active tasks */}
         {canViewTaskModules && (
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="panel-heading mb-3">
               <h3 className="flex items-center gap-2 font-bold text-text-primary">
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-amber-500/10 text-accent-gold">
                   <ICONS.CheckSquare className="h-4 w-4" aria-hidden="true" />
