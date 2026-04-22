@@ -27,7 +27,7 @@ import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
 import { notifyDataChanged } from '../../lib/dataSync';
 import { ensureSessionContext } from '../../lib/api/sessionContext';
-import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
+import { ROLE_OPTIONS, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
 import { validatePin, validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
 import { bulkImportUsers, invalidateUserStatsCache } from '../../lib/api/optimized600Users';
 import { optimizedRealtimeSubscriber } from '../../lib/api/realtimeOptimized600Users';
@@ -353,10 +353,24 @@ export default function UserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const setPage = (page: number) => setCurrentPage(Math.max(1, page));
 
-  const [searchRaw, setSearchRaw] = useState('');
-  const search = useDebounce(searchRaw, 500); // Increased from 300ms to 500ms for 600+ user optimization
+  // Dedicated search fields for NRP and NAMA (1000+ user optimization)
+  const [searchNrpRaw, setSearchNrpRaw] = useState('');
+  const searchNrp = useDebounce(searchNrpRaw, 400);
+  const [searchNamaRaw, setSearchNamaRaw] = useState('');
+  const searchNama = useDebounce(searchNamaRaw, 400);
+  
+  // Combine both searches for backend query
+  const combinedSearch = useMemo(() => {
+    const nrp = searchNrp.trim();
+    const nama = searchNama.trim();
+    if (!nrp && !nama) return '';
+    if (nrp && nama) return `${nrp}|${nama}`;
+    return nrp || nama;
+  }, [searchNrp, searchNama]);
+
   const [filterRole, setFilterRole] = useState<Role | ''>('');
   const [filterStatus, setFilterStatus] = useState<'active' | 'inactive' | ''>('');
+  const [filterSatuan, setFilterSatuan] = useState<string>('');
 
   const { users, isLoading, error, totalItems, totalPages, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({
     orderBy: 'created_at',
@@ -364,9 +378,10 @@ export default function UserManagement() {
     serverPaginated: true,
     page: currentPage,
     pageSize: PAGE_SIZE,
-    searchQuery: search,
+    searchQuery: combinedSearch,
     role: filterRole || undefined,
     isActive: filterStatus ? filterStatus === 'active' : undefined,
+    satuan: filterSatuan || undefined,
   });
   const { showNotification } = useUIStore();
   const authUser = useAuthStore((s) => s.user);
@@ -414,7 +429,8 @@ export default function UserManagement() {
       online,
     };
   }, [users]);
-  const hasFilters = searchRaw.trim().length > 0 || filterRole !== '' || filterStatus !== '';
+  
+  const hasFilters = searchNrpRaw.trim().length > 0 || searchNamaRaw.trim().length > 0 || filterRole !== '' || filterStatus !== '' || filterSatuan !== '';
 
   useEffect(() => {
     setSelectedUserIds(new Set());
@@ -1006,80 +1022,132 @@ export default function UserManagement() {
           </div>
         )}
 
-        {/* Header actions */}
-        <div className="app-card flex flex-col gap-3 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-muted">
+        {/* Header actions - Advanced search for 1000+ users */}
+        <div className="app-card flex flex-col gap-4 p-4">
+          {/* Search section with dedicated NRP and NAMA fields */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="relative">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Cari NRP</label>
+              <span className="pointer-events-none absolute inset-y-8 left-3 flex items-center text-text-muted">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
               <input
                 type="text"
-                placeholder="Cari nama atau NRP..."
-                value={searchRaw}
-                onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
+                placeholder="Contoh: 1234567890"
+                value={searchNrpRaw}
+                onChange={(e) => { setSearchNrpRaw(e.target.value); setPage(1); }}
                 className="form-control w-full bg-bg-card pl-9"
               />
             </div>
+            
+            <div className="relative">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Cari Nama</label>
+              <span className="pointer-events-none absolute inset-y-8 left-3 flex items-center text-text-muted">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Contoh: Ahmad Reza"
+                value={searchNamaRaw}
+                onChange={(e) => { setSearchNamaRaw(e.target.value); setPage(1); }}
+                className="form-control w-full bg-bg-card pl-9"
+              />
+            </div>
+
             <select
               value={filterRole}
               onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
-              className="form-control sm:w-40 bg-bg-card"
+              className="form-control bg-bg-card"
             >
               <option value="">Semua Role</option>
               {ROLE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
+
             <select
               value={filterStatus}
               onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); setPage(1); }}
-              className="form-control sm:w-40 bg-bg-card"
+              className="form-control bg-bg-card"
             >
               <option value="">Semua Status</option>
               <option value="active">Aktif</option>
               <option value="inactive">Nonaktif</option>
             </select>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={exportFilteredCSV}>
-              <span className="flex items-center gap-1.5">
-                <ICONS.Download className="h-3.5 w-3.5" aria-hidden="true" />
-                Export CSV
-              </span>
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => setShowImport(true)}>
-              <span className="flex items-center gap-1.5">
-                <span aria-hidden="true">⬆</span>
-                Import CSV
-              </span>
-            </Button>
-            <Button size="sm" onClick={() => setShowCreate(true)}>+ Tambah</Button>
-            {hasFilters && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchRaw('');
-                  setFilterRole('');
-                  setFilterStatus('');
-                  setPage(1);
-                }}
+
+          {/* Additional filter row for Satuan and actions */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 sm:w-48">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Satuan/Unit</label>
+              <select
+                value={filterSatuan}
+                onChange={(e) => { setFilterSatuan(e.target.value); setPage(1); }}
+                className="form-control w-full bg-bg-card"
               >
-                Reset Filter
+                <option value="">Semua Satuan</option>
+                {satuans.map((satuan) => (
+                  <option key={satuan.id} value={satuan.nama}>{satuan.nama}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant="outline" size="sm" onClick={exportFilteredCSV}>
+                <span className="flex items-center gap-1.5">
+                  <ICONS.Download className="h-3.5 w-3.5" aria-hidden="true" />
+                  Export CSV
+                </span>
               </Button>
-            )}
+              <Button variant="secondary" size="sm" onClick={() => setShowImport(true)}>
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden="true">⬆</span>
+                  Import CSV
+                </span>
+              </Button>
+              <Button size="sm" onClick={() => setShowCreate(true)}>+ Tambah</Button>
+              {hasFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchNrpRaw('');
+                    setSearchNamaRaw('');
+                    setFilterRole('');
+                    setFilterStatus('');
+                    setFilterSatuan('');
+                    setPage(1);
+                  }}
+                >
+                  Reset Filter
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Filter summary tags */}
           <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
+            {searchNrpRaw && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+                NRP: {searchNrpRaw}
+              </span>
+            )}
+            {searchNamaRaw && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+                Nama: {searchNamaRaw}
+              </span>
+            )}
             <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
-              Filter role: {filterRole ? `${getRoleDisplayLabel(filterRole)} (${getRoleCode(filterRole)})` : 'Semua'}
+              Role: {filterRole ? getRoleDisplayLabel(filterRole) : 'Semua'}
             </span>
             <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
-              Filter status: {filterStatus === 'active' ? 'Aktif' : filterStatus === 'inactive' ? 'Nonaktif' : 'Semua'}
+              Status: {filterStatus === 'active' ? 'Aktif' : filterStatus === 'inactive' ? 'Nonaktif' : 'Semua'}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
-              Query: {searchRaw.trim() || 'Tidak ada'}
-            </span>
+            {filterSatuan && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+                Satuan: {filterSatuan}
+              </span>
+            )}
           </div>
         </div>
 
