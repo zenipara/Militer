@@ -46,6 +46,8 @@ interface TableProps<T> {
   caption?: string;
   /** Callback saat baris diklik */
   onRowClick?: (row: T) => void;
+  /** Minimum lebar tabel sebelum scroll horizontal aktif */
+  minTableWidthClass?: string;
 }
 
 export default function Table<T>({
@@ -56,6 +58,7 @@ export default function Table<T>({
   emptyMessage = 'Tidak ada data',
   caption,
   onRowClick,
+  minTableWidthClass = 'min-w-[640px]',
 }: TableProps<T>) {
   const { displayDensity } = useUIStore();
   const isCompact = displayDensity === 'compact';
@@ -97,7 +100,7 @@ export default function Table<T>({
         Geser tabel ke samping untuk melihat semua kolom
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-[640px] w-full">
+        <table className={`${minTableWidthClass} w-full`}>
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead className="sticky top-0 z-[1]">
             <tr className="border-b border-surface bg-slate-50/95 backdrop-blur-sm dark:bg-surface/45">

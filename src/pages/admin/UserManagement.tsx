@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import VirtualizedTable from '../../components/ui/VirtualizedTable';
+import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
@@ -27,16 +27,13 @@ import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
 import { notifyDataChanged } from '../../lib/dataSync';
 import { ensureSessionContext } from '../../lib/api/sessionContext';
-import { ROLE_OPTIONS, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
+import { ROLE_OPTIONS, getRoleCode, getRoleDisplayLabel, isRoleAdmin, isRoleKomandan, normalizeRole } from '../../lib/rolePermissions';
 import { validatePin, validateRoleEditForm, getFirstErrorMessage } from '../../lib/validation/personelValidation';
-import { bulkImportUsers, invalidateUserStatsCache } from '../../lib/api/optimized600Users';
-import { optimizedRealtimeSubscriber } from '../../lib/api/realtimeOptimized600Users';
 import type { User, Role, CommandLevel } from '../../types';
 
-// Page size options for 1000+ user management
-const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
-const PAGE_SIZE = 50 as const; // Default, but can be changed by user
+const PAGE_SIZE = 50;
 const MAX_IMPORT_ROWS = 5000;
+const IMPORT_CHUNK_SIZE = 50;
 const DEFAULT_IMPORT_PIN = '123456';
 const FALLBACK_HEADERS = ['nrp', 'nama', 'pangkat', 'satuan', 'role', 'level_komando', 'jabatan', 'pin'];
 
@@ -351,70 +348,42 @@ interface ImportRowsResult {
   duplicateRows: number;
 }
 
-async function runWithConcurrency<T>(
-  items: T[],
-  worker: (item: T) => Promise<void>,
-  concurrency = 5,
-): Promise<number> {
-  const queue = [...items];
-  let successCount = 0;
+function getErrorMessage(error: unknown, fallback = 'Gagal memproses data import'): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (typeof error === 'string' && error.trim()) return error;
 
-  const runners = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
-    while (queue.length > 0) {
-      const item = queue.shift();
-      if (!item) break;
-      try {
-        await worker(item);
-        successCount += 1;
-      } catch {
-        // Skip failed row and continue processing the remaining queue.
-      }
-    }
-  });
+  if (error && typeof error === 'object') {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === 'string' && maybeMessage.trim()) return maybeMessage;
 
-  await Promise.all(runners);
-  return successCount;
+    const maybeDetails = (error as { details?: unknown }).details;
+    if (typeof maybeDetails === 'string' && maybeDetails.trim()) return maybeDetails;
+
+    const maybeHint = (error as { hint?: unknown }).hint;
+    if (typeof maybeHint === 'string' && maybeHint.trim()) return maybeHint;
+  }
+
+  return fallback;
 }
 
 export default function UserManagement() {
-  const nrpInputRef = useRef<HTMLInputElement | null>(null);
-  const namaInputRef = useRef<HTMLInputElement | null>(null);
-
   const [currentPage, setCurrentPage] = useState(1);
   const setPage = (page: number) => setCurrentPage(Math.max(1, page));
 
-  // Page size selector for 1000+ users (25, 50, or 100 per page)
-  const [pageSize, setPageSize] = useState<typeof PAGE_SIZE_OPTIONS[number]>(PAGE_SIZE);
-
-  // Dedicated search fields for NRP and NAMA (1000+ user optimization)
-  const [searchNrpRaw, setSearchNrpRaw] = useState('');
-  const searchNrp = useDebounce(searchNrpRaw, 400);
-  const [searchNamaRaw, setSearchNamaRaw] = useState('');
-  const searchNama = useDebounce(searchNamaRaw, 400);
-  
-  // Combine both searches for backend query
-  const combinedSearch = useMemo(() => {
-    const nrp = searchNrp.trim();
-    const nama = searchNama.trim();
-    if (!nrp && !nama) return '';
-    if (nrp && nama) return `${nrp}|${nama}`;
-    return nrp || nama;
-  }, [searchNrp, searchNama]);
-
+  const [searchRaw, setSearchRaw] = useState('');
+  const search = useDebounce(searchRaw, 300);
   const [filterRole, setFilterRole] = useState<Role | ''>('');
   const [filterStatus, setFilterStatus] = useState<'active' | 'inactive' | ''>('');
-  const [filterSatuan, setFilterSatuan] = useState<string>('');
 
   const { users, isLoading, error, totalItems, totalPages, createUser, updateUser, toggleUserActive, deleteUser, resetUserPin, getUserById } = useUsers({
     orderBy: 'created_at',
     ascending: false,
     serverPaginated: true,
     page: currentPage,
-    pageSize: pageSize,
-    searchQuery: combinedSearch,
+    pageSize: PAGE_SIZE,
+    searchQuery: search,
     role: filterRole || undefined,
     isActive: filterStatus ? filterStatus === 'active' : undefined,
-    satuan: filterSatuan || undefined,
   });
   const { showNotification } = useUIStore();
   const authUser = useAuthStore((s) => s.user);
@@ -433,6 +402,7 @@ export default function UserManagement() {
   const [roleEditUser, setRoleEditUser] = useState<User | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
+  const [bulkPin, setBulkPin] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // CSV import state
@@ -461,93 +431,11 @@ export default function UserManagement() {
       online,
     };
   }, [users]);
-  
-  const hasFilters = searchNrpRaw.trim().length > 0 || searchNamaRaw.trim().length > 0 || filterRole !== '' || filterStatus !== '' || filterSatuan !== '';
-
-  const selectedUsersOnPage = useMemo(
+  const hasFilters = searchRaw.trim().length > 0 || filterRole !== '' || filterStatus !== '';
+  const selectedUsers = useMemo(
     () => users.filter((u) => selectedUserIds.has(u.id)),
-    [users, selectedUserIds]
+    [users, selectedUserIds],
   );
-
-  const selectedStats = useMemo(() => {
-    const active = selectedUsersOnPage.filter((u) => u.is_active).length;
-    const inactive = selectedUsersOnPage.length - active;
-    return { active, inactive };
-  }, [selectedUsersOnPage]);
-
-  const resetAllFilters = useCallback(() => {
-    setSearchNrpRaw('');
-    setSearchNamaRaw('');
-    setFilterRole('');
-    setFilterStatus('');
-    setFilterSatuan('');
-    setPage(1);
-  }, []);
-
-  const applyQuickFilter = useCallback((preset: 'all' | 'active' | 'inactive' | 'admin' | 'komandan' | 'my-satuan') => {
-    if (preset === 'all') {
-      resetAllFilters();
-      return;
-    }
-
-    if (preset === 'active') {
-      setFilterStatus('active');
-      setPage(1);
-      return;
-    }
-
-    if (preset === 'inactive') {
-      setFilterStatus('inactive');
-      setPage(1);
-      return;
-    }
-
-    if (preset === 'admin' || preset === 'komandan') {
-      setFilterRole(preset);
-      setPage(1);
-      return;
-    }
-
-    if (preset === 'my-satuan' && authUser?.satuan) {
-      setFilterSatuan(authUser.satuan);
-      setPage(1);
-    }
-  }, [authUser?.satuan, resetAllFilters]);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const tagName = target?.tagName;
-      const isTypingContext =
-        !!target &&
-        (target.isContentEditable || tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT');
-
-      if (event.key === '/' && !isTypingContext) {
-        event.preventDefault();
-        namaInputRef.current?.focus();
-        return;
-      }
-
-      if (event.key.toLowerCase() === 'n' && event.altKey && !isTypingContext) {
-        event.preventDefault();
-        nrpInputRef.current?.focus();
-        return;
-      }
-
-      if (event.key === 'Escape' && hasFilters) {
-        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
-          (target as HTMLElement).blur();
-        }
-        resetAllFilters();
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [hasFilters, resetAllFilters]);
-
-  const quickFilterButtonClass =
-    'min-h-[34px] rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors duration-150';
 
   useEffect(() => {
     setSelectedUserIds(new Set());
@@ -575,13 +463,6 @@ export default function UserManagement() {
   useEffect(() => {
     void loadRegistrationForms();
   }, [authUser?.id, authUser?.role]);
-
-  // Cleanup realtime subscriptions on unmount to prevent memory leaks
-  useEffect(() => {
-    return () => {
-      optimizedRealtimeSubscriber.unsubscribeAll();
-    };
-  }, []);
 
   const createRegistrationFormLink = async () => {
     if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
@@ -659,13 +540,13 @@ export default function UserManagement() {
     }
   };
 
-  const handleBulkResetPin = async (userIds: string[], newPin: string) => {
-    if (userIds.length === 0) {
+  const handleBulkResetPin = async () => {
+    if (selectedUserIds.size === 0) {
       showNotification('Pilih minimal satu personel', 'error');
       return;
     }
 
-    const pinError = validatePin(newPin);
+    const pinError = validatePin(bulkPin);
     if (pinError) {
       showNotification(pinError.message, 'error');
       return;
@@ -674,13 +555,14 @@ export default function UserManagement() {
     setIsSaving(true);
     try {
       const { data, error } = await supabase.rpc('bulk_reset_pins', {
-        p_user_ids: userIds,
-        p_new_pin: newPin,
+        p_user_ids: Array.from(selectedUserIds),
+        p_new_pin: bulkPin,
       });
       if (error) throw error;
-      const count = Number(data ?? userIds.length);
+      const count = data as number;
       showNotification(`PIN ${count} personel berhasil direset`, 'success');
       setShowBulkReset(false);
+      setBulkPin('');
       setSelectedUserIds(new Set());
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal reset PIN massal', 'error');
@@ -689,14 +571,14 @@ export default function UserManagement() {
     }
   };
 
-  const handleToggleActive = useCallback(async (u: User) => {
+  const handleToggleActive = async (u: User) => {
     try {
       await toggleUserActive(u.id, !u.is_active);
       showNotification(`Akun ${u.nama} ${!u.is_active ? 'diaktifkan' : 'dinonaktifkan'}`, 'success');
     } catch {
       showNotification('Gagal mengubah status akun', 'error');
     }
-  }, [toggleUserActive, showNotification]);
+  };
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
@@ -810,52 +692,107 @@ export default function UserManagement() {
     }
 
     setIsImporting(true);
-    const startTime = performance.now();
     try {
-      const authUserContext = useAuthStore.getState().user;
-      if (!authUserContext) {
+      const authUser = useAuthStore.getState().user;
+      if (!authUser) {
         throw new Error('Anda harus login terlebih dahulu');
       }
 
-      await ensureSessionContext(authUserContext.id, authUserContext.role);
+      // Ensure session context is set before RPC call
+      await ensureSessionContext(authUser.id, authUser.role);
 
-      // Use optimized bulk import API
-      const usersForImport = rows.map((r) => ({
-        nrp: r.nrp ?? '',
-        pin: DEFAULT_IMPORT_PIN,
-        nama: r.nama ?? '',
-        role: normalizeImportedRole(r.role),
-        satuan: r.satuan ?? '',
-        pangkat: r.pangkat ?? '',
-        jabatan: r.jabatan ?? '',
-      }));
+      const batches = [] as Record<string, string>[][];
+      for (let i = 0; i < rows.length; i += IMPORT_CHUNK_SIZE) {
+        batches.push(rows.slice(i, i + IMPORT_CHUNK_SIZE));
+      }
 
-      const result = await bulkImportUsers({
-        users: usersForImport,
-        batchSize: 5000,
-      });
+      let totalSuccess = 0;
+      let totalFailed = 0;
+      const allErrors: { nrp: string; error: string }[] = [];
 
-      const duration = (performance.now() - startTime) / 1000;
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+        const batch = batches[batchIndex];
+        const payload = batch.map((r) => ({
+          nrp: r.nrp ?? '',
+          pin: DEFAULT_IMPORT_PIN,
+          nama: r.nama ?? '',
+          role: normalizeImportedRole(r.role),
+          satuan: r.satuan ?? '',
+          pangkat: r.pangkat ?? '',
+          jabatan: r.jabatan ?? '',
+        }));
 
-      if (result.success > 0) {
-        showNotification(
-          `✅ ${result.success} personel berhasil diimpor dalam ${duration.toFixed(1)}s. PIN: ${DEFAULT_IMPORT_PIN}`,
-          'success'
-        );
+        try {
+          const { data, error } = await supabase.rpc('import_users_csv', { p_users: payload });
+          if (error) throw error;
+
+          const result = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
+          totalSuccess += result.success;
+          totalFailed += result.failed;
+          if (result.errors?.length) {
+            allErrors.push(...result.errors);
+          }
+        } catch (batchError) {
+          // Fallback: if one bad row breaks the whole batch, retry per-row so valid rows still import.
+          const batchMessage = getErrorMessage(batchError, 'Gagal memproses batch import');
+          if (import.meta.env.DEV) {
+            console.warn(`[CSV Import] Batch ${batchIndex + 1}/${batches.length} gagal, fallback ke per-baris:`, batchError);
+          }
+
+          for (const row of batch) {
+            const singlePayload = [{
+              nrp: row.nrp ?? '',
+              pin: DEFAULT_IMPORT_PIN,
+              nama: row.nama ?? '',
+              role: normalizeImportedRole(row.role),
+              satuan: row.satuan ?? '',
+              pangkat: row.pangkat ?? '',
+              jabatan: row.jabatan ?? '',
+            }];
+
+            try {
+              const { data, error } = await supabase.rpc('import_users_csv', { p_users: singlePayload });
+              if (error) throw error;
+
+              const singleResult = data as { success: number; failed: number; errors: { nrp: string; error: string }[] };
+              totalSuccess += singleResult.success;
+              totalFailed += singleResult.failed;
+
+              if (singleResult.errors?.length) {
+                allErrors.push(...singleResult.errors);
+              }
+            } catch (rowError) {
+              totalFailed += 1;
+              allErrors.push({
+                nrp: row.nrp ?? '-',
+                error: `Batch ${batchIndex + 1}/${batches.length}: ${getErrorMessage(rowError, batchMessage)}`,
+              });
+            }
+          }
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const aggregated = { success: totalSuccess, failed: totalFailed, errors: allErrors };
+      if (aggregated.success > 0) {
+        showNotification(`${aggregated.success} personel berhasil diimpor. PIN awal: ${DEFAULT_IMPORT_PIN}`, 'success');
         setPage(1);
-        invalidateUserStatsCache();
         notifyDataChanged('users');
       }
 
-      if (result.failed > 0) {
-        const errorMsgs = result.errors.slice(0, 3).map((e) => `${e.nrp}: ${e.error}`).join('; ');
-        if (result.success > 0) {
-          showNotification(
-            `⚠️ ${result.failed} gagal: ${errorMsgs}${result.errors.length > 3 ? '...' : ''}`,
-            'warning'
-          );
+      if (aggregated.failed > 0 && aggregated.errors.length > 0) {
+        const errorMsgs = aggregated.errors.slice(0, 3).map((e) => `${e.nrp}: ${e.error}`).join('; ');
+        if (aggregated.success > 0) {
+          showNotification(`Gagal: ${errorMsgs}${aggregated.errors.length > 3 ? '...' : ''}`, 'warning');
         } else {
-          throw new Error(`Import gagal: ${errorMsgs}${result.errors.length > 3 ? '...' : ''}`);
+          throw new Error(`Import gagal: ${errorMsgs}${aggregated.errors.length > 3 ? '...' : ''}`);
+        }
+      } else if (aggregated.failed > 0) {
+        if (aggregated.success > 0) {
+          showNotification(`${aggregated.failed} data gagal diimpor`, 'warning');
+        } else {
+          throw new Error('Semua data gagal diimpor');
         }
       }
     } catch (err) {
@@ -868,10 +805,10 @@ export default function UserManagement() {
     }
   };
 
-  const openRoleEdit = useCallback((user: User) => {
+  const openRoleEdit = (user: User) => {
     setRoleEditUser(user);
     setShowRoleEdit(true);
-  }, []);
+  };
 
   const handleRoleUpdate = async (userId: string, role: Role, levelKomando?: CommandLevel) => {
     if (!userId) return;
@@ -952,17 +889,25 @@ export default function UserManagement() {
     
     setIsBatchProcessing(true);
     try {
+      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
+      
       // Filter out current user (can't delete self)
-      const toDelete = selectedUsersOnPage.filter((u) => u.id !== authUser?.id);
+      const toDelete = selectedList.filter((u) => u.id !== authUser?.id);
       
       if (toDelete.length === 0) {
         showNotification('Tidak ada personel yang bisa dihapus', 'error');
         return;
       }
 
-      const deleted = await runWithConcurrency(toDelete, async (user) => {
-        await deleteUser(user.id);
-      });
+      let deleted = 0;
+      for (const user of toDelete) {
+        try {
+          await deleteUser(user.id);
+          deleted++;
+        } catch (e) {
+          if (import.meta.env.DEV) console.warn(`Failed to delete ${user.nama}:`, e);
+        }
+      }
 
       showNotification(`${deleted} personel berhasil dihapus`, 'success');
       setSelectedUserIds(new Set());
@@ -979,15 +924,24 @@ export default function UserManagement() {
 
     setIsBatchProcessing(true);
     try {
-      const updated = await runWithConcurrency(selectedUsersOnPage, async (user) => {
+      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
+      let updated = 0;
+
+      for (const user of selectedList) {
         let newStatus: boolean;
         if (action === 'toggle') {
           newStatus = !user.is_active;
         } else {
           newStatus = action === 'activate';
         }
-        await updateUser(user.id, { is_active: newStatus });
-      });
+
+        try {
+          await updateUser(user.id, { is_active: newStatus });
+          updated++;
+        } catch (e) {
+          if (import.meta.env.DEV) console.warn(`Failed to update ${user.nama}:`, e);
+        }
+      }
 
       const actionLabel = action === 'activate' ? 'diaktifkan' : action === 'deactivate' ? 'dinonaktifkan' : 'diubah statusnya';
       showNotification(`${updated} personel berhasil ${actionLabel}`, 'success');
@@ -1005,12 +959,20 @@ export default function UserManagement() {
 
     setIsBatchProcessing(true);
     try {
-      const updated = await runWithConcurrency(selectedUsersOnPage, async (user) => {
-        await updateUser(user.id, {
-          role,
-          level_komando: isRoleKomandan(role) ? levelKomando : undefined,
-        });
-      });
+      const selectedList = users.filter((u) => selectedUserIds.has(u.id));
+      let updated = 0;
+
+      for (const user of selectedList) {
+        try {
+          await updateUser(user.id, {
+            role,
+            level_komando: isRoleKomandan(role) ? levelKomando : undefined,
+          });
+          updated++;
+        } catch (e) {
+          if (import.meta.env.DEV) console.warn(`Failed to update ${user.nama}:`, e);
+        }
+      }
 
       showNotification(`Role ${updated} personel berhasil diubah ke ${role}`, 'success');
       setSelectedUserIds(new Set());
@@ -1022,24 +984,24 @@ export default function UserManagement() {
     }
   };
 
-  const toggleSelectUser = useCallback((id: string) => {
+  const toggleSelectUser = (id: string) => {
     setSelectedUserIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }, []);
+  };
 
-  const toggleSelectAll = useCallback(() => {
+  const toggleSelectAll = () => {
     if (selectedUserIds.size === users.length) {
       setSelectedUserIds(new Set());
     } else {
       setSelectedUserIds(new Set(users.map((u) => u.id)));
     }
-  }, [selectedUserIds.size, users]);
+  };
 
-  const handleOpenDetail = useCallback(async (u: User) => {
+  const handleOpenDetail = async (u: User) => {
     // Fetch full detail (including extended fields) before opening modal
     try {
       const full = await getUserById(u.id);
@@ -1049,7 +1011,7 @@ export default function UserManagement() {
       setDetailUser(u);
     }
     setShowDetail(true);
-  }, [getUserById]);
+  };
 
   const handleSaveDetail = async (id: string, updates: Partial<User>) => {
     await updateUser(id, updates);
@@ -1061,82 +1023,6 @@ export default function UserManagement() {
       setDetailUser((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev));
     }
   };
-
-  const tableColumns = useMemo(() => ([
-    {
-      key: 'select',
-      header: (
-        <input
-          type="checkbox"
-          checked={users.length > 0 && selectedUserIds.size === users.length}
-          onChange={toggleSelectAll}
-          className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
-          title="Pilih semua di halaman ini"
-        />
-      ),
-      render: (u: User) => (
-        <input
-          type="checkbox"
-          checked={selectedUserIds.has(u.id)}
-          onChange={() => toggleSelectUser(u.id)}
-          className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
-          onClick={(e) => e.stopPropagation()}
-        />
-      ),
-    },
-    { key: 'nrp', header: 'NRP', render: (u: User) => <span className="font-mono text-sm">{u.nrp}</span> },
-    { key: 'nama', header: 'Nama' },
-    { key: 'pangkat', header: 'Pangkat', render: (u: User) => u.pangkat ?? '—' },
-    { key: 'jabatan', header: 'Jabatan', render: (u: User) => u.jabatan ?? '—' },
-    { key: 'satuan', header: 'Satuan' },
-    { key: 'role', header: 'Role', render: (u: User) => <RoleBadge role={u.role} /> },
-    {
-      key: 'is_online', header: 'Status', render: (u: User) => {
-        const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
-        return (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5">
-              <div className={`h-2 w-2 rounded-full ${u.is_online ? 'bg-success' : 'bg-text-muted'}`} />
-              <span className="text-xs text-text-muted">{u.is_online ? 'Online' : 'Offline'}</span>
-            </div>
-            {isLocked && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-accent-red/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-red">
-                <ICONS.Lock className="h-2.5 w-2.5" aria-hidden="true" />
-                Terkunci
-              </span>
-            )}
-            {!u.is_active && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-surface/50 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
-                Nonaktif
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: 'actions', header: 'Aksi', render: (u: User) => (
-        <UserTableActions
-          user={u}
-          currentUserId={authUser?.id}
-          onDetail={() => handleOpenDetail(u)}
-          onResetPin={() => { setSelectedUser(u); setShowResetPin(true); }}
-          onRoleEdit={() => openRoleEdit(u)}
-          onToggleActive={() => handleToggleActive(u)}
-          onUnlock={() => { setSelectedUser(u); setShowUnlock(true); }}
-          onDelete={() => { setSelectedUser(u); setShowDelete(true); }}
-        />
-      ),
-    },
-  ]), [
-    users.length,
-    selectedUserIds,
-    toggleSelectAll,
-    toggleSelectUser,
-    authUser?.id,
-    handleOpenDetail,
-    handleToggleActive,
-  ]);
 
   return (
     <DashboardLayout title="Manajemen Personel">
@@ -1152,31 +1038,54 @@ export default function UserManagement() {
             <>
               <span>{totalItems} personel terdaftar</span>
               <span>Halaman {currentPage} dari {totalPages}</span>
-              <span>{pageStats.pageCount} data tampil (pageSize: {pageSize})</span>
-              {isLoading && <span className="animate-pulse">⏳ Memuat...</span>}
+              <span>{pageStats.pageCount} data tampil</span>
             </>
           }
         />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="app-card p-4">
-            <p className="text-xs uppercase tracking-wide text-text-muted">Total Terdaftar</p>
-            <p className="mt-2 text-2xl font-bold text-text-primary">{totalItems}</p>
+          <div className="app-card border border-surface/70 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-text-muted">Total Terdaftar</p>
+                <p className="mt-2 text-2xl font-bold text-text-primary">{totalItems}</p>
+              </div>
+              <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-primary/10 px-2 text-xs font-semibold text-primary">
+                All
+              </span>
+            </div>
             <p className="mt-1 text-xs text-text-muted">Total personel di sistem</p>
           </div>
-          <div className="app-card p-4">
-            <p className="text-xs uppercase tracking-wide text-text-muted">Aktif (Halaman)</p>
-            <p className="mt-2 text-2xl font-bold text-success">{pageStats.active}</p>
+          <div className="app-card border border-surface/70 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-text-muted">Aktif (Halaman)</p>
+                <p className="mt-2 text-2xl font-bold text-success">{pageStats.active}</p>
+              </div>
+              <span className="h-2.5 w-2.5 rounded-full bg-success animate-pulse" aria-hidden="true" />
+            </div>
             <p className="mt-1 text-xs text-text-muted">Akun siap digunakan</p>
           </div>
-          <div className="app-card p-4">
-            <p className="text-xs uppercase tracking-wide text-text-muted">Nonaktif (Halaman)</p>
-            <p className="mt-2 text-2xl font-bold text-accent-red">{pageStats.inactive}</p>
+          <div className="app-card border border-surface/70 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-text-muted">Nonaktif (Halaman)</p>
+                <p className="mt-2 text-2xl font-bold text-accent-red">{pageStats.inactive}</p>
+              </div>
+              <span className="h-2.5 w-2.5 rounded-full bg-accent-red" aria-hidden="true" />
+            </div>
             <p className="mt-1 text-xs text-text-muted">Perlu review status</p>
           </div>
-          <div className="app-card p-4">
-            <p className="text-xs uppercase tracking-wide text-text-muted">Online (Realtime)</p>
-            <p className="mt-2 text-2xl font-bold text-primary">{pageStats.online}</p>
+          <div className="app-card border border-surface/70 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-text-muted">Online (Realtime)</p>
+                <p className="mt-2 text-2xl font-bold text-primary">{pageStats.online}</p>
+              </div>
+              <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-primary/10 px-2 text-[11px] font-semibold text-primary">
+                Live
+              </span>
+            </div>
             <p className="mt-1 text-xs text-text-muted">Terlihat sedang aktif</p>
           </div>
         </div>
@@ -1190,232 +1099,123 @@ export default function UserManagement() {
           </div>
         )}
 
-        {/* Header actions - Advanced search for 1000+ users */}
-        <div className="app-card flex flex-col gap-4 p-4">
-          {/* Search section with dedicated NRP and NAMA fields */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="relative">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Cari NRP</label>
-              <span className="pointer-events-none absolute inset-y-8 left-3 flex items-center text-text-muted">
+        {/* Header actions */}
+        <div className="app-card space-y-4 p-4 sm:p-5">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
+              <div className="relative sm:col-span-2 lg:col-span-1">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-muted">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               </span>
               <input
-                ref={nrpInputRef}
                 type="text"
-                placeholder="Contoh: 1234567890"
-                value={searchNrpRaw}
-                onChange={(e) => { setSearchNrpRaw(e.target.value); setPage(1); }}
+                placeholder="Cari nama atau NRP..."
+                value={searchRaw}
+                onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
                 className="form-control w-full bg-bg-card pl-9"
               />
             </div>
-            
-            <div className="relative">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Cari Nama</label>
-              <span className="pointer-events-none absolute inset-y-8 left-3 flex items-center text-text-muted">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              </span>
-              <input
-                ref={namaInputRef}
-                type="text"
-                placeholder="Contoh: Ahmad Reza"
-                value={searchNamaRaw}
-                onChange={(e) => { setSearchNamaRaw(e.target.value); setPage(1); }}
-                className="form-control w-full bg-bg-card pl-9"
-              />
-            </div>
-
-            <select
-              value={filterRole}
-              onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
-              className="form-control bg-bg-card"
-            >
-              <option value="">Semua Role</option>
-              {ROLE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-
-            <select
-              value={filterStatus}
-              onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); setPage(1); }}
-              className="form-control bg-bg-card"
-            >
-              <option value="">Semua Status</option>
-              <option value="active">Aktif</option>
-              <option value="inactive">Nonaktif</option>
-            </select>
-          </div>
-
-          {/* Additional filter row for Satuan and actions */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1 sm:w-48">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Satuan/Unit</label>
               <select
-                value={filterSatuan}
-                onChange={(e) => { setFilterSatuan(e.target.value); setPage(1); }}
+                value={filterRole}
+                onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
                 className="form-control w-full bg-bg-card"
               >
-                <option value="">Semua Satuan</option>
-                {satuans.map((satuan) => (
-                  <option key={satuan.id} value={satuan.nama}>{satuan.nama}</option>
+                <option value="">Semua Role</option>
+                {ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
+              <select
+                value={filterStatus}
+                onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); setPage(1); }}
+                className="form-control w-full bg-bg-card"
+              >
+                <option value="">Semua Status</option>
+                <option value="active">Aktif</option>
+                <option value="inactive">Nonaktif</option>
+              </select>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={exportFilteredCSV}>
-                <span className="flex items-center gap-1.5">
-                  <ICONS.Download className="h-3.5 w-3.5" aria-hidden="true" />
-                  Export CSV
-                </span>
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setShowImport(true)}>
-                <span className="flex items-center gap-1.5">
-                  <span aria-hidden="true">⬆</span>
-                  Import CSV
-                </span>
-              </Button>
-              <Button size="sm" onClick={() => setShowCreate(true)}>+ Tambah</Button>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+              <Button variant="outline" size="sm" onClick={exportFilteredCSV} className="w-full sm:w-auto">
+              <span className="flex items-center gap-1.5">
+                <ICONS.Download className="h-3.5 w-3.5" aria-hidden="true" />
+                Export CSV
+              </span>
+            </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowImport(true)} className="w-full sm:w-auto">
+              <span className="flex items-center gap-1.5">
+                <span aria-hidden="true">⬆</span>
+                Import CSV
+              </span>
+            </Button>
+              <Button size="sm" onClick={() => setShowCreate(true)} className="w-full sm:w-auto">+ Tambah</Button>
               {hasFilters && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={resetAllFilters}
+                  onClick={() => {
+                    setSearchRaw('');
+                    setFilterRole('');
+                    setFilterStatus('');
+                    setPage(1);
+                  }}
+                  className="w-full sm:w-auto"
                 >
                   Reset Filter
                 </Button>
               )}
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-surface/60 bg-surface/20 p-2">
-            <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">Preset Cepat:</span>
-            <Button
-              size="sm"
-              variant="ghost"
-              className={`${quickFilterButtonClass} ${!hasFilters ? 'bg-primary/10 text-primary' : ''}`}
-              onClick={() => applyQuickFilter('all')}
-            >
-              Semua
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className={`${quickFilterButtonClass} ${filterStatus === 'active' ? 'bg-primary/10 text-primary' : ''}`}
-              onClick={() => applyQuickFilter('active')}
-            >
-              Aktif
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className={`${quickFilterButtonClass} ${filterStatus === 'inactive' ? 'bg-primary/10 text-primary' : ''}`}
-              onClick={() => applyQuickFilter('inactive')}
-            >
-              Nonaktif
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className={`${quickFilterButtonClass} ${filterRole === 'admin' ? 'bg-primary/10 text-primary' : ''}`}
-              onClick={() => applyQuickFilter('admin')}
-            >
-              Admin
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className={`${quickFilterButtonClass} ${filterRole === 'komandan' ? 'bg-primary/10 text-primary' : ''}`}
-              onClick={() => applyQuickFilter('komandan')}
-            >
-              Komandan
-            </Button>
-            {authUser?.satuan && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className={`${quickFilterButtonClass} ${filterSatuan === authUser.satuan ? 'bg-primary/10 text-primary' : ''}`}
-                onClick={() => applyQuickFilter('my-satuan')}
-              >
-                Satuan Saya
-              </Button>
-            )}
-            <span className="ml-auto px-1 text-[11px] text-text-muted">Shortcut: / Nama • Alt+N NRP • Esc Reset</span>
-          </div>
-
-          {/* Filter summary tags with performance info */}
-          <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-            {searchNrpRaw && (
-              <button
-                type="button"
-                onClick={() => { setSearchNrpRaw(''); setPage(1); }}
-                className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1 hover:border-primary/40 hover:text-text-primary"
-                title="Hapus filter NRP"
-              >
-                NRP: {searchNrpRaw}
-                <span aria-hidden="true">×</span>
-              </button>
-            )}
-            {searchNamaRaw && (
-              <button
-                type="button"
-                onClick={() => { setSearchNamaRaw(''); setPage(1); }}
-                className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1 hover:border-primary/40 hover:text-text-primary"
-                title="Hapus filter Nama"
-              >
-                Nama: {searchNamaRaw}
-                <span aria-hidden="true">×</span>
-              </button>
-            )}
+          <div className="grid gap-2 text-xs text-text-muted sm:grid-cols-2 xl:grid-cols-3">
             <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
-              Role: {filterRole ? getRoleDisplayLabel(filterRole) : 'Semua'}
+              Filter role: {filterRole ? `${getRoleDisplayLabel(filterRole)} (${getRoleCode(filterRole)})` : 'Semua'}
             </span>
             <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
-              Status: {filterStatus === 'active' ? 'Aktif' : filterStatus === 'inactive' ? 'Nonaktif' : 'Semua'}
+              Filter status: {filterStatus === 'active' ? 'Aktif' : filterStatus === 'inactive' ? 'Nonaktif' : 'Semua'}
             </span>
-            {filterSatuan && (
-              <button
-                type="button"
-                onClick={() => { setFilterSatuan(''); setPage(1); }}
-                className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1 hover:border-primary/40 hover:text-text-primary"
-                title="Hapus filter Satuan"
-              >
-                Satuan: {filterSatuan}
-                <span aria-hidden="true">×</span>
-              </button>
-            )}
-            
-            {/* Performance indicator */}
-            {(searchNrpRaw || searchNamaRaw) && (
-              <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/5 px-2.5 py-1 text-success">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-success"></span>
-                {totalItems} hasil ditemukan
-              </span>
-            )}
-
-            {hasFilters && (
-              <button
-                type="button"
-                onClick={resetAllFilters}
-                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-primary hover:bg-primary/10"
-              >
-                Bersihkan semua
-              </button>
-            )}
-          </div>
-
-          <div className="grid gap-2 rounded-xl border border-surface/60 bg-bg-card p-3 text-sm text-text-secondary sm:grid-cols-3">
-            <div>
-              Menampilkan <span className="font-semibold text-text-primary">{pageStats.pageCount}</span> data pada halaman ini.
-            </div>
-            <div>
-              Total hasil sesuai filter: <span className="font-semibold text-text-primary">{totalItems}</span> personel.
-            </div>
-            <div>
-              Halaman aktif: <span className="font-semibold text-text-primary">{currentPage}</span> dari <span className="font-semibold text-text-primary">{totalPages}</span>.
-            </div>
+            <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1 sm:col-span-2 xl:col-span-1">
+              Query: {searchRaw.trim() || 'Tidak ada'}
+            </span>
           </div>
         </div>
+
+        {/* Bulk selection toolbar */}
+        {selectedUserIds.size > 0 && (
+          <div className="rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 to-blue-500/5 px-4 py-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-primary">
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/20 text-xs font-bold">{selectedUserIds.size}</span>
+                <span>personel dipilih</span>
+                <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary/90">
+                  dari {users.length} data halaman ini
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                <Button size="sm" variant="secondary" onClick={() => setShowBulkReset(true)} className="w-full sm:w-auto">
+                  <ICONS.Key className="h-3.5 w-3.5" aria-hidden="true" />
+                  Reset PIN
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setBatchOperation('toggle-active')} className="w-full sm:w-auto">
+                  <ICONS.ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
+                  Toggle Status
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => setBatchOperation('role-change')} className="w-full sm:w-auto">
+                  <ICONS.Shield className="h-3.5 w-3.5" aria-hidden="true" />
+                  Ubah Role
+                </Button>
+                {isRoleAdmin(authUser?.role) && (
+                  <Button size="sm" variant="danger" onClick={() => setBatchOperation('delete')} className="w-full sm:w-auto">
+                    <ICONS.Trash className="h-3.5 w-3.5" aria-hidden="true" />
+                    Hapus
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => setSelectedUserIds(new Set())} className="w-full sm:w-auto">
+                  Batal
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {isRoleAdmin(authUser?.role) && (
           <div className="app-card p-4 space-y-4">
@@ -1529,86 +1329,118 @@ export default function UserManagement() {
           </div>
         )}
 
-        {/* Bulk selection toolbar */}
-        {selectedUserIds.size > 0 && (
-          <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 to-blue-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <span className="flex items-center gap-2 text-sm font-semibold text-primary">
-                <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/20 text-xs font-bold">{selectedUserIds.size}</span>
-                personel dipilih
-              </span>
-              <p className="text-xs text-text-secondary">
-                {selectedStats.active} aktif • {selectedStats.inactive} nonaktif pada halaman ini
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="secondary" onClick={() => setShowBulkReset(true)}>
-                <ICONS.Key className="h-3.5 w-3.5" aria-hidden="true" />
-                Reset PIN
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setBatchOperation('toggle-active')}>
-                <ICONS.ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
-                Toggle Status
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setBatchOperation('role-change')}>
-                <ICONS.Shield className="h-3.5 w-3.5" aria-hidden="true" />
-                Ubah Role
-              </Button>
-              {isRoleAdmin(authUser?.role) && (
-                <Button size="sm" variant="danger" onClick={() => setBatchOperation('delete')}>
-                  <ICONS.Trash className="h-3.5 w-3.5" aria-hidden="true" />
-                  Hapus
-                </Button>
-              )}
-              <Button size="sm" variant="ghost" onClick={() => setSelectedUserIds(new Set())}>
-                Batal
-              </Button>
-            </div>
-          </div>
-        )}
-
         {isLoading ? (
           <TableSkeleton rows={6} cols={7} />
         ) : (
           <>
-          <VirtualizedTable
-            columns={tableColumns}
+          <Table
+            columns={[
+              {
+                key: 'select',
+                className: 'w-10 whitespace-nowrap',
+                header: (
+                  <input
+                    type="checkbox"
+                    checked={users.length > 0 && selectedUserIds.size === users.length}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
+                    title="Pilih semua di halaman ini"
+                  />
+                ),
+                render: (u) => (
+                  <input
+                    type="checkbox"
+                    checked={selectedUserIds.has(u.id)}
+                    onChange={() => toggleSelectUser(u.id)}
+                    className="h-4 w-4 rounded border-surface accent-primary cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ),
+              },
+              {
+                key: 'nrp',
+                header: 'NRP',
+                className: 'whitespace-nowrap',
+                render: (u) => <span className="font-mono text-sm">{u.nrp}</span>,
+              },
+              { key: 'nama', header: 'Nama', className: 'min-w-[180px]' },
+              {
+                key: 'pangkat',
+                header: 'Pangkat',
+                className: 'hidden md:table-cell',
+                render: (u) => u.pangkat ?? '—',
+              },
+              {
+                key: 'jabatan',
+                header: 'Jabatan',
+                className: 'hidden lg:table-cell',
+                render: (u) => u.jabatan ?? '—',
+              },
+              {
+                key: 'satuan',
+                header: 'Satuan',
+                className: 'hidden xl:table-cell',
+              },
+              {
+                key: 'role',
+                header: 'Role',
+                className: 'hidden md:table-cell',
+                render: (u) => <RoleBadge role={u.role} />,
+              },
+              {
+                key: 'is_online', header: 'Status', className: 'whitespace-nowrap', render: (u) => {
+                  const isLocked = u.locked_until && new Date(u.locked_until) > new Date();
+                  return (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className={`h-2 w-2 rounded-full ${u.is_online ? 'bg-success' : 'bg-text-muted'}`} />
+                        <span className="text-xs text-text-muted">{u.is_online ? 'Online' : 'Offline'}</span>
+                      </div>
+                      {isLocked && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-accent-red/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent-red">
+                          <ICONS.Lock className="h-2.5 w-2.5" aria-hidden="true" />
+                          Terkunci
+                        </span>
+                      )}
+                      {!u.is_active && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-surface/50 px-1.5 py-0.5 text-[10px] font-semibold text-text-muted">
+                          Nonaktif
+                        </span>
+                      )}
+                    </div>
+                  );
+                },
+              },
+              {
+                key: 'actions', header: 'Aksi', className: 'whitespace-nowrap', render: (u) => (
+                  <UserTableActions
+                    user={u}
+                    currentUserId={authUser?.id}
+                    onDetail={() => handleOpenDetail(u)}
+                    onResetPin={() => { setSelectedUser(u); setShowResetPin(true); }}
+                    onRoleEdit={() => openRoleEdit(u)}
+                    onToggleActive={() => handleToggleActive(u)}
+                    onUnlock={() => { setSelectedUser(u); setShowUnlock(true); }}
+                    onDelete={() => { setSelectedUser(u); setShowDelete(true); }}
+                  />
+                ),
+              },
+            ]}
             data={users}
             keyExtractor={(u) => u.id}
             isLoading={false}
+            minTableWidthClass="min-w-[540px]"
             caption="Tabel manajemen personel berdasarkan filter role, status, dan pencarian"
             emptyMessage="Tidak ada personel ditemukan"
-            maxHeight="calc(100vh - 320px)"
-            rowHeight={52}
-            overscan={5}
           />
-          
-          {/* Pagination controls with page size selector */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-text-muted">Data per halaman:</label>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number.parseInt(e.target.value, 10) as typeof PAGE_SIZE_OPTIONS[number]);
-                  setPage(1); // Reset to first page when changing page size
-                }}
-                className="form-control w-20 bg-bg-card text-sm"
-              >
-                {PAGE_SIZE_OPTIONS.map((size) => (
-                  <option key={size} value={size}>{size}</option>
-                ))}
-              </select>
-            </div>
-
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={pageSize}
-              onPageChange={setPage}
-            />
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={PAGE_SIZE}
+            compactOnMobile
+            onPageChange={setPage}
+          />
           </>
         )}
       </div>
@@ -1659,7 +1491,7 @@ export default function UserManagement() {
         isOpen={showBulkReset}
         onClose={() => setShowBulkReset(false)}
         isSaving={isSaving}
-        selectedUsers={selectedUsersOnPage}
+        selectedUsers={selectedUsers}
         onSave={handleBulkResetPin}
         onError={(msg) => showNotification(msg, 'error')}
         onSuccess={(msg) => {
@@ -1735,7 +1567,7 @@ export default function UserManagement() {
       <BatchOperationModals
         isOpen={!!batchOperation}
         operationType={batchOperation}
-        selectedUsers={selectedUsersOnPage}
+        selectedUsers={selectedUsers}
         isSaving={isBatchProcessing}
         onDelete={handleBatchDelete}
         onToggleActive={handleBatchToggleActive}

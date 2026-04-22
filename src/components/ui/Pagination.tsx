@@ -5,6 +5,10 @@ interface PaginationProps {
   /** Optional: show "X–Y of Z" label */
   totalItems?: number;
   pageSize?: number;
+  /** Compact page-number buttons on mobile to reduce crowding */
+  compactOnMobile?: boolean;
+  /** Additional class for pagination wrapper */
+  containerClassName?: string;
 }
 
 /**
@@ -16,6 +20,8 @@ export default function Pagination({
   onPageChange,
   totalItems,
   pageSize = 50,
+  compactOnMobile = false,
+  containerClassName = '',
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -33,7 +39,7 @@ export default function Pagination({
   const to = Math.min(currentPage * pageSize, totalItems ?? currentPage * pageSize);
 
   return (
-    <div className="mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-surface/70 bg-bg-card/55 px-3 py-2 sm:flex-row">
+    <div className={`mt-4 flex flex-col items-center justify-between gap-3 rounded-xl border border-surface/70 bg-bg-card/55 px-3 py-2 sm:flex-row ${containerClassName}`.trim()}>
       {totalItems !== undefined && (
         <p className="text-xs text-text-muted">
           Menampilkan {from}–{to} dari {totalItems} data
@@ -50,14 +56,19 @@ export default function Pagination({
         </button>
         {pages.map((p, idx) =>
           p === '…' ? (
-            <span key={`e${idx}`} className="px-2 text-text-muted text-sm select-none">…</span>
+            <span
+              key={`e${idx}`}
+              className={`px-2 text-sm select-none text-text-muted ${compactOnMobile ? 'hidden sm:inline-flex' : ''}`}
+            >
+              …
+            </span>
           ) : (
             <button
               key={p}
               onClick={() => onPageChange(p)}
               className={`min-w-[32px] rounded-lg px-2 py-1.5 text-sm font-medium transition-colors ${
                 p === currentPage ? 'bg-primary text-white' : 'border border-surface/70 bg-surface/35 text-text-muted hover:bg-surface'
-              }`}
+              } ${compactOnMobile && p !== currentPage && p !== 1 && p !== totalPages ? 'hidden sm:inline-flex' : ''}`}
               aria-current={p === currentPage ? 'page' : undefined}
             >
               {p}
