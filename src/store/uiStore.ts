@@ -13,6 +13,7 @@ const DARK_MODE_KEY = 'karyo_dark_mode';
 const SIDEBAR_OPEN_KEY = 'karyo_sidebar_open';
 const NOTIFICATIONS_ENABLED_KEY = 'karyo_notifications_enabled';
 const DISPLAY_DENSITY_KEY = 'karyo_display_density';
+const BOTTOM_NAVIGATION_ENABLED_KEY = 'karyo_bottom_navigation_enabled';
 const DASHBOARD_AUTO_REFRESH_ENABLED_KEY = 'karyo_dashboard_auto_refresh_enabled';
 const DASHBOARD_AUTO_REFRESH_MINUTES_KEY = 'karyo_dashboard_auto_refresh_minutes';
 
@@ -39,6 +40,7 @@ interface UIStore {
   sidebarOpen: boolean;
   notificationsEnabled: boolean;
   displayDensity: DisplayDensity;
+  bottomNavigationEnabled: boolean;
   dashboardAutoRefreshEnabled: boolean;
   dashboardAutoRefreshMinutes: number;
   /** Legacy single-slot notification (kept for backward compatibility) */
@@ -51,6 +53,8 @@ interface UIStore {
   setNotificationsEnabled: (enabled: boolean) => void;
   setDisplayDensity: (density: DisplayDensity) => void;
   toggleDisplayDensity: () => void;
+  setBottomNavigationEnabled: (enabled: boolean) => void;
+  toggleBottomNavigation: () => void;
   setDashboardAutoRefreshEnabled: (enabled: boolean) => void;
   setDashboardAutoRefreshMinutes: (minutes: number) => void;
   loadUserPreferences: () => Promise<void>;
@@ -93,6 +97,7 @@ const loadDisplayDensity = (): DisplayDensity => {
     return 'comfortable';
   }
 };
+const loadBottomNavigationEnabled = (): boolean => loadBoolean(BOTTOM_NAVIGATION_ENABLED_KEY, true);
 const loadDashboardAutoRefreshEnabled = (): boolean => loadBoolean(DASHBOARD_AUTO_REFRESH_ENABLED_KEY, true);
 const loadDashboardAutoRefreshMinutes = (): number => loadNumber(DASHBOARD_AUTO_REFRESH_MINUTES_KEY, 3);
 
@@ -158,6 +163,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   sidebarOpen: loadSidebarOpen(),
   notificationsEnabled: loadNotificationsEnabled(),
   displayDensity: loadDisplayDensity(),
+  bottomNavigationEnabled: loadBottomNavigationEnabled(),
   dashboardAutoRefreshEnabled: loadDashboardAutoRefreshEnabled(),
   dashboardAutoRefreshMinutes: loadDashboardAutoRefreshMinutes(),
   notification: null,
@@ -223,6 +229,18 @@ export const useUIStore = create<UIStore>((set, get) => ({
     );
     set({ displayDensity: density });
   },
+
+  setBottomNavigationEnabled: (enabled: boolean) => {
+    savePreference(BOTTOM_NAVIGATION_ENABLED_KEY, String(enabled));
+    set({ bottomNavigationEnabled: enabled });
+  },
+
+  toggleBottomNavigation: () =>
+    set((state) => {
+      const next = !state.bottomNavigationEnabled;
+      savePreference(BOTTOM_NAVIGATION_ENABLED_KEY, String(next));
+      return { bottomNavigationEnabled: next };
+    }),
 
   toggleDisplayDensity: () =>
     set((state) => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -16,6 +16,7 @@ import { usePlatformStore } from '../../store/platformStore';
 import { ICONS } from '../../icons';
 import { useKomandanDashboardStore } from '../../store/komandanDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
+import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh';
 import { isPathEnabled } from '../../lib/featureFlags';
 import { getKomandanScopeLabel } from '../../lib/rolePermissions';
 
@@ -28,6 +29,13 @@ export default function KomandanDashboard() {
   const { announcements } = useAnnouncements();
   const { onlineCount, totalPersonel, error, fetchStats } = useKomandanDashboardStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshStatsOnly = useCallback(async () => {
+    await fetchStats(user?.satuan);
+  }, [fetchStats, user?.satuan]);
+  const { requestRefresh: requestStatsRefresh } = useVisibilityAwareRefresh(refreshStatsOnly, {
+    intervalMs: user?.satuan ? 60 * 1000 : undefined,
+  });
+  const { requestRefresh: requestTaskRefresh } = useVisibilityAwareRefresh(refetchTasks);
 
   const refresh = async () => {
     setIsRefreshing(true);
@@ -45,24 +53,13 @@ export default function KomandanDashboard() {
   useEffect(() => {
     return subscribeDataChanges(['users', 'tasks', 'announcements'], (changed) => {
       if (changed.includes('users') || changed.includes('announcements')) {
-        void fetchStats(user?.satuan);
+        requestStatsRefresh();
       }
       if (changed.includes('tasks')) {
-        void refetchTasks();
+        requestTaskRefresh();
       }
     }, { debounceMs: 500 });
-  }, [fetchStats, refetchTasks, user?.satuan]);
-
-  useEffect(() => {
-    if (!user?.satuan) return undefined;
-    const intervalId = window.setInterval(() => {
-      void fetchStats(user.satuan);
-    }, 60 * 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [fetchStats, user?.satuan]);
+  }, [requestStatsRefresh, requestTaskRefresh]);
 
   const pendingTasks = useMemo(() => tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress'), [tasks]);
   const doneTasks = useMemo(() => tasks.filter((t) => t.status === 'done'), [tasks]);

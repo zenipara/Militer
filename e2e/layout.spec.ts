@@ -53,6 +53,24 @@ test.describe('Layout — Responsive', () => {
     await expect(sidebarNav.getByRole('link', { name: /Pengumuman/i })).toHaveCount(0);
     await expect(sidebarNav.getByRole('link', { name: /Pengaturan|Setelan/i })).toHaveCount(0);
   });
+
+  test('bottom navigation bisa dimatikan lewat preferensi', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => {
+      localStorage.setItem('karyo_bottom_navigation_enabled', 'false');
+    });
+    await loginAsAdmin(page);
+
+    const bottomNav = page.locator('nav[aria-label="Bottom navigation"]');
+    await expect(bottomNav).not.toBeVisible();
+
+    await page.locator('button[aria-label="Toggle sidebar"]').click();
+    const sidebarNav = page.locator('aside nav');
+    await expect(sidebarNav).toBeVisible();
+    await expect(sidebarNav.getByRole('link', { name: /Personel/i })).toBeVisible();
+    await expect(sidebarNav.getByRole('link', { name: /Pengumuman/i })).toBeVisible();
+    await expect(sidebarNav.getByRole('link', { name: /Pengaturan|Setelan/i })).toBeVisible();
+  });
 });
 
 test.describe('Layout — Aksesibilitas dasar', () => {

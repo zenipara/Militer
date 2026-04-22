@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
@@ -16,6 +16,7 @@ import { ICONS } from '../../icons';
 import { useAdminDashboardStore } from '../../store/adminDashboardStore';
 import { subscribeDataChanges } from '../../lib/dataSync';
 import { useUsers } from '../../hooks/useUsers';
+import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh';
 import { useFeatureStore } from '../../store/featureStore';
 import { usePlatformStore } from '../../store/platformStore';
 import { isPathEnabled } from '../../lib/featureFlags';
@@ -64,7 +65,6 @@ export default function AdminDashboard() {
   });
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [confirmMember, setConfirmMember] = useState<{ id: string; nama: string } | null>(null);
-  const pendingRefreshWhileHiddenRef = useRef(false);
   const {
     snapshot,
     isLoading,
@@ -73,6 +73,9 @@ export default function AdminDashboard() {
     fetchDashboard,
     refreshDashboard,
   } = useAdminDashboardStore();
+  const { requestRefresh: requestDashboardRefresh } = useVisibilityAwareRefresh(refreshDashboard, {
+    intervalMs: dashboardAutoRefreshEnabled ? dashboardAutoRefreshMinutes * 60 * 1000 : undefined,
+  });
 
   const stats = snapshot?.stats ?? null;
   const recentLogs = snapshot?.recentLogs ?? [];
@@ -86,42 +89,14 @@ export default function AdminDashboard() {
   }, [fetchDashboard]);
 
   useEffect(() => {
-    if (!dashboardAutoRefreshEnabled) return undefined;
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
-      void refreshDashboard();
-    }, dashboardAutoRefreshMinutes * 60 * 1000);
-
-    return () => window.clearInterval(intervalId);
-  }, [dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, refreshDashboard]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (!pendingRefreshWhileHiddenRef.current) return;
-      pendingRefreshWhileHiddenRef.current = false;
-      void refreshDashboard();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [refreshDashboard]);
-
-  useEffect(() => {
     return subscribeDataChanges(
       ['users', 'tasks', 'leave_requests', 'attendance', 'announcements', 'logistics_items', 'audit_logs', 'gate_pass'],
       () => {
-        if (document.visibilityState !== 'visible') {
-          pendingRefreshWhileHiddenRef.current = true;
-          return;
-        }
-        void refreshDashboard();
+        requestDashboardRefresh();
       },
       { debounceMs: 450 },
     );
-  }, [refreshDashboard]);
+  }, [requestDashboardRefresh]);
 
   const handleRefresh = async () => {
     const ok = await refreshDashboard();
@@ -155,7 +130,7 @@ export default function AdminDashboard() {
     try {
       await deleteUser(id);
       showNotification(`Data anggota ${nama} berhasil dihapus`, 'success');
-      void refreshDashboard();
+      requestDashboardRefresh();
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal menghapus anggota', 'error');
     } finally {

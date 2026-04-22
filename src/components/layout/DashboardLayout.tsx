@@ -13,7 +13,7 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
-  const { displayDensity, setSidebarOpen } = useUIStore();
+  const { displayDensity, setSidebarOpen, bottomNavigationEnabled } = useUIStore();
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
 
@@ -32,9 +32,10 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     }
   }, [location.pathname]);
 
+  const mobileBottomPadding = bottomNavigationEnabled ? 'pb-28' : 'pb-8';
   const mainPadding = displayDensity === 'compact'
-    ? 'px-4 py-3 pb-28 sm:px-5 sm:py-4 lg:px-6 lg:py-6 lg:pb-8'
-    : 'px-5 py-5 pb-28 sm:px-6 lg:px-8 lg:py-7 lg:pb-8';
+    ? `px-4 py-3 ${mobileBottomPadding} sm:px-5 sm:py-4 lg:px-6 lg:py-6 lg:pb-8`
+    : `px-5 py-5 ${mobileBottomPadding} sm:px-6 lg:px-8 lg:py-7 lg:pb-8`;
 
   const shellWidth = displayDensity === 'compact' ? 'max-w-[1440px]' : 'max-w-[1360px]';
 

@@ -30,7 +30,7 @@ interface NavbarProps {
 export default function Navbar({ title }: NavbarProps) {
   const { user, logout } = useAuthStore();
   const { flags } = useFeatureStore();
-  const { toggleSidebar, toggleDarkMode, isDarkMode } = useUIStore();
+  const { toggleSidebar, toggleDarkMode, isDarkMode, bottomNavigationEnabled } = useUIStore();
   const { unreadCount } = useMessages({ includeSent: false, enableDirectRealtime: false });
   const { isOnline, isSyncing, syncStats, requestSync, getLastSyncTimeFormatted } = useOfflineSync();
   const { isInstallAvailable, installApp } = usePWAInstall();
@@ -66,13 +66,15 @@ export default function Navbar({ title }: NavbarProps) {
   const showSidebarToggleOnMobile = useMemo(() => {
     if (!user) return false;
 
+    const enabledSidebarPaths = getSidebarNavPaths(user.role).filter((path) => isPathEnabled(path, flags));
+    if (!bottomNavigationEnabled) return enabledSidebarPaths.length > 0;
+
     const bottomPaths = new Set(
       getBottomTabPaths(user.role).filter((path) => isPathEnabled(path, flags)),
     );
-    const enabledSidebarPaths = getSidebarNavPaths(user.role).filter((path) => isPathEnabled(path, flags));
 
     return enabledSidebarPaths.some((path) => !bottomPaths.has(path));
-  }, [user, flags]);
+  }, [user, flags, bottomNavigationEnabled]);
   const currentDateLabel = useMemo(
     () => new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }),
     [],

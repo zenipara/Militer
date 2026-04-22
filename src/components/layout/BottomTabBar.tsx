@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, CheckSquare, CalendarDays, Megaphone,
-  UserCheck, Users, Package, Settings, ScanLine, ScrollText,
+  UserCheck, Users, Settings, ScanLine, ScrollText,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
+import { useUIStore } from '../../store/uiStore';
 import { useMessages } from '../../hooks/useMessages';
 import { isPathEnabled } from '../../lib/featureFlags';
 import { ROLE_ROUTE_PATHS } from '../../lib/rolePermissions';
@@ -22,7 +23,6 @@ const BOTTOM_TABS: Record<Role, BottomTabItem[]> = {
   admin: [
     { path: ROLE_ROUTE_PATHS.admin.dashboard,     label: 'Beranda',    icon: <LayoutDashboard size={20} aria-hidden="true" /> },
     { path: ROLE_ROUTE_PATHS.admin.users,         label: 'Personel',   icon: <Users size={20} aria-hidden="true" /> },
-    { path: ROLE_ROUTE_PATHS.admin.logistics,     label: 'Logistik',   icon: <Package size={20} aria-hidden="true" /> },
     { path: ROLE_ROUTE_PATHS.admin.announcements, label: 'Pengumuman', icon: <Megaphone size={20} aria-hidden="true" /> },
     { path: ROLE_ROUTE_PATHS.admin.settings,      label: 'Setelan',    icon: <Settings size={20} aria-hidden="true" /> },
   ],
@@ -65,9 +65,10 @@ export const getBottomTabPaths = (role: Role): string[] =>
 export default function BottomTabBar() {
   const { user } = useAuthStore();
   const { flags } = useFeatureStore();
+  const { bottomNavigationEnabled } = useUIStore();
   const { unreadCount } = useMessages({ includeSent: false, enableDirectRealtime: false, subscribeToDataChanges: false });
 
-  if (!user) return null;
+  if (!user || !bottomNavigationEnabled) return null;
 
   const tabs = (BOTTOM_TABS[user.role] ?? []).filter((tab) => isPathEnabled(tab.path, flags));
 

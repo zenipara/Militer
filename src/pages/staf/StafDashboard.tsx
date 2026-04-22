@@ -14,6 +14,7 @@ import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
 import { subscribeDataChanges } from '../../lib/dataSync';
 import { ensureStoredSessionContext } from '../../lib/api/sessionContext';
+import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh';
 
 interface StafStats {
   totalPersonel: number;
@@ -121,6 +122,7 @@ export default function StafDashboard() {
       setStatsLoading(false);
     }
   }, [user?.satuan]);
+  const { requestRefresh: requestStatsRefresh } = useVisibilityAwareRefresh(loadStats);
 
   const refresh = async () => {
     setIsRefreshing(true);
@@ -137,9 +139,9 @@ export default function StafDashboard() {
 
   useEffect(() => {
     return subscribeDataChanges(['users', 'attendance', 'tasks', 'logistics_items'], () => {
-      void loadStats();
+      requestStatsRefresh();
     }, { debounceMs: 500 });
-  }, [loadStats]);
+  }, [requestStatsRefresh]);
 
   const modules = useMemo(() => BIDANG_MODULES[bidang].filter((m) => isPathEnabled(m.path, flags)), [bidang, flags]);
   const pinnedAnnouncements = useMemo(() => announcements.filter((a) => a.is_pinned).slice(0, 3), [announcements]);

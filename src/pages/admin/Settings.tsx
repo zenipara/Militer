@@ -70,6 +70,8 @@ export default function Settings() {
     setDashboardAutoRefreshMinutes,
     sidebarOpen,
     setSidebarOpen,
+    bottomNavigationEnabled,
+    setBottomNavigationEnabled,
     showNotification,
   } = useUIStore();
 
@@ -280,6 +282,7 @@ export default function Settings() {
     if (!isDarkMode) toggleDarkMode();
     setNotificationsEnabled(true);
     setDisplayDensity('comfortable');
+    setBottomNavigationEnabled(true);
     setDashboardAutoRefreshEnabled(true);
     setDashboardAutoRefreshMinutes(3);
     setSidebarOpen(true);
@@ -589,6 +592,27 @@ export default function Settings() {
                   aria-label="Toggle sidebar preference"
                   role="switch"
                   aria-checked={sidebarOpen}
+                >
+                  <span />
+                </button>
+              </div>
+
+              <div className="setting-row">
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">Navigasi Bawah</p>
+                  <p className="text-xs text-text-muted mt-0.5">
+                    {bottomNavigationEnabled
+                      ? 'Shortcut Beranda, Personel, Pengumuman, dan Setelan tampil di bawah saat mobile.'
+                      : 'Navigasi bawah disembunyikan; gunakan sidebar untuk akses cepat.'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setBottomNavigationEnabled(!bottomNavigationEnabled)}
+                  className="toggle-switch"
+                  data-checked={bottomNavigationEnabled}
+                  aria-label="Toggle bottom navigation"
+                  role="switch"
+                  aria-checked={bottomNavigationEnabled}
                 >
                   <span />
                 </button>

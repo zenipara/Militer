@@ -101,7 +101,7 @@ export const getSidebarNavPaths = (role: Role): string[] =>
 
 export default function Sidebar() {
   const { user, logout } = useAuthStore();
-  const { sidebarOpen, setSidebarOpen } = useUIStore();
+  const { sidebarOpen, setSidebarOpen, bottomNavigationEnabled } = useUIStore();
   const { settings } = usePlatformStore();
   const { flags } = useFeatureStore();
   const location = useLocation();
@@ -157,11 +157,11 @@ export default function Sidebar() {
 
     const roleNavItems = (NAV_ITEMS[user.role] ?? []).filter((item) => isPathEnabled(item.path, flags));
 
-    if (!isMobileViewport) return roleNavItems;
+    if (!isMobileViewport || !bottomNavigationEnabled) return roleNavItems;
 
     const bottomTabPaths = new Set(getBottomTabPaths(user.role));
     return roleNavItems.filter((item) => !bottomTabPaths.has(item.path));
-  }, [user, flags, isMobileViewport]);
+  }, [user, flags, isMobileViewport, bottomNavigationEnabled]);
 
   useEffect(() => {
     if (!isMobileViewport) return;
