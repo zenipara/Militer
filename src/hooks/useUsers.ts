@@ -17,6 +17,8 @@ import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import { isRoleKomandan } from '../lib/rolePermissions';
 import { supabase } from '../lib/supabase';
 import { readSessionContext } from '../lib/sessionContext';
+import { globalRequestCoalescer, createRequestKey } from '../lib/requestCoalescer600';
+import { userSearchCache, createUserSearchCacheKey } from '../lib/cacheWithTTL600';
 import type { User, Role } from '../types';
 import { useAuthStore } from '../store/authStore';
 
@@ -77,7 +79,56 @@ export function useUsers(options: UseUsersOptions = {}) {
     if (!callerId || !callerRole) return [] as User[];
 
     if (!requestParams.serverPaginated) {
-      return apiFetchUsers({
+      const cacheKey = createRequestKey('fetch-all-users', {
+        callerRole: requestParams.role,
+        satuan: requestParams.satuan,
+        isActive: requestParams.isActive,
+      });
+      
+      return globalRequestCoalescer.coalesce(cacheKey, () =>
+        apiFetchUsers({
+          callerId,
+          callerRole,
+          role: requestParams.role,
+          satuan: requestParams.satuan,
+          isActive: requestParams.isActive,
+          orderBy: requestParams.orderBy,
+          ascending: requestParams.ascending,
+        })
+      );
+    }
+
+    const page = Math.max(1, requestParams.page);
+    const offset = (page - 1) * requestParams.pageSize;
+    
+    // Use cache key for coalescing
+    const cacheKey = createUserSearchCacheKey(
+      requestParams.searchQuery,
+      requestParams.role,
+      requestParams.satuan,
+      requestParams.isActive,
+      page,
+      requestParams.pageSize
+    );
+
+    // Use cache first if available and not modified filter
+    const cached = userSearchCache.get(cacheKey);
+    if (cached) {
+      return cached.users;
+    }
+
+    // Coalesce identical requests within time window
+    const coalescedKey = createRequestKey('fetch-users-page', {
+      page,
+      pageSize: requestParams.pageSize,
+      search: requestParams.searchQuery,
+      role: requestParams.role,
+      satuan: requestParams.satuan,
+      isActive: requestParams.isActive,
+    });
+
+    return globalRequestCoalescer.coalesce(coalescedKey, () =>
+      apiFetchUsersPage({
         callerId,
         callerRole,
         role: requestParams.role,
@@ -85,23 +136,15 @@ export function useUsers(options: UseUsersOptions = {}) {
         isActive: requestParams.isActive,
         orderBy: requestParams.orderBy,
         ascending: requestParams.ascending,
-      });
-    }
-
-    const page = Math.max(1, requestParams.page);
-    const offset = (page - 1) * requestParams.pageSize;
-    return apiFetchUsersPage({
-      callerId,
-      callerRole,
-      role: requestParams.role,
-      satuan: requestParams.satuan,
-      isActive: requestParams.isActive,
-      orderBy: requestParams.orderBy,
-      ascending: requestParams.ascending,
-      search: requestParams.searchQuery,
-      limit: requestParams.pageSize,
-      offset,
-    });
+        search: requestParams.searchQuery,
+        limit: requestParams.pageSize,
+        offset,
+      }).then((data) => {
+        // Cache result after fetch
+        userSearchCache.set(cacheKey, { users: data, total: 0 }, 2 * 60 * 1000);
+        return data;
+      })
+    );
   }, [callerId, callerRole, requestParams]);
 
   const fetchUsers = useCallback(async () => {
@@ -124,18 +167,27 @@ export function useUsers(options: UseUsersOptions = {}) {
 
     try {
       const countPromise = requestParams.serverPaginated
-        ? apiCountUsers({
-            callerId,
-            callerRole,
-            role: requestParams.role,
-            satuan: requestParams.satuan,
-            isActive: requestParams.isActive,
-            orderBy: requestParams.orderBy,
-            ascending: requestParams.ascending,
-            search: requestParams.searchQuery,
-            limit: requestParams.pageSize,
-            offset: 0,
-          })
+        ? globalRequestCoalescer.coalesce(
+            createRequestKey('count-users', {
+              role: requestParams.role,
+              satuan: requestParams.satuan,
+              isActive: requestParams.isActive,
+              search: requestParams.searchQuery,
+            }),
+            () =>
+              apiCountUsers({
+                callerId,
+                callerRole,
+                role: requestParams.role,
+                satuan: requestParams.satuan,
+                isActive: requestParams.isActive,
+                orderBy: requestParams.orderBy,
+                ascending: requestParams.ascending,
+                search: requestParams.searchQuery,
+                limit: requestParams.pageSize,
+                offset: 0,
+              })
+          )
         : Promise.resolve(0);
 
       const [data, total] = await Promise.all([loadUsersData(), countPromise]);

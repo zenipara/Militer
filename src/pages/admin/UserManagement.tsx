@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import Table from '../../components/ui/Table';
+import VirtualizedTable from '../../components/ui/VirtualizedTable';
 import Button from '../../components/common/Button';
 import PageHeader from '../../components/ui/PageHeader';
 import { RoleBadge } from '../../components/common/Badge';
@@ -371,7 +371,7 @@ export default function UserManagement() {
   const setPage = (page: number) => setCurrentPage(Math.max(1, page));
 
   const [searchRaw, setSearchRaw] = useState('');
-  const search = useDebounce(searchRaw, 300);
+  const search = useDebounce(searchRaw, 500); // Increased from 300ms to 500ms for 600+ user optimization
   const [filterRole, setFilterRole] = useState<Role | ''>('');
   const [filterStatus, setFilterStatus] = useState<'active' | 'inactive' | ''>('');
 
@@ -1297,7 +1297,7 @@ export default function UserManagement() {
           <TableSkeleton rows={6} cols={7} />
         ) : (
           <>
-          <Table
+          <VirtualizedTable
             columns={[
               {
                 key: 'select',
@@ -1370,6 +1370,9 @@ export default function UserManagement() {
             isLoading={false}
             caption="Tabel manajemen personel berdasarkan filter role, status, dan pencarian"
             emptyMessage="Tidak ada personel ditemukan"
+            maxHeight="calc(100vh - 320px)"
+            rowHeight={52}
+            overscan={5}
           />
           <Pagination
             currentPage={currentPage}
