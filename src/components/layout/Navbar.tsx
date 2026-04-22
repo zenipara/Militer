@@ -29,7 +29,7 @@ export default function Navbar({ title }: NavbarProps) {
   const { user, logout } = useAuthStore();
   const { flags } = useFeatureStore();
   const { toggleSidebar, toggleDarkMode, isDarkMode } = useUIStore();
-  const { unreadCount } = useMessages();
+  const { unreadCount } = useMessages({ includeSent: false });
   const { isOnline, isSyncing, syncStats, requestSync, getLastSyncTimeFormatted } = useOfflineSync();
   const { isInstallAvailable, installApp } = usePWAInstall();
   const navigate = useNavigate();

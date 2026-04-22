@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { notifyDataChanged, type DataResource } from '../lib/dataSync';
 import { useAuthStore } from '../store/authStore';
 
+const REALTIME_FLUSH_DEBOUNCE_MS = 240;
+
 const realtimeTableMap: Array<{ table: string; resource: DataResource }> = [
   { table: 'users', resource: 'users' },
   { table: 'tasks', resource: 'tasks' },
@@ -81,7 +83,7 @@ export function useGlobalRealtimeSync() {
 
           flushTimerRef.current = setTimeout(() => {
             flushPendingResources();
-          }, 100);
+          }, REALTIME_FLUSH_DEBOUNCE_MS);
         });
       }
 

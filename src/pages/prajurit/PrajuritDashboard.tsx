@@ -29,7 +29,7 @@ export default function PrajuritDashboard() {
   const { tasks, isLoading: tasksLoading } = useTasks({ assignedTo: user?.id });
   const { todayAttendance, isLoading: attnLoading, checkIn, checkOut } = useAttendance();
   const { announcements, isLoading: annLoading } = useAnnouncements();
-  const { unreadCount } = useMessages();
+  const { unreadCount } = useMessages({ includeSent: false });
   const { gatePasses, fetchGatePasses } = useGatePassStore();
   const [checkingIn, setCheckingIn] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);

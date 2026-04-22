@@ -7,7 +7,13 @@ import { notifyDataChanged, subscribeDataChanges } from '../lib/dataSync';
 import type { Message } from '../types';
 import { useAuthStore } from '../store/authStore';
 
-export function useMessages() {
+interface UseMessagesOptions {
+  includeSent?: boolean;
+  enableDirectRealtime?: boolean;
+}
+
+export function useMessages(options: UseMessagesOptions = {}) {
+  const { includeSent = true, enableDirectRealtime = true } = options;
   const { user } = useAuthStore();
   const [inbox, setInbox] = useState<Message[]>([]);
   const [sent, setSent] = useState<Message[]>([]);
@@ -19,6 +25,7 @@ export function useMessages() {
   const isFetchingRef = useRef(false);
   const refreshQueuedRef = useRef(false);
   const fetchMessagesRef = useRef<(() => Promise<void>) | null>(null);
+  const hasLoadedRef = useRef(false);
 
   const fetchMessages = useCallback(async () => {
     if (isFetchingRef.current) {
@@ -33,16 +40,18 @@ export function useMessages() {
       return;
     }
     isFetchingRef.current = true;
-    setIsLoading(true);
+    if (!hasLoadedRef.current) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
-      const [inboxData, sentData] = await Promise.all([
-        fetchInbox(user.id, user.role),
-        fetchSent(user.id, user.role),
-      ]);
+      const inboxPromise = fetchInbox(user.id, user.role);
+      const sentPromise = includeSent ? fetchSent(user.id, user.role) : Promise.resolve([] as Message[]);
+      const [inboxData, sentData] = await Promise.all([inboxPromise, sentPromise]);
       setInbox(inboxData);
       setSent(sentData);
       setUnreadCount(inboxData.filter((m) => !m.is_read).length);
+      hasLoadedRef.current = true;
     } catch (err) {
       setError(handleError(err, 'Gagal memuat pesan'));
     } finally {
@@ -54,7 +63,7 @@ export function useMessages() {
         setIsLoading(false);
       }
     }
-  }, [user]);
+  }, [includeSent, user]);
 
   useEffect(() => {
     void fetchMessages();
@@ -72,6 +81,7 @@ export function useMessages() {
   const channelNonceRef = useRef(`msg-${Math.random().toString(36).slice(2, 10)}`);
 
   useEffect(() => {
+    if (!enableDirectRealtime) return;
     if (!user) return;
     // Cleanup previous channel if exists
     if (channelRef.current) {
@@ -95,7 +105,7 @@ export function useMessages() {
         channelRef.current = null;
       }
     };
-  }, [user, fetchMessages]);
+  }, [enableDirectRealtime, user, fetchMessages]);
 
   /**
    * Sync the current fetchMessages function to the ref so queued refreshes
