@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ICONS } from '../../icons';
 import { useAuthStore } from '../../store/authStore';
@@ -61,6 +61,13 @@ export default function Navbar({ title }: NavbarProps) {
   const messagePath = getRoleMessagesPath(user?.role);
   const canOpenMessages = Boolean(messagePath && isPathEnabled(messagePath, flags));
   const profilePath = getRoleProfilePath(user?.role);
+  const currentDateLabel = useMemo(
+    () => new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }),
+    [],
+  );
+  const handleSyncNow = useCallback(() => {
+    void requestSync();
+  }, [requestSync]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-surface/60 bg-bg-card/90 px-4 backdrop-blur-2xl sm:px-5 lg:px-8" data-print-hide>
@@ -81,7 +88,7 @@ export default function Navbar({ title }: NavbarProps) {
 
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-sm font-bold text-text-primary sm:text-base leading-tight">{title}</h1>
-          <p className="hidden text-[11px] text-text-muted sm:block leading-tight">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <p className="hidden text-[11px] text-text-muted sm:block leading-tight">{currentDateLabel}</p>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -95,9 +102,7 @@ export default function Navbar({ title }: NavbarProps) {
             failed={syncStats.failed}
             isSyncing={isSyncing}
             isOnline={isOnline}
-            onSync={() => {
-              void requestSync();
-            }}
+            onSync={handleSyncNow}
           />
 
           {/* Global search */}

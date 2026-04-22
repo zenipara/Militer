@@ -1,3 +1,5 @@
+import { useEffect, useMemo, useState } from 'react';
+
 interface SyncQueueBadgeProps {
   pending: number;
   failed: number;
@@ -13,9 +15,38 @@ export default function SyncQueueBadge({
   isOnline,
   onSync,
 }: SyncQueueBadgeProps) {
-  if (pending === 0 && failed === 0) return null;
+  const [visibleCounts, setVisibleCounts] = useState({ pending: 0, failed: 0 });
+  const [isVisible, setIsVisible] = useState(false);
 
-  const hasFailed = failed > 0;
+  useEffect(() => {
+    const hasItems = pending > 0 || failed > 0;
+
+    if (hasItems) {
+      setVisibleCounts({ pending, failed });
+      setIsVisible(true);
+      return;
+    }
+
+    const hideTimer = window.setTimeout(() => {
+      setIsVisible(false);
+      setVisibleCounts({ pending: 0, failed: 0 });
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(hideTimer);
+    };
+  }, [pending, failed]);
+
+  if (!isVisible) return null;
+
+  const hasFailed = visibleCounts.failed > 0;
+  const pendingLabel = hasFailed ? visibleCounts.failed : visibleCounts.pending;
+  const title = useMemo(
+    () => (hasFailed
+      ? `${visibleCounts.failed} operasi gagal. Klik untuk coba sinkron ulang.`
+      : `${visibleCounts.pending} operasi menunggu sinkronisasi. Klik untuk sinkron sekarang.`),
+    [hasFailed, visibleCounts.failed, visibleCounts.pending],
+  );
 
   return (
     <button
@@ -27,18 +58,14 @@ export default function SyncQueueBadge({
           ? 'border-red-200 bg-red-50/90 text-red-700 hover:bg-red-100 disabled:opacity-60 dark:border-accent-red/35 dark:bg-accent-red/16 dark:text-accent-red'
           : 'border-blue-200 bg-blue-50/90 text-blue-700 hover:bg-blue-100 disabled:opacity-60 dark:border-primary/35 dark:bg-primary/16 dark:text-primary'
       }`}
-      title={
-        hasFailed
-          ? `${failed} operasi gagal. Klik untuk coba sinkron ulang.`
-          : `${pending} operasi menunggu sinkronisasi. Klik untuk sinkron sekarang.`
-      }
+      title={title}
       aria-label={
         hasFailed
-          ? `Sinkronisasi ulang ${failed} operasi gagal`
-          : `Sinkronisasi ${pending} operasi tertunda`
+          ? `Sinkronisasi ulang ${visibleCounts.failed} operasi gagal`
+          : `Sinkronisasi ${visibleCounts.pending} operasi tertunda`
       }
     >
-      <span className="tabular-nums">{hasFailed ? `${failed} gagal` : `${pending} antre`}</span>
+      <span className="tabular-nums">{hasFailed ? `${pendingLabel} gagal` : `${pendingLabel} antre`}</span>
       <span aria-hidden="true" className="text-[10px]">
         {isSyncing ? '...' : 'Sync'}
       </span>

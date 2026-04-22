@@ -3,7 +3,7 @@
  * Manages offline state, sync coordination, and queue monitoring
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getPendingOperations,
   getQueueStats,
@@ -21,6 +21,19 @@ interface SyncStats {
   synced: number;
   total: number;
   oldestPendingAge: number | null;
+}
+
+const MIN_SYNCING_MS = 900;
+const DUPLICATE_SYNC_COMPLETE_WINDOW_MS = 800;
+
+function areSyncStatsEqual(a: SyncStats, b: SyncStats): boolean {
+  return (
+    a.pending === b.pending
+    && a.failed === b.failed
+    && a.synced === b.synced
+    && a.total === b.total
+    && a.oldestPendingAge === b.oldestPendingAge
+  );
 }
 
 /**
@@ -42,10 +55,172 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
 
   const swRef = useRef<ServiceWorkerContainer | null>(null);
   const syncStatsRef = useRef(syncStats);
+  const isSyncingRef = useRef(isSyncing);
+  const isMountedRef = useRef(true);
+  const onOnlineStatusChangeRef = useRef(onOnlineStatusChange);
+  const onSyncCompleteRef = useRef(onSyncComplete);
+  const syncStartedAtRef = useRef<number | null>(null);
+  const stopSyncTimerRef = useRef<number | null>(null);
+  const syncCompleteAtRef = useRef(0);
+  const checkOnlineTimeoutRef = useRef<number | null>(null);
+  const updateStatsInFlightRef = useRef(false);
+
+  const clearStopSyncTimer = useCallback(() => {
+    if (stopSyncTimerRef.current !== null) {
+      window.clearTimeout(stopSyncTimerRef.current);
+      stopSyncTimerRef.current = null;
+    }
+  }, []);
+
+  const finishSyncing = useCallback(() => {
+    const startedAt = syncStartedAtRef.current;
+    const elapsed = startedAt ? Date.now() - startedAt : MIN_SYNCING_MS;
+    const remaining = Math.max(0, MIN_SYNCING_MS - elapsed);
+
+    clearStopSyncTimer();
+    stopSyncTimerRef.current = window.setTimeout(() => {
+      if (!isMountedRef.current) return;
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+      stopSyncTimerRef.current = null;
+    }, remaining);
+  }, [clearStopSyncTimer]);
+
+  const startSyncing = useCallback(() => {
+    syncStartedAtRef.current = Date.now();
+    clearStopSyncTimer();
+    if (!isSyncingRef.current) {
+      isSyncingRef.current = true;
+      setIsSyncing(true);
+    }
+  }, [clearStopSyncTimer]);
+
+  const setOnlineStable = useCallback((nextOnline: boolean) => {
+    setIsOnline((prev) => (prev === nextOnline ? prev : nextOnline));
+  }, []);
+
+  const updateSyncStats = useCallback(async () => {
+    if (updateStatsInFlightRef.current) return;
+    updateStatsInFlightRef.current = true;
+    try {
+      const stats = await getQueueStats();
+      setSyncStats((prev) => (areSyncStatsEqual(prev, stats) ? prev : stats));
+    } catch (error) {
+      console.error('[useOfflineSync] Failed to get queue stats:', error);
+    } finally {
+      updateStatsInFlightRef.current = false;
+    }
+  }, []);
+
+  const handleSyncComplete = useCallback(() => {
+    const now = Date.now();
+    if (now - syncCompleteAtRef.current < DUPLICATE_SYNC_COMPLETE_WINDOW_MS) {
+      return;
+    }
+    syncCompleteAtRef.current = now;
+    finishSyncing();
+    setLastSyncTime(now);
+    void updateSyncStats().then(() => {
+      onSyncCompleteRef.current?.(syncStatsRef.current);
+    });
+  }, [finishSyncing, updateSyncStats]);
 
   useEffect(() => {
     syncStatsRef.current = syncStats;
   }, [syncStats]);
+
+  useEffect(() => {
+    isSyncingRef.current = isSyncing;
+  }, [isSyncing]);
+
+  useEffect(() => {
+    onOnlineStatusChangeRef.current = onOnlineStatusChange;
+  }, [onOnlineStatusChange]);
+
+  useEffect(() => {
+    onSyncCompleteRef.current = onSyncComplete;
+  }, [onSyncComplete]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      clearStopSyncTimer();
+      if (checkOnlineTimeoutRef.current !== null) {
+        window.clearTimeout(checkOnlineTimeoutRef.current);
+      }
+    };
+  }, [clearStopSyncTimer]);
+
+  const checkOnlineStatus = useCallback(async (): Promise<boolean> => {
+    if (!navigator.serviceWorker.controller) {
+      const fallbackOnline = navigator.onLine;
+      setOnlineStable(fallbackOnline);
+      return fallbackOnline;
+    }
+
+    return new Promise((resolve) => {
+      const channel = new MessageChannel();
+      let resolved = false;
+
+      const finish = (value: boolean) => {
+        if (resolved) return;
+        resolved = true;
+        if (checkOnlineTimeoutRef.current !== null) {
+          window.clearTimeout(checkOnlineTimeoutRef.current);
+          checkOnlineTimeoutRef.current = null;
+        }
+        setOnlineStable(value);
+        resolve(value);
+      };
+
+      channel.port1.onmessage = (event) => {
+        finish(event.data.isOnline ?? navigator.onLine);
+      };
+
+      navigator.serviceWorker.controller.postMessage(
+        { type: 'CHECK_OFFLINE_STATUS' },
+        [channel.port2]
+      );
+
+      checkOnlineTimeoutRef.current = window.setTimeout(() => {
+        finish(navigator.onLine);
+      }, 2000);
+    });
+  }, [setOnlineStable]);
+
+  const requestSync = useCallback(async () => {
+    if (isSyncingRef.current || !isOnline) return;
+
+    startSyncing();
+
+    try {
+      if (navigator.serviceWorker.controller) {
+        const channel = new MessageChannel();
+        navigator.serviceWorker.controller.postMessage(
+          { type: 'SYNC_NOW' },
+          [channel.port2]
+        );
+
+        channel.port1.onmessage = (event) => {
+          if (event.data.type === 'SYNC_COMPLETE') {
+            handleSyncComplete();
+          } else {
+            finishSyncing();
+          }
+        };
+
+        window.setTimeout(() => {
+          finishSyncing();
+        }, 30000);
+      } else {
+        finishSyncing();
+      }
+    } catch (error) {
+      console.error('[useOfflineSync] Sync request failed:', error);
+      finishSyncing();
+    }
+  }, [finishSyncing, handleSyncComplete, isOnline, startSyncing]);
 
   /**
    * Initialize service worker communication
@@ -63,8 +238,8 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
         const { type, isOnline: swIsOnline } = event.data;
 
         if (type === 'ONLINE_STATUS_CHANGED') {
-          setIsOnline(swIsOnline);
-          onOnlineStatusChange?.(swIsOnline);
+          setOnlineStable(swIsOnline);
+          onOnlineStatusChangeRef.current?.(swIsOnline);
 
           if (swIsOnline && autoSync) {
             void requestSync();
@@ -72,11 +247,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
         }
 
         if (type === 'SYNC_COMPLETE') {
-          setIsSyncing(false);
-          void updateSyncStats().then(() => {
-            onSyncComplete?.(syncStatsRef.current);
-          });
-          setLastSyncTime(Date.now());
+          handleSyncComplete();
         }
       };
 
@@ -100,92 +271,31 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
       if (cleanup) cleanup();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSync, onOnlineStatusChange, onSyncComplete]);
+  }, [autoSync, checkOnlineStatus, handleSyncComplete, requestSync, setOnlineStable, updateSyncStats]);
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      void updateSyncStats();
-    }, 15000);
-    return () => window.clearInterval(id);
-  }, []);
+    let timer: number | null = null;
+    let canceled = false;
 
-  /**
-   * Check online status via Service Worker
-   */
-  const checkOnlineStatus = async (): Promise<boolean> => {
-    if (!navigator.serviceWorker.controller) {
-      return navigator.onLine;
-    }
+    const schedule = () => {
+      if (canceled) return;
+      const busy = syncStatsRef.current.pending > 0 || syncStatsRef.current.failed > 0;
+      const nextMs = busy ? 8000 : 30000;
+      timer = window.setTimeout(async () => {
+        await updateSyncStats();
+        schedule();
+      }, nextMs);
+    };
 
-    return new Promise((resolve) => {
-      const channel = new MessageChannel();
+    schedule();
 
-      channel.port1.onmessage = (event) => {
-        const isCurrentlyOnline = event.data.isOnline ?? navigator.onLine;
-        setIsOnline(isCurrentlyOnline);
-        resolve(isCurrentlyOnline);
-      };
-
-      navigator.serviceWorker.controller!.postMessage(
-        { type: 'CHECK_OFFLINE_STATUS' },
-        [channel.port2]
-      );
-
-      // Timeout fallback
-      setTimeout(() => {
-        resolve(navigator.onLine);
-      }, 2000);
-    });
-  };
-
-  /**
-   * Update sync statistics from IndexedDB
-   */
-  const updateSyncStats = async () => {
-    try {
-      const stats = await getQueueStats();
-      setSyncStats(stats);
-    } catch (error) {
-      console.error('[useOfflineSync] Failed to get queue stats:', error);
-    }
-  };
-
-  /**
-   * Manually trigger sync
-   */
-  const requestSync = async () => {
-    if (isSyncing || !isOnline) return;
-
-    setIsSyncing(true);
-
-    try {
-      // Notify service worker to sync
-      if (navigator.serviceWorker.controller) {
-        const channel = new MessageChannel();
-        navigator.serviceWorker.controller.postMessage(
-          { type: 'SYNC_NOW' },
-          [channel.port2]
-        );
-
-        channel.port1.onmessage = (event) => {
-          if (event.data.type === 'SYNC_COMPLETE') {
-            void updateSyncStats();
-            setLastSyncTime(Date.now());
-            onSyncComplete?.(syncStatsRef.current);
-          }
-          setIsSyncing(false);
-        };
-
-        // Timeout
-        setTimeout(() => {
-          setIsSyncing(false);
-        }, 30000);
+    return () => {
+      canceled = true;
+      if (timer !== null) {
+        window.clearTimeout(timer);
       }
-    } catch (error) {
-      console.error('[useOfflineSync] Sync request failed:', error);
-      setIsSyncing(false);
-    }
-  };
+    };
+  }, [updateSyncStats]);
 
   /**
    * Get pending operations
