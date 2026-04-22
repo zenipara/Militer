@@ -13,6 +13,7 @@ import type { User, CommandLevel } from '../types';
 export const APP_ROUTE_PATHS = {
   root: '/',
   login: '/login',
+  forceChangePin: '/force-change-pin',
   error: '/error',
 } as const;
 

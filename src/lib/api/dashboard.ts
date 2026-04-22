@@ -2,6 +2,7 @@ import { supabase } from '../supabase';
 import type { AuditLog, Attendance, LogisticsItem } from '../../types';
 import { CacheWithTTL } from '../cacheWithTTL';
 import { requestCoalescer } from '../requestCoalescer';
+import { ensureStoredSessionContext } from './sessionContext';
 
 // Cache dashboard snapshot for 2 minutes (can be manually refreshed)
 const dashboardCache = new CacheWithTTL<string, AdminDashboardSnapshot>(120000);
@@ -41,6 +42,7 @@ function ensureNoError(context: string, error: { message: string } | null): void
 }
 
 async function fetchAdminDashboardSnapshotImpl(): Promise<AdminDashboardSnapshot> {
+  await ensureStoredSessionContext();
   const { data, error } = await supabase.rpc('api_get_admin_dashboard_snapshot');
   ensureNoError('snapshot dashboard admin', error);
 
@@ -85,6 +87,7 @@ export async function refreshAdminDashboardSnapshot(): Promise<AdminDashboardSna
 export async function fetchKomandanDashboardStats(
   satuan: string,
 ): Promise<{ onlineCount: number; totalPersonel: number }> {
+  await ensureStoredSessionContext();
   const { data, error } = await supabase.rpc('api_get_komandan_dashboard_stats', {
     p_satuan: satuan,
   });

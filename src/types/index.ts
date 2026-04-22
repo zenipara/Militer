@@ -61,6 +61,7 @@ export interface User {
   nrp: string;
   nama: string;
   role: Role;
+  force_change_pin?: boolean;
   level_komando?: CommandLevel;
   pangkat?: string;
   jabatan?: string;

@@ -18,6 +18,7 @@ function getRoleFallbackPath(role: Role, flags: ReturnType<typeof useFeatureStor
 
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const requiresPinChange = useAuthStore((s) => s.requiresPinChange);
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const hasUser = useAuthStore((s) => Boolean(s.user));
   const userRole = useAuthStore((s) => s.user?.role ?? null);
@@ -40,6 +41,10 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
 
   if (!allowedRoles.includes(userRole)) {
     return <Navigate to={getRoleDefaultPath(userRole) ?? APP_ROUTE_PATHS.login} replace />;
+  }
+
+  if (requiresPinChange && pathname !== APP_ROUTE_PATHS.forceChangePin) {
+    return <Navigate to={APP_ROUTE_PATHS.forceChangePin} replace />;
   }
 
   if (!isPathEnabled(pathname, flags)) {

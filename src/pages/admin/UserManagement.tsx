@@ -284,27 +284,17 @@ export default function UserManagement() {
 
   const handleImportFile = async (file: File) => {
     if (!isRoleAdmin(authUser?.role)) {
-      showNotification('Import CSV hanya untuk Super Admin', 'error');
-      return;
+      throw new Error('Import CSV hanya untuk Super Admin');
     }
 
-    let rows: Record<string, string>[];
-    try {
-      rows = await readImportRowsFromFile(file);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal membaca CSV. Pastikan file valid UTF-8.';
-      showNotification(message, 'error');
-      throw err;
-    }
+    const rows = await readImportRowsFromFile(file);
 
     if (rows.length === 0) {
-      showNotification('File CSV kosong atau format tidak valid', 'error');
-      return;
+      throw new Error('File CSV kosong atau format tidak valid');
     }
 
     if (rows.length > MAX_IMPORT_ROWS) {
-      showNotification(`Maksimal ${MAX_IMPORT_ROWS} data per import`, 'error');
-      return;
+      throw new Error(`Maksimal ${MAX_IMPORT_ROWS} data per import`);
     }
 
     setIsImporting(true);
@@ -330,7 +320,7 @@ export default function UserManagement() {
         const batch = batches[batchIndex];
         const payload = batch.map((r) => ({
           nrp: r.nrp ?? '',
-          pin: r.pin ?? '123456',
+          pin: '123456',
           nama: r.nama ?? '',
           role: normalizeImportedRole(r.role),
           satuan: r.satuan ?? '',
@@ -369,14 +359,23 @@ export default function UserManagement() {
 
       if (aggregated.failed > 0 && aggregated.errors.length > 0) {
         const errorMsgs = aggregated.errors.slice(0, 3).map((e) => `${e.nrp}: ${e.error}`).join('; ');
-        showNotification(`Gagal: ${errorMsgs}${aggregated.errors.length > 3 ? '...' : ''}`, 'warning');
+        if (aggregated.success > 0) {
+          showNotification(`Gagal: ${errorMsgs}${aggregated.errors.length > 3 ? '...' : ''}`, 'warning');
+        } else {
+          throw new Error(`Import gagal: ${errorMsgs}${aggregated.errors.length > 3 ? '...' : ''}`);
+        }
       } else if (aggregated.failed > 0) {
-        showNotification(`${aggregated.failed} data gagal diimpor`, 'warning');
+        if (aggregated.success > 0) {
+          showNotification(`${aggregated.failed} data gagal diimpor`, 'warning');
+        } else {
+          throw new Error('Semua data gagal diimpor');
+        }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Gagal mengimpor data';
       showNotification(message, 'error');
       console.error('CSV Import error:', err);
+      throw err;
     } finally {
       setIsImporting(false);
     }
@@ -913,11 +912,6 @@ export default function UserManagement() {
         isSaving={isImporting}
         onImport={handleImportFile}
         onError={(msg) => showNotification(msg, 'error')}
-        onSuccess={(msg) => {
-          showNotification(msg, 'success');
-          setShowImport(false);
-          setPage(1);
-        }}
       />
 
       <RoleEditModal

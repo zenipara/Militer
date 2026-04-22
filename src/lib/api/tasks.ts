@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import type { Task, TaskReport, TaskStatus } from '../../types';
+import { ensureSessionContext } from './sessionContext';
 
 export interface FetchTasksParams {
   callerId: string;
@@ -11,6 +12,7 @@ export interface FetchTasksParams {
 }
 
 export async function fetchTasks(params: FetchTasksParams): Promise<Task[]> {
+  await ensureSessionContext(params.callerId, params.callerRole);
   const { data, error } = await supabase.rpc('api_get_tasks', {
     p_user_id: params.callerId,
     p_role: params.callerRole,
@@ -32,6 +34,7 @@ export async function insertTask(callerId: string, callerRole: string, taskData:
   prioritas: 1 | 2 | 3;
   satuan?: string;
 }): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.rpc('api_insert_task', {
     p_caller_id: callerId,
     p_caller_role: callerRole,
@@ -47,6 +50,7 @@ export async function insertTask(callerId: string, callerRole: string, taskData:
 }
 
 export async function patchTaskStatus(callerId: string, callerRole: string, taskId: string, status: TaskStatus): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.rpc('api_update_task_status', {
     p_caller_id: callerId,
     p_caller_role: callerRole,
@@ -62,6 +66,7 @@ export async function insertTaskReport(callerId: string, callerRole: string, rep
   isi_laporan: string;
   file_url?: string;
 }): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.rpc('api_insert_task_report', {
     p_caller_id: callerId,
     p_caller_role: callerRole,
@@ -73,6 +78,7 @@ export async function insertTaskReport(callerId: string, callerRole: string, rep
 }
 
 export async function fetchLatestTaskReport(callerId: string, callerRole: string, taskId: string): Promise<TaskReport | null> {
+  await ensureSessionContext(callerId, callerRole);
   const { data, error } = await supabase.rpc('api_get_latest_task_report', {
     p_user_id: callerId,
     p_role: callerRole,

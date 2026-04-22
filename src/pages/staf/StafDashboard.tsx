@@ -13,6 +13,7 @@ import { isPathEnabled } from '../../lib/featureFlags';
 import { ICONS } from '../../icons';
 import { supabase } from '../../lib/supabase';
 import { subscribeDataChanges } from '../../lib/dataSync';
+import { ensureStoredSessionContext } from '../../lib/api/sessionContext';
 
 interface StafStats {
   totalPersonel: number;
@@ -29,6 +30,7 @@ const EMPTY_STATS: StafStats = {
 };
 
 async function fetchStafStats(satuan: string): Promise<StafStats> {
+  await ensureStoredSessionContext();
   const { data, error } = await supabase.rpc('api_get_staf_stats', {
     p_satuan: satuan,
   });

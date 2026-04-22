@@ -8,7 +8,6 @@ export interface ImportPersonelModalProps {
   onImport: (file: File) => Promise<void>;
   onClose: () => void;
   onError: (message: string) => void;
-  onSuccess: (message: string) => void;
 }
 
 export default function ImportPersonelModal({
@@ -17,16 +16,26 @@ export default function ImportPersonelModal({
   onImport,
   onClose,
   onError,
-  onSuccess,
 }: ImportPersonelModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isCsvFile = (file: File): boolean => {
+    const fileName = file.name.trim().toLowerCase();
+    const mimeType = file.type.trim().toLowerCase();
+    return (
+      fileName.endsWith('.csv') ||
+      mimeType === 'text/csv' ||
+      mimeType === 'application/csv' ||
+      mimeType === 'application/vnd.ms-excel'
+    );
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file type
-      if (!file.name.endsWith('.csv')) {
+      if (!isCsvFile(file)) {
         onError('Hanya file CSV yang diizinkan');
         return;
       }
@@ -49,15 +58,13 @@ export default function ImportPersonelModal({
 
     try {
       await onImport(selectedFile);
-      onSuccess('Data personel berhasil diimpor');
       setSelectedFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       onClose();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal mengimpor data personel';
-      onError(message);
+    } catch {
+      // Keep modal open so user can review/replace file after import failure.
     }
   };
 
@@ -97,11 +104,12 @@ export default function ImportPersonelModal({
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-text-primary">File CSV *</label>
+          <label htmlFor="personel-csv-input" className="text-sm font-semibold text-text-primary">File CSV *</label>
           <input
+            id="personel-csv-input"
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.CSV,text/csv"
             onChange={handleFileChange}
             disabled={isSaving}
             className="mt-1 block w-full text-sm text-text-secondary
@@ -122,6 +130,7 @@ export default function ImportPersonelModal({
         <div className="text-xs text-text-secondary space-y-1">
           <p>• Maksimal ukuran file: 5MB</p>
           <p>• NRP, Nama, dan Satuan wajib diisi</p>
+          <p>• PIN di CSV diabaikan, sistem memakai PIN default 123456</p>
           <p>• Duplikat NRP akan dilewati</p>
         </div>
       </div>

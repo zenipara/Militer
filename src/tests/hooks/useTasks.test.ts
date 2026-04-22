@@ -67,16 +67,23 @@ describe('useTasks', () => {
   });
 
   it('createTask throws when rpc returns error', async () => {
-    mockSupabase.rpc
-      .mockResolvedValueOnce({ data: mockTasks, error: null })  // fetch
-      .mockResolvedValueOnce({ data: null, error: new Error('insert failed') }); // insert
+    mockSupabase.rpc.mockImplementation((rpcName: string) => {
+      if (rpcName === 'set_session_context') {
+        return Promise.resolve({ data: null, error: null });
+      }
+      if (rpcName === 'api_get_tasks') {
+        return Promise.resolve({ data: mockTasks, error: null });
+      }
+      if (rpcName === 'api_insert_task') {
+        return Promise.resolve({ data: null, error: new Error('insert failed') });
+      }
+      return Promise.resolve({ data: null, error: null });
+    });
 
     const { result } = renderHook(() => useTasks());
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    await expect(
-      act(async () => { await result.current.createTask({ judul: 'Bad', assigned_to: 'u2', prioritas: 2 }); })
-    ).rejects.toThrow('insert failed');
+    await expect(result.current.createTask({ judul: 'Bad', assigned_to: 'u2', prioritas: 2 })).rejects.toThrow('insert failed');
   });
 
   it('approveTask calls rpc with approved status', async () => {

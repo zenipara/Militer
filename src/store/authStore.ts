@@ -29,12 +29,14 @@ function getAuthBroadcastChannel(): BroadcastChannel | null {
 interface AuthStore {
   user: User | null;
   isAuthenticated: boolean;
+  requiresPinChange: boolean;
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
   login: (nrp: string, pin: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
+  completeForceChangePin: (newPin: string) => Promise<void>;
   updateOnlineStatus: (status: boolean) => Promise<void>;
   clearError: () => void;
 }
@@ -162,6 +164,7 @@ const cleanupLocalAuthState = (): void => {
   useAuthStore.setState({
     user: null,
     isAuthenticated: false,
+    requiresPinChange: false,
     isLoading: false,
     isInitialized: true,
     error: null,
@@ -180,6 +183,7 @@ function broadcastAuthSync(message: AuthSyncMessage): void {
 interface VerifyUserPinRow {
   user_id: string;
   user_role: string;
+  force_change_pin: boolean;
 }
 
 async function restoreSessionWithRetry(
@@ -243,7 +247,13 @@ async function restoreSessionWithRetry(
       // Re-save session with refreshed expiry
       await saveSession(refreshedSession);
 
-      set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
+      set({
+        user,
+        isAuthenticated: true,
+        requiresPinChange: Boolean(user.force_change_pin),
+        isLoading: false,
+        isInitialized: true,
+      });
       if (import.meta.env.DEV) console.log('[AUTH] Session restored successfully and refreshed');
       return true;
     } catch (err) {
@@ -277,6 +287,7 @@ async function restoreSessionWithRetry(
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   isAuthenticated: false,
+  requiresPinChange: false,
   isLoading: true,
   isInitialized: false,
   error: null,
@@ -298,7 +309,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const row = data as VerifyUserPinRow | null;
       if (!row) throw new Error('NRP atau PIN salah. Periksa kembali dan coba lagi.');
 
-      const { user_id, user_role } = row;
+      const { user_id, user_role, force_change_pin } = row;
       if (import.meta.env.DEV) console.log('[AUTH] PIN verified for user_id:', user_id);
 
       // Step 1b: Bind role/user context for RLS-based queries.
@@ -345,7 +356,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         expires_at: makeSessionExpiry(),
       };
       await saveSession(sessionPayload);
-      set({ user, isAuthenticated: true, isLoading: false, error: null });
+      set({
+        user,
+        isAuthenticated: true,
+        requiresPinChange: force_change_pin || Boolean(user.force_change_pin),
+        isLoading: false,
+        error: null,
+      });
       broadcastAuthSync({
         type: 'LOGIN',
         session: sessionPayload,
@@ -354,7 +371,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan sistem. Coba lagi nanti.';
       if (import.meta.env.DEV) console.error('[AUTH] Login failed:', message);
-      set({ isLoading: false, error: message, isAuthenticated: false, user: null });
+      set({ isLoading: false, error: message, isAuthenticated: false, user: null, requiresPinChange: false });
       throw err;
     }
   },
@@ -387,7 +404,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } finally {
       // Always cleanup session state, regardless of RPC success/failure
       clearSession();
-      set({ user: null, isAuthenticated: false, isLoading: false, error: null });
+      set({ user: null, isAuthenticated: false, requiresPinChange: false, isLoading: false, error: null });
       broadcastAuthSync({ type: 'LOGOUT' });
     }
   },
@@ -401,6 +418,27 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return;
     }
     await restoreSessionWithRetry(session, set);
+  },
+
+  completeForceChangePin: async (newPin: string) => {
+    const { user } = get();
+    if (!user) {
+      throw new Error('Sesi tidak ditemukan. Silakan login ulang.');
+    }
+
+    const { error } = await supabase.rpc('complete_force_change_pin', {
+      p_new_pin: newPin,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    const nextUser = {
+      ...user,
+      force_change_pin: false,
+    };
+    set({ user: nextUser, requiresPinChange: false });
   },
 
   updateOnlineStatus: async (status: boolean) => {

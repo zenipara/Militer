@@ -1,7 +1,9 @@
 import { supabase } from '../supabase';
 import type { Announcement, Role } from '../../types';
+import { ensureSessionContext } from './sessionContext';
 
 export async function fetchAnnouncements(callerId: string, callerRole: string): Promise<Announcement[]> {
+  await ensureSessionContext(callerId, callerRole);
   const { data, error } = await supabase.rpc('api_get_announcements', {
     p_user_id: callerId,
     p_role: callerRole,
@@ -18,6 +20,7 @@ export async function insertAnnouncement(callerId: string, callerRole: string, d
   target_satuan?: string;
   is_pinned?: boolean;
 }): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.rpc('api_insert_announcement', {
     p_caller_id: callerId,
     p_caller_role: callerRole,
@@ -32,6 +35,7 @@ export async function insertAnnouncement(callerId: string, callerRole: string, d
 }
 
 export async function patchAnnouncement(callerId: string, callerRole: string, id: string, updates: Partial<Announcement>): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.rpc('api_update_announcement', {
     p_caller_id: callerId,
     p_caller_role: callerRole,
@@ -42,6 +46,7 @@ export async function patchAnnouncement(callerId: string, callerRole: string, id
 }
 
 export async function deleteAnnouncement(callerId: string, callerRole: string, id: string): Promise<void> {
+  await ensureSessionContext(callerId, callerRole);
   const { error } = await supabase.rpc('api_delete_announcement', {
     p_caller_id: callerId,
     p_caller_role: callerRole,

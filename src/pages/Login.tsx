@@ -10,7 +10,7 @@ import { usePlatformStore } from '../store/platformStore';
 import { APP_ROUTE_PATHS, getRoleDefaultPath } from '../lib/rolePermissions';
 
 export default function Login() {
-  const { login, isAuthenticated, user, isLoading, error, clearError } = useAuthStore();
+  const { login, isAuthenticated, requiresPinChange, user, isLoading, error, clearError } = useAuthStore();
   const { settings } = usePlatformStore();
   const navigate = useNavigate();
 
@@ -22,10 +22,14 @@ export default function Login() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
+      if (requiresPinChange) {
+        navigate(APP_ROUTE_PATHS.forceChangePin, { replace: true });
+        return;
+      }
       const redirectPath = getRoleDefaultPath(user.role) ?? APP_ROUTE_PATHS.login;
       navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, requiresPinChange, user, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

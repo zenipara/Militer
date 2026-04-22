@@ -92,6 +92,10 @@ export default function Profile() {
       showNotification('PIN baru harus 6 digit angka', 'error');
       return;
     }
+    if (pinForm.newPin === '123456') {
+      showNotification('PIN baru tidak boleh sama dengan PIN default', 'error');
+      return;
+    }
     if (pinForm.newPin !== pinForm.confirmPin) {
       showNotification('Konfirmasi PIN tidak cocok', 'error');
       return;
