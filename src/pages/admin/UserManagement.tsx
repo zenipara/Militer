@@ -405,7 +405,6 @@ export default function UserManagement() {
   const [roleEditUser, setRoleEditUser] = useState<User | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
 
-  const [bulkPin, setBulkPin] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // CSV import state
@@ -436,6 +435,56 @@ export default function UserManagement() {
   }, [users]);
   
   const hasFilters = searchNrpRaw.trim().length > 0 || searchNamaRaw.trim().length > 0 || filterRole !== '' || filterStatus !== '' || filterSatuan !== '';
+
+  const selectedUsersOnPage = useMemo(
+    () => users.filter((u) => selectedUserIds.has(u.id)),
+    [users, selectedUserIds]
+  );
+
+  const selectedStats = useMemo(() => {
+    const active = selectedUsersOnPage.filter((u) => u.is_active).length;
+    const inactive = selectedUsersOnPage.length - active;
+    return { active, inactive };
+  }, [selectedUsersOnPage]);
+
+  const resetAllFilters = () => {
+    setSearchNrpRaw('');
+    setSearchNamaRaw('');
+    setFilterRole('');
+    setFilterStatus('');
+    setFilterSatuan('');
+    setPage(1);
+  };
+
+  const applyQuickFilter = (preset: 'all' | 'active' | 'inactive' | 'admin' | 'komandan' | 'my-satuan') => {
+    if (preset === 'all') {
+      resetAllFilters();
+      return;
+    }
+
+    if (preset === 'active') {
+      setFilterStatus('active');
+      setPage(1);
+      return;
+    }
+
+    if (preset === 'inactive') {
+      setFilterStatus('inactive');
+      setPage(1);
+      return;
+    }
+
+    if (preset === 'admin' || preset === 'komandan') {
+      setFilterRole(preset);
+      setPage(1);
+      return;
+    }
+
+    if (preset === 'my-satuan' && authUser?.satuan) {
+      setFilterSatuan(authUser.satuan);
+      setPage(1);
+    }
+  };
 
   useEffect(() => {
     setSelectedUserIds(new Set());
@@ -547,13 +596,13 @@ export default function UserManagement() {
     }
   };
 
-  const handleBulkResetPin = async () => {
-    if (selectedUserIds.size === 0) {
+  const handleBulkResetPin = async (userIds: string[], newPin: string) => {
+    if (userIds.length === 0) {
       showNotification('Pilih minimal satu personel', 'error');
       return;
     }
 
-    const pinError = validatePin(bulkPin);
+    const pinError = validatePin(newPin);
     if (pinError) {
       showNotification(pinError.message, 'error');
       return;
@@ -562,14 +611,13 @@ export default function UserManagement() {
     setIsSaving(true);
     try {
       const { data, error } = await supabase.rpc('bulk_reset_pins', {
-        p_user_ids: Array.from(selectedUserIds),
-        p_new_pin: bulkPin,
+        p_user_ids: userIds,
+        p_new_pin: newPin,
       });
       if (error) throw error;
-      const count = data as number;
+      const count = Number(data ?? userIds.length);
       showNotification(`PIN ${count} personel berhasil direset`, 'success');
       setShowBulkReset(false);
-      setBulkPin('');
       setSelectedUserIds(new Set());
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal reset PIN massal', 'error');
@@ -1116,14 +1164,7 @@ export default function UserManagement() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setSearchNrpRaw('');
-                    setSearchNamaRaw('');
-                    setFilterRole('');
-                    setFilterStatus('');
-                    setFilterSatuan('');
-                    setPage(1);
-                  }}
+                  onClick={resetAllFilters}
                 >
                   Reset Filter
                 </Button>
@@ -1131,17 +1172,43 @@ export default function UserManagement() {
             </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-surface/60 bg-surface/20 p-2">
+            <span className="px-1 text-[11px] font-semibold uppercase tracking-wide text-text-muted">Preset Cepat:</span>
+            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('all')}>Semua</Button>
+            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('active')}>Aktif</Button>
+            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('inactive')}>Nonaktif</Button>
+            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('admin')}>Admin</Button>
+            <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('komandan')}>Komandan</Button>
+            {authUser?.satuan && (
+              <Button size="sm" variant="ghost" onClick={() => applyQuickFilter('my-satuan')}>
+                Satuan Saya
+              </Button>
+            )}
+          </div>
+
           {/* Filter summary tags with performance info */}
           <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
             {searchNrpRaw && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+              <button
+                type="button"
+                onClick={() => { setSearchNrpRaw(''); setPage(1); }}
+                className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1 hover:border-primary/40 hover:text-text-primary"
+                title="Hapus filter NRP"
+              >
                 NRP: {searchNrpRaw}
-              </span>
+                <span aria-hidden="true">×</span>
+              </button>
             )}
             {searchNamaRaw && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+              <button
+                type="button"
+                onClick={() => { setSearchNamaRaw(''); setPage(1); }}
+                className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1 hover:border-primary/40 hover:text-text-primary"
+                title="Hapus filter Nama"
+              >
                 Nama: {searchNamaRaw}
-              </span>
+                <span aria-hidden="true">×</span>
+              </button>
             )}
             <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
               Role: {filterRole ? getRoleDisplayLabel(filterRole) : 'Semua'}
@@ -1150,9 +1217,15 @@ export default function UserManagement() {
               Status: {filterStatus === 'active' ? 'Aktif' : filterStatus === 'inactive' ? 'Nonaktif' : 'Semua'}
             </span>
             {filterSatuan && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1">
+              <button
+                type="button"
+                onClick={() => { setFilterSatuan(''); setPage(1); }}
+                className="inline-flex items-center gap-1 rounded-full border border-surface/60 bg-surface/20 px-2.5 py-1 hover:border-primary/40 hover:text-text-primary"
+                title="Hapus filter Satuan"
+              >
                 Satuan: {filterSatuan}
-              </span>
+                <span aria-hidden="true">×</span>
+              </button>
             )}
             
             {/* Performance indicator */}
@@ -1162,6 +1235,28 @@ export default function UserManagement() {
                 {totalItems} hasil ditemukan
               </span>
             )}
+
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={resetAllFilters}
+                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-primary hover:bg-primary/10"
+              >
+                Bersihkan semua
+              </button>
+            )}
+          </div>
+
+          <div className="grid gap-2 rounded-xl border border-surface/60 bg-bg-card p-3 text-sm text-text-secondary sm:grid-cols-3">
+            <div>
+              Menampilkan <span className="font-semibold text-text-primary">{pageStats.pageCount}</span> data pada halaman ini.
+            </div>
+            <div>
+              Total hasil sesuai filter: <span className="font-semibold text-text-primary">{totalItems}</span> personel.
+            </div>
+            <div>
+              Halaman aktif: <span className="font-semibold text-text-primary">{currentPage}</span> dari <span className="font-semibold text-text-primary">{totalPages}</span>.
+            </div>
           </div>
         </div>
 
@@ -1280,10 +1375,15 @@ export default function UserManagement() {
         {/* Bulk selection toolbar */}
         {selectedUserIds.size > 0 && (
           <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 to-blue-500/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <span className="flex items-center gap-2 text-sm font-semibold text-primary">
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/20 text-xs font-bold">{selectedUserIds.size}</span>
-              personel dipilih
-            </span>
+            <div className="space-y-1">
+              <span className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-primary/20 text-xs font-bold">{selectedUserIds.size}</span>
+                personel dipilih
+              </span>
+              <p className="text-xs text-text-secondary">
+                {selectedStats.active} aktif • {selectedStats.inactive} nonaktif pada halaman ini
+              </p>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="secondary" onClick={() => setShowBulkReset(true)}>
                 <ICONS.Key className="h-3.5 w-3.5" aria-hidden="true" />
