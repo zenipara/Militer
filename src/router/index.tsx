@@ -11,6 +11,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 // Jika error, cek penamaan file/folder (huruf besar/kecil harus sama persis)
 
 const Login = lazy(() => import('../pages/Login'));
+const RegisterByLink = lazy(() => import('../pages/RegisterByLink'));
 const ForceChangePin = lazy(() => import('../pages/ForceChangePin'));
 const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
 const UserManagement = lazy(() => import('../pages/admin/UserManagement'));
@@ -69,6 +70,10 @@ export const router = createHashRouter([
   {
     path: APP_ROUTE_PATHS.login,
     element: wrap(<Login />),
+  },
+  {
+    path: APP_ROUTE_PATHS.register,
+    element: wrap(<RegisterByLink />),
   },
   {
     element: <ProtectedRoute allowedRoles={['admin', 'komandan', 'staf', 'guard', 'prajurit']} />,

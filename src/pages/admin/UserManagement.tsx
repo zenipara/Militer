@@ -35,6 +35,18 @@ const PAGE_SIZE = 50;
 const MAX_IMPORT_ROWS = 5000;
 const IMPORT_CHUNK_SIZE = 50;
 
+interface RegistrationFormLink {
+  id: string;
+  role: Role;
+  token: string;
+  is_active: boolean;
+  max_uses: number | null;
+  used_count: number;
+  expires_at: string | null;
+  created_at: string;
+  created_by_name: string | null;
+}
+
 function normalizeImportedRole(value: string | undefined): Role {
   const normalized = normalizeRole(value ?? '') ?? 'prajurit';
   return (normalized === 'admin' || normalized === 'komandan' || normalized === 'staf' || normalized === 'guard' || normalized === 'prajurit')
@@ -179,6 +191,14 @@ export default function UserManagement() {
   // CSV import state
   const [isImporting, setIsImporting] = useState(false);
 
+  // Closed registration form state
+  const [registrationForms, setRegistrationForms] = useState<RegistrationFormLink[]>([]);
+  const [isLoadingRegistrationForms, setIsLoadingRegistrationForms] = useState(false);
+  const [isCreatingRegistrationForm, setIsCreatingRegistrationForm] = useState(false);
+  const [registrationRole, setRegistrationRole] = useState<Role>('prajurit');
+  const [registrationExpiryDays, setRegistrationExpiryDays] = useState(7);
+  const [registrationMaxUses, setRegistrationMaxUses] = useState('');
+
   // Batch operations state
   const [batchOperation, setBatchOperation] = useState<'delete' | 'toggle-active' | 'role-change' | null>(null);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
@@ -199,6 +219,105 @@ export default function UserManagement() {
   useEffect(() => {
     setSelectedUserIds(new Set());
   }, [users, currentPage]);
+
+  const loadRegistrationForms = async () => {
+    if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
+      setRegistrationForms([]);
+      return;
+    }
+
+    setIsLoadingRegistrationForms(true);
+    try {
+      await ensureSessionContext(authUser.id, authUser.role);
+      const { data, error } = await supabase.rpc('list_registration_form_links');
+      if (error) throw error;
+      setRegistrationForms((data as RegistrationFormLink[]) ?? []);
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal memuat form pendaftaran tertutup', 'error');
+    } finally {
+      setIsLoadingRegistrationForms(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadRegistrationForms();
+  }, [authUser?.id, authUser?.role]);
+
+  const createRegistrationFormLink = async () => {
+    if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
+      showNotification('Hanya admin yang bisa membuat link pendaftaran', 'error');
+      return;
+    }
+
+    setIsCreatingRegistrationForm(true);
+    try {
+      await ensureSessionContext(authUser.id, authUser.role);
+
+      const maxUses = registrationMaxUses.trim() ? Number.parseInt(registrationMaxUses.trim(), 10) : null;
+      if (maxUses !== null && (!Number.isFinite(maxUses) || maxUses <= 0)) {
+        throw new Error('Maksimal penggunaan harus angka lebih dari 0');
+      }
+
+      const { data, error } = await supabase
+        .rpc('create_registration_form_link', {
+          p_role: registrationRole,
+          p_expires_in_days: registrationExpiryDays,
+          p_max_uses: maxUses,
+        })
+        .single();
+
+      if (error) throw error;
+
+      const created = data as RegistrationFormLink;
+      const link = `${window.location.origin}${window.location.pathname}#/register/${created.token}`;
+
+      setRegistrationForms((prev) => [created, ...prev]);
+      showNotification('Link pendaftaran berhasil dibuat', 'success');
+
+      try {
+        await navigator.clipboard.writeText(link);
+        showNotification('Link pendaftaran otomatis disalin ke clipboard', 'success');
+      } catch {
+        showNotification('Link berhasil dibuat. Salin manual dari daftar form di bawah.', 'warning');
+      }
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal membuat link pendaftaran', 'error');
+    } finally {
+      setIsCreatingRegistrationForm(false);
+    }
+  };
+
+  const toggleRegistrationFormActive = async (form: RegistrationFormLink) => {
+    if (!isRoleAdmin(authUser?.role) || !authUser?.id) {
+      showNotification('Hanya admin yang bisa mengubah status form', 'error');
+      return;
+    }
+
+    try {
+      await ensureSessionContext(authUser.id, authUser.role);
+      const nextStatus = !form.is_active;
+      const { error } = await supabase.rpc('set_registration_form_active', {
+        p_form_id: form.id,
+        p_is_active: nextStatus,
+      });
+      if (error) throw error;
+
+      setRegistrationForms((prev) => prev.map((item) => (item.id === form.id ? { ...item, is_active: nextStatus } : item)));
+      showNotification(`Form pendaftaran ${nextStatus ? 'diaktifkan' : 'dinonaktifkan'}`, 'success');
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal mengubah status form pendaftaran', 'error');
+    }
+  };
+
+  const copyRegistrationLink = async (token: string) => {
+    const link = `${window.location.origin}${window.location.pathname}#/register/${token}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      showNotification('Link pendaftaran disalin ke clipboard', 'success');
+    } catch {
+      showNotification('Gagal menyalin link. Salin manual dari tabel.', 'error');
+    }
+  };
 
   const handleBulkResetPin = async () => {
     if (selectedUserIds.size === 0) {
@@ -727,6 +846,118 @@ export default function UserManagement() {
             </span>
           </div>
         </div>
+
+        {isRoleAdmin(authUser?.role) && (
+          <div className="app-card p-4 space-y-4">
+            <div>
+              <h3 className="text-base font-semibold text-text-primary">Form Pendaftaran Tertutup</h3>
+              <p className="mt-1 text-sm text-text-muted">
+                Hanya admin yang dapat membuat link pendaftaran berdasarkan role, lalu mengaktifkan/nonaktifkan form tersebut.
+              </p>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-4">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Role Pendaftaran</label>
+                <select
+                  value={registrationRole}
+                  onChange={(e) => setRegistrationRole(e.target.value as Role)}
+                  className="form-control w-full bg-bg-card"
+                >
+                  {ROLE_OPTIONS.filter((opt) => opt.value !== 'admin').map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Masa Berlaku (hari)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={registrationExpiryDays}
+                  onChange={(e) => setRegistrationExpiryDays(Math.max(1, Math.min(365, Number.parseInt(e.target.value || '1', 10))))}
+                  className="form-control w-full bg-bg-card"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-text-muted">Maks Penggunaan (opsional)</label>
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="Kosong = tak terbatas"
+                  value={registrationMaxUses}
+                  onChange={(e) => setRegistrationMaxUses(e.target.value.replace(/[^\d]/g, ''))}
+                  className="form-control w-full bg-bg-card"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <Button onClick={createRegistrationFormLink} isLoading={isCreatingRegistrationForm} className="w-full">
+                  Buat Link Pendaftaran
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-surface/70">
+              <table className="w-full text-sm">
+                <thead className="bg-surface/30 text-left text-xs uppercase tracking-wide text-text-muted">
+                  <tr>
+                    <th className="px-3 py-2">Role</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Kuota</th>
+                    <th className="px-3 py-2">Kedaluwarsa</th>
+                    <th className="px-3 py-2">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoadingRegistrationForms ? (
+                    <tr>
+                      <td className="px-3 py-3 text-text-muted" colSpan={5}>Memuat form pendaftaran...</td>
+                    </tr>
+                  ) : registrationForms.length === 0 ? (
+                    <tr>
+                      <td className="px-3 py-3 text-text-muted" colSpan={5}>Belum ada form pendaftaran yang dibuat.</td>
+                    </tr>
+                  ) : (
+                    registrationForms.map((form) => (
+                      <tr key={form.id} className="border-t border-surface/50">
+                        <td className="px-3 py-3 font-medium text-text-primary">{getRoleDisplayLabel(form.role)}</td>
+                        <td className="px-3 py-3">
+                          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${form.is_active ? 'bg-success/15 text-success' : 'bg-accent-red/15 text-accent-red'}`}>
+                            {form.is_active ? 'Aktif' : 'Nonaktif'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-text-secondary">
+                          {form.used_count}/{form.max_uses ?? '∞'}
+                        </td>
+                        <td className="px-3 py-3 text-text-secondary">
+                          {form.expires_at ? new Date(form.expires_at).toLocaleString('id-ID') : 'Tanpa batas'}
+                        </td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline" onClick={() => copyRegistrationLink(form.token)}>
+                              Salin Link
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={form.is_active ? 'ghost' : 'secondary'}
+                              onClick={() => toggleRegistrationFormActive(form)}
+                            >
+                              {form.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Bulk selection toolbar */}
         {selectedUserIds.size > 0 && (
