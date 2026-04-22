@@ -28,7 +28,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
   // Scroll to top on route change
   useEffect(() => {
     if (typeof mainRef.current?.scrollTo === 'function') {
-      mainRef.current.scrollTo({ top: 0, behavior: 'instant' });
+      mainRef.current.scrollTo({ top: 0, behavior: 'auto' });
     }
   }, [location.pathname]);
 
@@ -40,7 +40,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
   const shellWidth = displayDensity === 'compact' ? 'max-w-[1560px]' : 'max-w-[1480px]';
 
   return (
-    <div className="desktop-shell flex min-h-[100dvh] overflow-hidden bg-military-dark" data-density={displayDensity}>
+    <div className="desktop-shell flex h-[100dvh] overflow-hidden bg-military-dark" data-density={displayDensity}>
       <Sidebar />
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <Navbar title={title} />

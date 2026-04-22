@@ -9,7 +9,9 @@ import EmptyState from '../../components/common/EmptyState';
 import WeatherWidget from '../../components/ui/WeatherWidget';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useTasks } from '../../hooks/useTasks';
+import { useUsers } from '../../hooks/useUsers';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
+import UserDetailModal from '../../components/common/UserDetailModal';
 import { useAuthStore } from '../../store/authStore';
 import { useFeatureStore } from '../../store/featureStore';
 import { usePlatformStore } from '../../store/platformStore';
@@ -19,6 +21,7 @@ import { subscribeDataChanges } from '../../lib/dataSync';
 import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh';
 import { isPathEnabled } from '../../lib/featureFlags';
 import { getKomandanScopeLabel } from '../../lib/rolePermissions';
+import type { User } from '../../types';
 
 export default function KomandanDashboard() {
   const navigate = useNavigate();
@@ -26,9 +29,26 @@ export default function KomandanDashboard() {
   const { flags } = useFeatureStore();
   const { weatherSettings } = usePlatformStore();
   const { tasks, isLoading: tasksLoading, refetch: refetchTasks } = useTasks({ assignedBy: user?.id });
+  const {
+    users: personnelUsers,
+    isLoading: isPersonnelLoading,
+    getUserById,
+    refetch: refetchPersonnel,
+  } = useUsers({
+    satuan: user?.satuan,
+    isActive: true,
+    orderBy: 'nama',
+    ascending: true,
+    serverPaginated: true,
+    page: 1,
+    pageSize: 8,
+  });
   const { announcements } = useAnnouncements();
   const { onlineCount, totalPersonel, error, fetchStats } = useKomandanDashboardStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [personnelFilter, setPersonnelFilter] = useState<'all' | 'online' | 'offline'>('all');
+  const [selectedPersonnel, setSelectedPersonnel] = useState<User | null>(null);
+  const [showPersonnelDetail, setShowPersonnelDetail] = useState(false);
   const refreshStatsOnly = useCallback(async () => {
     await fetchStats(user?.satuan);
   }, [fetchStats, user?.satuan]);
@@ -40,7 +60,7 @@ export default function KomandanDashboard() {
   const refresh = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([fetchStats(user?.satuan), refetchTasks()]);
+      await Promise.all([fetchStats(user?.satuan), refetchTasks(), refetchPersonnel()]);
     } finally {
       setIsRefreshing(false);
     }
@@ -65,6 +85,22 @@ export default function KomandanDashboard() {
   const doneTasks = useMemo(() => tasks.filter((t) => t.status === 'done'), [tasks]);
   const approvedTasks = useMemo(() => tasks.filter((t) => t.status === 'approved'), [tasks]);
   const pinnedAnnouncements = useMemo(() => announcements.filter((a) => a.is_pinned), [announcements]);
+  const filteredPersonnel = useMemo(() => {
+    if (personnelFilter === 'online') return personnelUsers.filter((u) => u.is_online);
+    if (personnelFilter === 'offline') return personnelUsers.filter((u) => !u.is_online);
+    return personnelUsers;
+  }, [personnelFilter, personnelUsers]);
+  const panelOnlineCount = useMemo(() => personnelUsers.filter((u) => u.is_online).length, [personnelUsers]);
+
+  const handleOpenPersonnelDetail = useCallback(async (target: User) => {
+    try {
+      const detail = await getUserById(target.id);
+      setSelectedPersonnel(detail);
+    } catch {
+      setSelectedPersonnel(target);
+    }
+    setShowPersonnelDetail(true);
+  }, [getUserById]);
 
   const canOpenTasks = isPathEnabled('/komandan/tasks', flags);
   const canOpenReports = isPathEnabled('/komandan/reports', flags);
@@ -200,6 +236,68 @@ export default function KomandanDashboard() {
           </div>
         </div>
 
+        {canOpenPersonnel && (
+          <div className="app-card p-5">
+            <div className="panel-heading">
+              <div>
+                <h3 className="panel-heading__title">Personel Operasional</h3>
+                <p className="panel-heading__desc">Pantau personel satuan dan buka detail profil tanpa keluar dari dashboard.</p>
+              </div>
+              <Link to="/komandan/personnel" className="text-xs text-primary hover:underline">Kelola personel lengkap →</Link>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-surface/70 bg-surface/20 px-2.5 py-1 text-xs text-text-muted">
+                {panelOnlineCount}/{personnelUsers.length} online
+              </span>
+              {(['all', 'online', 'offline'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setPersonnelFilter(option)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                    personnelFilter === option
+                      ? 'bg-primary text-white'
+                      : 'border border-surface/70 bg-bg-card text-text-muted hover:text-text-primary'
+                  }`}
+                >
+                  {option === 'all' ? 'Semua' : option === 'online' ? 'Online' : 'Offline'}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {isPersonnelLoading ? (
+                <p className="text-sm text-text-muted">Memuat personel...</p>
+              ) : filteredPersonnel.length === 0 ? (
+                <EmptyState
+                  title="Belum ada personel"
+                  description="Personel akan muncul di sini sesuai filter yang dipilih."
+                  className="border-0 bg-transparent px-0 py-6"
+                />
+              ) : (
+                filteredPersonnel.slice(0, 6).map((personel) => (
+                  <div key={personel.id} className="flex items-center justify-between gap-3 rounded-2xl border border-surface/60 bg-surface/15 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-text-primary">{personel.nama}</p>
+                      <p className="text-xs text-text-muted">NRP {personel.nrp} · {personel.pangkat ?? '—'} {personel.jabatan ? `· ${personel.jabatan}` : ''}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${personel.is_online ? 'bg-success/10 text-success' : 'bg-surface/40 text-text-muted'}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${personel.is_online ? 'bg-success' : 'bg-text-muted/50'}`} aria-hidden="true" />
+                        {personel.is_online ? 'Online' : 'Offline'}
+                      </span>
+                      <Button size="sm" variant="secondary" onClick={() => void handleOpenPersonnelDetail(personel)}>
+                        Detail
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Recent tasks */}
         {canOpenTasks && (
           <div>
@@ -246,6 +344,17 @@ export default function KomandanDashboard() {
           </div>
         )}
       </div>
+
+      <UserDetailModal
+        isOpen={showPersonnelDetail}
+        onClose={() => {
+          setShowPersonnelDetail(false);
+          setSelectedPersonnel(null);
+        }}
+        user={selectedPersonnel}
+        viewerRole="komandan"
+        mode="view"
+      />
     </DashboardLayout>
   );
 }

@@ -56,7 +56,7 @@ export default function AdminDashboard() {
   const { dashboardAutoRefreshEnabled, dashboardAutoRefreshMinutes, showNotification } = useUIStore();
   const { flags } = useFeatureStore();
   const { weatherSettings } = usePlatformStore();
-  const { users: latestUsers, isLoading: isMembersLoading, deleteUser } = useUsers({
+  const { users: latestUsers, isLoading: isMembersLoading, deleteUser, toggleUserActive } = useUsers({
     orderBy: 'created_at',
     ascending: false,
     serverPaginated: true,
@@ -64,6 +64,7 @@ export default function AdminDashboard() {
     pageSize: 6,
   });
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
   const [confirmMember, setConfirmMember] = useState<{ id: string; nama: string } | null>(null);
   const {
     snapshot,
@@ -135,6 +136,31 @@ export default function AdminDashboard() {
       showNotification(err instanceof Error ? err.message : 'Gagal menghapus anggota', 'error');
     } finally {
       setDeletingUserId(null);
+    }
+  };
+
+  const handleToggleMemberActive = async (target: { id: string; nama: string; is_active: boolean }) => {
+    if (!isUserManagementEnabled) {
+      showNotification('Fitur manajemen personel sedang dinonaktifkan admin', 'warning');
+      return;
+    }
+    if (target.id === user?.id) {
+      showNotification('Tidak dapat mengubah status akun sendiri', 'error');
+      return;
+    }
+
+    setTogglingUserId(target.id);
+    try {
+      await toggleUserActive(target.id, !target.is_active);
+      showNotification(
+        `Akun ${target.nama} berhasil ${target.is_active ? 'dinonaktifkan' : 'diaktifkan'}`,
+        'success',
+      );
+      requestDashboardRefresh();
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Gagal mengubah status anggota', 'error');
+    } finally {
+      setTogglingUserId(null);
     }
   };
 
@@ -338,17 +364,34 @@ export default function AdminDashboard() {
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-text-primary">{member.nama}</p>
                             <p className="text-xs text-text-muted">NRP {member.nrp} · {member.role}</p>
+                            <div className="mt-0.5 flex items-center gap-1.5 text-[11px]">
+                              <span className={`inline-flex h-2 w-2 rounded-full ${member.is_active ? 'bg-success' : 'bg-text-muted/50'}`} aria-hidden="true" />
+                              <span className={member.is_active ? 'text-success' : 'text-text-muted'}>
+                                {member.is_active ? 'Akun aktif' : 'Akun nonaktif'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          disabled={member.id === user?.id || deletingUserId === member.id}
-                          onClick={() => handleDeleteMember(member.id, member.nama)}
-                          isLoading={deletingUserId === member.id}
-                        >
-                          Hapus
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            disabled={member.id === user?.id || togglingUserId === member.id || deletingUserId === member.id}
+                            onClick={() => void handleToggleMemberActive(member)}
+                            isLoading={togglingUserId === member.id}
+                          >
+                            {member.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            disabled={member.id === user?.id || deletingUserId === member.id || togglingUserId === member.id}
+                            onClick={() => handleDeleteMember(member.id, member.nama)}
+                            isLoading={deletingUserId === member.id}
+                          >
+                            Hapus
+                          </Button>
+                        </div>
                       </div>
                     ))
                   )}
