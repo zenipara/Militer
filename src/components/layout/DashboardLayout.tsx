@@ -42,7 +42,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
   return (
     <div className="desktop-shell flex min-h-[100dvh] overflow-hidden bg-military-dark" data-density={displayDensity}>
       <Sidebar />
-      <div className="relative flex-1 flex flex-col overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <Navbar title={title} />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.05]"
@@ -59,7 +59,7 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
           }}
         />
         {/* pb-28 on mobile to avoid content being hidden behind BottomTabBar + safe area */}
-        <main ref={mainRef} className={`relative flex-1 overflow-y-auto scroll-y ${mainPadding}`}>
+        <main ref={mainRef} className={`relative min-h-0 flex-1 overflow-y-auto scroll-y ${mainPadding}`}>
           <div className={`mx-auto w-full ${shellWidth} animate-fade-up`}>
             {children}
           </div>
