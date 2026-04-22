@@ -5,11 +5,19 @@ import ImportPersonelModal from '../../../../components/admin/modals/ImportPerso
 
 describe('ImportPersonelModal', () => {
   const onImport = vi.fn();
+  const onPreview = vi.fn();
   const onClose = vi.fn();
   const onError = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    onPreview.mockResolvedValue({
+      totalRows: 4,
+      validRows: 3,
+      skippedRows: 1,
+      missingRequiredRows: 1,
+      duplicateRows: 0,
+    });
   });
 
   it('accepts uppercase CSV extensions and triggers import', async () => {
@@ -104,5 +112,29 @@ describe('ImportPersonelModal', () => {
 
     await waitFor(() => expect(onImport).toHaveBeenCalledWith(file));
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows preview summary when preview callback is provided', async () => {
+    const { container } = render(
+      <ImportPersonelModal
+        isOpen
+        isSaving={false}
+        onImport={onImport}
+        onPreview={onPreview}
+        onClose={onClose}
+        onError={onError}
+      />,
+    );
+
+    const fileInput = container.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+
+    const file = new File(['NRP,Nama,Satuan\n123456,Budi,Satuan A'], 'personel.csv', { type: 'text/csv' });
+    fireEvent.change(fileInput as HTMLInputElement, { target: { files: [file] } });
+
+    await waitFor(() => expect(onPreview).toHaveBeenCalledWith(file));
+    await waitFor(() => expect(screen.getByText('Total baris data: 4')).toBeInTheDocument());
+    expect(screen.getByText('Baris valid: 3')).toBeInTheDocument();
+    expect(screen.getByText('Baris dilewati: 1')).toBeInTheDocument();
   });
 });

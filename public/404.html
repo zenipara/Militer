@@ -6,7 +6,9 @@
     <meta http-equiv="refresh" content="0; url=./" />
     <script>
       (function () {
-        var repoBase = '/v';
+        var isGitHubPages = /\.github\.io$/i.test(window.location.hostname || '');
+        var pathSegments = (window.location.pathname || '/').split('/').filter(Boolean);
+        var repoBase = isGitHubPages && pathSegments.length > 0 ? '/' + pathSegments[0] : '';
         var path = window.location.pathname || '/';
         var hash = window.location.hash || '';
 
@@ -20,7 +22,7 @@
           return;
         }
 
-        window.location.replace(repoBase + '/#/' + window.location.search);
+        window.location.replace((repoBase || '') + '/#/' + window.location.search);
       })();
     </script>
     <title>KARYO OS</title>

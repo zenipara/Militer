@@ -153,7 +153,8 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
   }, [clearStopSyncTimer]);
 
   const checkOnlineStatus = useCallback(async (): Promise<boolean> => {
-    if (!navigator.serviceWorker.controller) {
+    const controller = navigator.serviceWorker.controller;
+    if (!controller) {
       const fallbackOnline = navigator.onLine;
       setOnlineStable(fallbackOnline);
       return fallbackOnline;
@@ -178,7 +179,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
         finish(event.data.isOnline ?? navigator.onLine);
       };
 
-      navigator.serviceWorker.controller.postMessage(
+      controller.postMessage(
         { type: 'CHECK_OFFLINE_STATUS' },
         [channel.port2]
       );
@@ -195,9 +196,10 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
     startSyncing();
 
     try {
-      if (navigator.serviceWorker.controller) {
+      const controller = navigator.serviceWorker.controller;
+      if (controller) {
         const channel = new MessageChannel();
-        navigator.serviceWorker.controller.postMessage(
+        controller.postMessage(
           { type: 'SYNC_NOW' },
           [channel.port2]
         );

@@ -202,9 +202,9 @@ git push origin main
 ```
 
 Workflow `.github/workflows/deploy-production.yml` akan otomatis:
-1. Build production bundle dengan `VITE_BASE_PATH=/v/`
+1. Build production bundle dengan `VITE_BASE_PATH=/${repo-name}/` (otomatis dari nama repository)
 2. Deploy ke GitHub Pages
-3. Tersedia di: `https://yuniamagsila.github.io/v/`
+3. Tersedia di: `https://<owner>.github.io/<repo-name>/`
 
 ### Via GitHub Actions (manual)
 
@@ -251,7 +251,7 @@ Data sample (PIN default: **123456**):
 - [ ] GitHub Secrets sudah diset (`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`)
 - [ ] `npm run build` berhasil di lokal
 - [ ] Migrations sudah di-push ke Supabase
-- [ ] Halaman login terbuka di `https://yuniamagsila.github.io/v/`
+- [ ] Halaman login terbuka di `https://<owner>.github.io/<repo-name>/`
 - [ ] Console browser tidak ada error JavaScript kritis
 - [ ] Service worker terdaftar
 
@@ -275,7 +275,7 @@ Atau via workflow GitHub Actions:
 
 ```
 GitHub → Actions → "Production Smoke" → Run workflow
-  base_url: https://yuniamagsila.github.io/v/
+  base_url: https://<owner>.github.io/<repo-name>/
 ```
 
 ### Cek konektivitas Supabase

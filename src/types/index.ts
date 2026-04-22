@@ -257,6 +257,7 @@ export interface Announcement {
   created_by?: string;
   is_pinned: boolean;
   created_at: string;
+  updated_at?: string;
   creator?: User;
 }
 

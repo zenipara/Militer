@@ -303,8 +303,11 @@ function parseCSV(text: string): Record<string, string>[] {
 }
 
 interface ImportRowsResult {
+  totalRows: number;
   rows: Record<string, string>[];
   skippedRows: number;
+  missingRequiredRows: number;
+  duplicateRows: number;
 }
 
 export default function UserManagement() {
@@ -542,17 +545,18 @@ export default function UserManagement() {
     }
   };
 
-  const readImportRowsFromFile = async (file: File): Promise<ImportRowsResult> => {
+  const buildImportRowsResult = async (file: File): Promise<ImportRowsResult> => {
     const parsedRows = isSpreadsheetFile(file)
       ? await parseSpreadsheetFile(file)
       : parseCSV(await decodeImportFile(file));
     const rows = parsedRows.map(normalizeImportRow);
     if (rows.length === 0) {
-      throw new Error('CSV tidak berisi data yang bisa diproses');
+      throw new Error('File tidak berisi data yang bisa diproses');
     }
 
     const validRows: Record<string, string>[] = [];
-    let skippedRows = 0;
+    let missingRequiredRows = 0;
+    let duplicateRows = 0;
     const seenNrp = new Set<string>();
 
     for (const row of rows) {
@@ -568,12 +572,12 @@ export default function UserManagement() {
       };
 
       if (!normalizedRow.nrp || !normalizedRow.nama || !normalizedRow.satuan) {
-        skippedRows += 1;
+        missingRequiredRows += 1;
         continue;
       }
 
       if (seenNrp.has(normalizedRow.nrp)) {
-        skippedRows += 1;
+        duplicateRows += 1;
         continue;
       }
 
@@ -586,8 +590,24 @@ export default function UserManagement() {
     }
 
     return {
+      totalRows: rows.length,
       rows: validRows,
-      skippedRows,
+      skippedRows: missingRequiredRows + duplicateRows,
+      missingRequiredRows,
+      duplicateRows,
+    };
+  };
+
+  const readImportRowsFromFile = async (file: File): Promise<ImportRowsResult> => buildImportRowsResult(file);
+
+  const handlePreviewImportFile = async (file: File) => {
+    const result = await buildImportRowsResult(file);
+    return {
+      totalRows: result.totalRows,
+      validRows: result.rows.length,
+      skippedRows: result.skippedRows,
+      missingRequiredRows: result.missingRequiredRows,
+      duplicateRows: result.duplicateRows,
     };
   };
 
@@ -1337,6 +1357,7 @@ export default function UserManagement() {
         onClose={() => setShowImport(false)}
         isSaving={isImporting}
         onImport={handleImportFile}
+        onPreview={handlePreviewImportFile}
         onError={(msg) => showNotification(msg, 'error')}
       />
 
