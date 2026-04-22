@@ -54,6 +54,7 @@ function makeGatePass(partial: Partial<GatePass>): GatePass {
 describe('GatePassMonitorPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     mockState.fetchGatePasses = vi.fn(async () => undefined);
   });
 
@@ -216,6 +217,32 @@ describe('GatePassMonitorPage', () => {
     const cards = screen.getAllByTestId(/monitor-card-/i);
     expect(cards[0]).toHaveTextContent('Kunjungan Baru');
     expect(cards[1]).toHaveTextContent('Kunjungan Lama');
+  });
+
+  it('switches between card mode and table mode, then persists selection', async () => {
+    mockState.gatePasses = [
+      makeGatePass({ id: 'mode-1', tujuan: 'Data Alpha', status: 'approved' }),
+      makeGatePass({ id: 'mode-2', tujuan: 'Data Bravo', status: 'checked_in' }),
+    ];
+
+    const { unmount } = render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+
+    expect(screen.queryByTestId('monitor-table')).not.toBeInTheDocument();
+    expect(screen.getAllByTestId(/monitor-card-/i)).toHaveLength(2);
+
+    fireEvent.click(screen.getByTestId('gatepass-monitor-display-table'));
+
+    expect(screen.getByTestId('monitor-table')).toBeInTheDocument();
+    expect(screen.queryByTestId(/monitor-card-/i)).not.toBeInTheDocument();
+    expect(localStorage.getItem('karyo_gatepass_monitor_display_mode')).toBe('table');
+
+    unmount();
+    render(<GatePassMonitorPage />);
+
+    await waitFor(() => expect(screen.getByText('Monitoring Gate Pass')).toBeInTheDocument());
+    expect(screen.getByTestId('monitor-table')).toBeInTheDocument();
   });
 
   it('filters rows by satuan', async () => {

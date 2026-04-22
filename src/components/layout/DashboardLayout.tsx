@@ -32,15 +32,15 @@ export default function DashboardLayout({ children, title }: DashboardLayoutProp
     }
   }, [location.pathname]);
 
-  const mobileBottomPadding = bottomNavigationEnabled ? 'pb-28' : 'pb-8';
+  const mobileBottomPadding = bottomNavigationEnabled ? 'pb-36' : 'pb-12';
   const mainPadding = displayDensity === 'compact'
-    ? `px-4 py-3 ${mobileBottomPadding} sm:px-5 sm:py-4 lg:px-6 lg:py-6 lg:pb-8`
-    : `px-5 py-5 ${mobileBottomPadding} sm:px-6 lg:px-8 lg:py-7 lg:pb-8`;
+    ? `px-4 py-3 ${mobileBottomPadding} sm:px-5 sm:py-4 lg:px-6 lg:py-6 lg:pb-10`
+    : `px-5 py-5 ${mobileBottomPadding} sm:px-6 lg:px-8 lg:py-7 lg:pb-10`;
 
   const shellWidth = displayDensity === 'compact' ? 'max-w-[1440px]' : 'max-w-[1360px]';
 
   return (
-    <div className="desktop-shell flex h-screen overflow-hidden bg-military-dark" data-density={displayDensity}>
+    <div className="desktop-shell flex min-h-[100dvh] overflow-hidden bg-military-dark" data-density={displayDensity}>
       <Sidebar />
       <div className="relative flex-1 flex flex-col overflow-hidden">
         <Navbar title={title} />

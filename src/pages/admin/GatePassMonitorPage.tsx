@@ -17,6 +17,17 @@ interface MonitorGatePass extends GatePass {
 
 type SortMode = 'priority' | 'latest';
 type OverdueBucket = 'all' | 'over_30m' | 'over_1h' | 'over_3h' | 'over_6h';
+type DisplayMode = 'cards' | 'table';
+const DISPLAY_MODE_KEY = 'karyo_gatepass_monitor_display_mode';
+
+function loadDisplayMode(): DisplayMode {
+  try {
+    const stored = localStorage.getItem(DISPLAY_MODE_KEY);
+    return stored === 'table' ? 'table' : 'cards';
+  } catch {
+    return 'cards';
+  }
+}
 
 function normalizeLegacyStatus(status: GatePassStatus): GatePassStatus {
   if (status === 'out') return 'checked_in';
@@ -194,6 +205,7 @@ export default function GatePassMonitorPage() {
   const [endDate, setEndDate] = useState('');
   const [criticalMode, setCriticalMode] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('priority');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(() => loadDisplayMode());
   const [now, setNow] = useState(() => new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -208,6 +220,14 @@ export default function GatePassMonitorPage() {
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DISPLAY_MODE_KEY, displayMode);
+    } catch {
+      // Ignore storage failures (private mode, quota issues)
+    }
+  }, [displayMode]);
 
   useEffect(() => {
     (async () => {
@@ -417,6 +437,7 @@ export default function GatePassMonitorPage() {
     setEndDate('');
     setCriticalMode(false);
     setSortMode('priority');
+    setDisplayMode('cards');
   };
 
   const applyDatePreset = (days: number) => {
@@ -589,7 +610,7 @@ export default function GatePassMonitorPage() {
 
   return (
     <DashboardLayout title="Monitoring Gate Pass">
-      <div className="mx-auto max-w-5xl py-6 space-y-6">
+      <div className="mx-auto max-w-7xl py-6 space-y-6 lg:space-y-8">
         <PageHeader
           title="Monitoring Gate Pass"
           subtitle="Pantau alur terbaru: submit auto-approved, scan keluar, dan scan kembali. Statistik diprioritaskan agar personil yang keluar lebih mudah dipantau."
@@ -649,139 +670,140 @@ export default function GatePassMonitorPage() {
           </div>
         </div>
 
-        <div className="app-card p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-text-primary">Intel Operasional</h2>
-              <p className="text-xs text-text-muted">Fokus cepat untuk kasus paling kritis.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={criticalMode ? 'secondary' : 'outline'}
-                size="sm"
-                onClick={() => setCriticalMode((prev) => !prev)}
-                data-testid="gatepass-monitor-critical-mode"
-              >
-                {criticalMode ? 'Mode Kritis Aktif' : 'Mode Fokus Kritis'}
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
-              <p className="text-xs text-text-muted">Terlambat Terlama</p>
-              {longestOverdue ? (
-                <>
-                  <p className="mt-1 text-sm font-semibold text-text-primary">{longestOverdue.user?.nama ?? 'Personil tidak diketahui'}</p>
-                  <p className="text-xs text-accent-red">Terlambat {formatDuration(Math.max(0, now.getTime() - parseTimeMs(longestOverdue.waktu_kembali)))}</p>
-                </>
-              ) : (
-                <p className="mt-1 text-xs text-text-muted">Tidak ada kasus overdue.</p>
-              )}
-            </div>
-
-            <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
-              <p className="text-xs text-text-muted">Batas Kembali Terdekat</p>
-              {nearestDeadline ? (
-                <>
-                  <p className="mt-1 text-sm font-semibold text-text-primary">{nearestDeadline.user?.nama ?? 'Personil tidak diketahui'}</p>
-                  <p className="text-xs text-orange-500">Sisa {formatDuration(Math.max(0, parseTimeMs(nearestDeadline.waktu_kembali) - now.getTime()))}</p>
-                </>
-              ) : (
-                <p className="mt-1 text-xs text-text-muted">Tidak ada personil aktif di luar.</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="app-card p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold text-text-primary">Ringkasan per Satuan</h2>
-              <p className="text-xs text-text-muted">Distribusi gate pass pada hasil filter aktif.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="text-xs text-text-muted">{unitSummary.length} satuan tampil</div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExportUnitSummaryCsv}
-                disabled={unitSummary.length === 0}
-                data-testid="gatepass-monitor-unit-summary-export"
-              >
-                Export Ringkasan
-              </Button>
-            </div>
-          </div>
-
-          {unitSummary.length > 0 ? (
-            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3" data-testid="gatepass-monitor-unit-summary">
-              {unitSummary.map((item) => (
-                <div
-                  key={item.unit}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Ringkasan ${item.unit}`}
-                  className={`rounded-xl border p-4 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${
-                    unitFilter === item.unit
-                      ? 'border-primary bg-primary/10'
-                      : 'border-surface/75 bg-surface/20 hover:border-primary/60 hover:bg-primary/5'
-                  }`}
-                  aria-pressed={unitFilter === item.unit}
-                  onClick={() => setUnitFilter((current) => (current === item.unit ? 'all' : item.unit))}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      setUnitFilter((current) => (current === item.unit ? 'all' : item.unit));
-                    }
-                  }}
+        <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr] xl:items-start">
+          <div className="app-card p-4 lg:p-5 lg:sticky lg:top-4 lg:self-start">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">Intel Operasional</h2>
+                <p className="text-xs text-text-muted">Fokus cepat untuk kasus paling kritis.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={criticalMode ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setCriticalMode((prev) => !prev)}
+                  data-testid="gatepass-monitor-critical-mode"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-text-primary">{item.unit}</p>
-                      <p className="text-xs text-text-muted">Total {item.total} data</p>
-                    </div>
-                    <div className="text-right text-xs text-text-muted">
-                      <div><span className="font-semibold text-accent-red">{item.overdue}</span> overdue</div>
-                      <div><span className="font-semibold text-orange-500">{item.checkedIn}</span> checked-in</div>
-                      <div><span className="font-semibold text-blue-500">{item.approved}</span> approved</div>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        void handleCopyText(buildCopyTextForUnitSummary(item), `Ringkasan ${item.unit} disalin`);
-                      }}
-                    >
-                      Salin ringkasan
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setUnitFilter((current) => (current === item.unit ? 'all' : item.unit));
-                      }}
-                    >
-                      Fokus unit
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                  {criticalMode ? 'Mode Kritis Aktif' : 'Mode Fokus Kritis'}
+                </Button>
+              </div>
             </div>
-          ) : (
-            <div className="mt-3 rounded-xl border border-dashed border-surface/75 bg-bg-card px-4 py-5 text-sm text-text-muted">
-              Tidak ada data untuk diringkas pada filter saat ini.
-            </div>
-          )}
-        </div>
 
-        <div className="app-card p-4">
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+              <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
+                <p className="text-xs text-text-muted">Terlambat Terlama</p>
+                {longestOverdue ? (
+                  <>
+                    <p className="mt-1 text-sm font-semibold text-text-primary">{longestOverdue.user?.nama ?? 'Personil tidak diketahui'}</p>
+                    <p className="text-xs text-accent-red">Terlambat {formatDuration(Math.max(0, now.getTime() - parseTimeMs(longestOverdue.waktu_kembali)))}</p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-text-muted">Tidak ada kasus overdue.</p>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
+                <p className="text-xs text-text-muted">Batas Kembali Terdekat</p>
+                {nearestDeadline ? (
+                  <>
+                    <p className="mt-1 text-sm font-semibold text-text-primary">{nearestDeadline.user?.nama ?? 'Personil tidak diketahui'}</p>
+                    <p className="text-xs text-orange-500">Sisa {formatDuration(Math.max(0, parseTimeMs(nearestDeadline.waktu_kembali) - now.getTime()))}</p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-text-muted">Tidak ada personil aktif di luar.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="app-card p-4 lg:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">Ringkasan per Satuan</h2>
+                <p className="text-xs text-text-muted">Distribusi gate pass pada hasil filter aktif.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-xs text-text-muted">{unitSummary.length} satuan tampil</div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExportUnitSummaryCsv}
+                  disabled={unitSummary.length === 0}
+                  data-testid="gatepass-monitor-unit-summary-export"
+                >
+                  Export Ringkasan
+                </Button>
+              </div>
+            </div>
+
+            {unitSummary.length > 0 ? (
+              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2" data-testid="gatepass-monitor-unit-summary">
+                {unitSummary.map((item) => (
+                  <div
+                    key={item.unit}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Ringkasan ${item.unit}`}
+                    className={`rounded-xl border p-4 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                      unitFilter === item.unit
+                        ? 'border-primary bg-primary/10'
+                        : 'border-surface/75 bg-surface/20 hover:border-primary/60 hover:bg-primary/5'
+                    }`}
+                    aria-pressed={unitFilter === item.unit}
+                    onClick={() => setUnitFilter((current) => (current === item.unit ? 'all' : item.unit))}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setUnitFilter((current) => (current === item.unit ? 'all' : item.unit));
+                      }
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-text-primary">{item.unit}</p>
+                        <p className="text-xs text-text-muted">Total {item.total} data</p>
+                      </div>
+                      <div className="text-right text-xs text-text-muted">
+                        <div><span className="font-semibold text-accent-red">{item.overdue}</span> overdue</div>
+                        <div><span className="font-semibold text-orange-500">{item.checkedIn}</span> checked-in</div>
+                        <div><span className="font-semibold text-blue-500">{item.approved}</span> approved</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          void handleCopyText(buildCopyTextForUnitSummary(item), `Ringkasan ${item.unit} disalin`);
+                        }}
+                      >
+                        Salin ringkasan
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setUnitFilter((current) => (current === item.unit ? 'all' : item.unit));
+                        }}
+                      >
+                        Fokus unit
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-3 rounded-xl border border-dashed border-surface/75 bg-bg-card px-4 py-5 text-sm text-text-muted">
+                Tidak ada data untuk diringkas pada filter saat ini.
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="app-card p-4 lg:p-5 lg:sticky lg:top-4">
           <div className="flex items-center justify-between gap-3 pb-3">
             <div>
               <h2 className="text-sm font-semibold text-text-primary">Filter dan pencarian</h2>
@@ -887,6 +909,26 @@ export default function GatePassMonitorPage() {
               <option value="priority">Urutan prioritas operasi</option>
               <option value="latest">Urutan terbaru keluar</option>
             </select>
+            <div className="ml-auto inline-flex rounded-xl border border-surface/75 bg-surface/20 p-1" data-testid="gatepass-monitor-display-mode">
+              <Button
+                size="sm"
+                variant={displayMode === 'cards' ? 'secondary' : 'ghost'}
+                onClick={() => setDisplayMode('cards')}
+                aria-pressed={displayMode === 'cards'}
+                data-testid="gatepass-monitor-display-cards"
+              >
+                Mode Kartu
+              </Button>
+              <Button
+                size="sm"
+                variant={displayMode === 'table' ? 'secondary' : 'ghost'}
+                onClick={() => setDisplayMode('table')}
+                aria-pressed={displayMode === 'table'}
+                data-testid="gatepass-monitor-display-table"
+              >
+                Mode Tabel
+              </Button>
+            </div>
           </div>
           <p className="mt-2 text-xs text-text-muted">
             {sortMode === 'priority'
@@ -912,7 +954,74 @@ export default function GatePassMonitorPage() {
             </div>
           )}
 
-          {filteredRows.map(gp => {
+          {filteredRows.length > 0 && displayMode === 'table' && (
+            <div className="overflow-hidden rounded-2xl border border-surface/80 bg-bg-card shadow-sm" data-testid="monitor-table">
+              <div className="overflow-x-auto">
+                <table className="min-w-[980px] w-full text-sm">
+                  <thead className="bg-surface/40 text-left text-xs uppercase tracking-[0.04em] text-text-muted">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Personil</th>
+                      <th className="px-4 py-3 font-semibold">Satuan</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold">Tujuan</th>
+                      <th className="px-4 py-3 font-semibold">Rencana</th>
+                      <th className="px-4 py-3 font-semibold">Scan</th>
+                      <th className="px-4 py-3 font-semibold">Kritis</th>
+                      <th className="px-4 py-3 font-semibold text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRows.map((gp) => {
+                      const kembaliAt = gp.waktu_kembali ? new Date(gp.waktu_kembali) : null;
+                      const isValidKembali = kembaliAt && !Number.isNaN(kembaliAt.getTime());
+                      const deltaMs = isValidKembali ? Math.abs(kembaliAt.getTime() - now.getTime()) : 0;
+                      const showLate = gp.effectiveStatus === 'overdue' && isValidKembali;
+                      const showRemaining = gp.effectiveStatus === 'checked_in' && isValidKembali;
+
+                      return (
+                        <tr key={gp.id} className="border-t border-surface/75 align-top hover:bg-primary/5">
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-text-primary">{gp.user?.nama ?? 'Personil tidak diketahui'}</div>
+                            <div className="text-xs text-text-muted">NRP: {gp.user?.nrp ?? '-'}</div>
+                          </td>
+                          <td className="px-4 py-3 text-text-muted">{gp.user?.satuan ?? '-'}</td>
+                          <td className="px-4 py-3"><GatePassStatusBadge gatePass={{ ...gp, status: gp.effectiveStatus }} /></td>
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-text-primary">{gp.tujuan}</div>
+                            <div className="text-xs text-text-muted">{gp.keperluan}</div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-text-muted">
+                            <div>Keluar: {formatDateTime(gp.waktu_keluar)}</div>
+                            <div>Kembali: {formatDateTime(gp.waktu_kembali)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-text-muted">
+                            <div>Out: {formatDateTime(gp.actual_keluar)}</div>
+                            <div>In: {formatDateTime(gp.actual_kembali)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-xs font-semibold">
+                            {showLate && <span className="text-accent-red">Terlambat {formatDuration(deltaMs)}</span>}
+                            {showRemaining && <span className="text-orange-500">Sisa {formatDuration(deltaMs)}</span>}
+                            {!showLate && !showRemaining && <span className="text-text-muted">Normal</span>}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => void handleCopyText(buildCopyTextForGatePass(gp), `Detail ${gp.user?.nama ?? gp.id} disalin`)}
+                            >
+                              Salin
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {filteredRows.length > 0 && displayMode === 'cards' && filteredRows.map(gp => {
             const kembaliAt = gp.waktu_kembali ? new Date(gp.waktu_kembali) : null;
             const isValidKembali = kembaliAt && !Number.isNaN(kembaliAt.getTime());
             const deltaMs = isValidKembali ? Math.abs(kembaliAt.getTime() - now.getTime()) : 0;
