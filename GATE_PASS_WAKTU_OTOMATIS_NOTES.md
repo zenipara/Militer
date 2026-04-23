@@ -11,7 +11,14 @@ Pembaruan ini mengimplementasikan fitur otomatis pengisian dan tampilan **Waktu 
 - Sistem backend sudah otomatis mengupdate `actual_kembali` saat scan kembali (status checked_in → completed)
 - Waktu capture dilakukan server-side dengan `NOW()` untuk akurasi maksimal
 
-### 2. **Utility Formatter Waktu** (`src/utils/timeFormatter.ts`)
+### 2. **Auto-Adjust Return Time on Checkout** ✓ NEW
+- Saat prajurit scan keluar dengan delay, waktu kembali **rencana** otomatis di-adjust
+- **Contoh**: 
+  - Rencana: 14:00 - 18:00 (durasi 4 jam)
+  - Actual checkout: 14:10 (delay 10 menit)
+  - Hasil: Waktu kembali rencana auto-adjust ke 18:10
+- **Manfaat**: Durasi izin tetap konsisten, meskipun ada delay saat keluar
+- Implementasi di backend: `scan_gate_pass()` dan `authenticated_scan_pos_jaga()`
 - `formatTimeOnly(waktu)` - Format "HH:mm" (contoh: "14:30")
 - `formatTimeWithDate(waktu)` - Format "HH:mm (DD Mon)" (contoh: "14:30 (25 Apr)")
 - `formatFullDateTime(waktu)` - Format lengkap dengan hari (contoh: "Selasa, 25 April 2026 14:30")
@@ -53,10 +60,13 @@ Menampilkan riwayat gate pass dengan informasi waktu:
 3. Di Pos Jaga, prajurit scan QR gate pass
 4. Sistem otomatis:
    - Set `actual_keluar = NOW()` (misal: 14:35)
+   - **Auto-adjust `waktu_kembali` rencana** (17:30 → 17:35, +5 menit)
+     - Ini memastikan durasi izin tetap 3 jam meski ada delay keluar
    - Update status → 'checked_in'
    - Display di ScanResultCard menunjukkan:
      - Rencana: 14:30
      - Aktual: 14:35 ✓
+     - Waktu kembali rencana sudah otomatis adjusted → 17:35
 
 ### Skenario 2: Prajurit Kembali
 1. Prajurit scan QR lagi di Pos Jaga saat kembali
@@ -65,8 +75,8 @@ Menampilkan riwayat gate pass dengan informasi waktu:
    - Update status → 'completed'
    - Display di ScanResultCard menunjukkan:
      - Waktu Kembali:
-       - Rencana: 17:30
-       - Aktual: 17:25 ✓
+       - Rencana: 17:35 (sudah di-adjust)
+       - Aktual: 17:25 ✓ (lebih cepat dari rencana)
 
 ## 📊 Data yang Disimpan
 
@@ -149,15 +159,27 @@ npm test -- src/tests/components/gatepass/GatePassList.test.tsx
 ## 💾 Backend Implementation (Already Done)
 
 Database migration sudah implemented di:
-- `supabase/migrations/20260418222000_harden_scan_rpcs_and_combined_auth_scan.sql`
+- `supabase/migrations/20260418222000_harden_scan_rpcs_and_combined_auth_scan.sql` - Initial scan logic
+- `supabase/migrations/20260423113000_auto_adjust_return_time_on_checkout.sql` - NEW: Auto-adjust return time
 
 Fungsi RPC:
-- `scan_gate_pass()` - Capture actual_keluar dan actual_kembali
-- `authenticated_scan_pos_jaga()` - Scan dengan NRP+PIN
+- `scan_gate_pass()` - Capture actual_keluar + auto-adjust waktu_kembali
+- `authenticated_scan_pos_jaga()` - Scan dengan NRP+PIN + auto-adjust waktu_kembali
 
-Both functions otomatis set:
-- `actual_keluar = NOW()` saat keluar (status: approved → checked_in)
-- `actual_kembali = NOW()` saat kembali (status: checked_in → completed)
+Both functions:
+- Saat checkout: Set `actual_keluar = NOW()` dan auto-adjust `waktu_kembali` jika ada delay
+- Saat check-in: Set `actual_kembali = NOW()`
+
+Logic auto-adjust:
+```sql
+-- Hitung delay antara rencana dan actual
+delay_ms := EXTRACT(EPOCH FROM (NOW() - waktu_keluar)) * 1000
+
+-- Jika ada delay positif, adjust return time
+IF delay_ms > 0 THEN
+  new_waktu_kembali := waktu_kembali + (delay_ms minutes)
+END IF
+```
 
 ## 📝 Notes
 
