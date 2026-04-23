@@ -19,11 +19,32 @@ function nowLocal(): string {
   return d.toISOString().slice(0, 16);
 }
 
+/**
+ * Generate default waktu_keluar (30 menit dari sekarang)
+ * dan default waktu_kembali (4 jam dari sekarang)
+ */
+function getDefaultTimes(): { keluar: string; kembali: string } {
+  const now = new Date();
+  
+  // Waktu keluar: 30 menit dari sekarang
+  const keluarTime = new Date(now.getTime() + 30 * 60 * 1000);
+  keluarTime.setSeconds(0, 0);
+  const keluar = keluarTime.toISOString().slice(0, 16);
+  
+  // Waktu kembali: 4 jam dari sekarang
+  const kembaliTime = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+  kembaliTime.setSeconds(0, 0);
+  const kembali = kembaliTime.toISOString().slice(0, 16);
+  
+  return { keluar, kembali };
+}
+
 export default function GatePassForm() {
+  const defaults = getDefaultTimes();
   const [keperluan, setKeperluan] = useState('');
   const [tujuan, setTujuan] = useState('');
-  const [waktuKeluar, setWaktuKeluar] = useState('');
-  const [waktuKembali, setWaktuKembali] = useState('');
+  const [waktuKeluar, setWaktuKeluar] = useState(defaults.keluar);
+  const [waktuKembali, setWaktuKembali] = useState(defaults.kembali);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -32,6 +53,26 @@ export default function GatePassForm() {
   const { showNotification } = useUIStore();
 
   const minNow = useMemo(() => nowLocal(), []);
+
+  /**
+   * Helper untuk apply preset duration
+   * Waktu keluar = sekarang + delayMins
+   * Waktu kembali = waktu keluar + durationMins
+   */
+  const applyPreset = (delayMins: number, durationMins: number) => {
+    const now = new Date();
+    const keluarTime = new Date(now.getTime() + delayMins * 60 * 1000);
+    keluarTime.setSeconds(0, 0);
+    const kembaliTime = new Date(keluarTime.getTime() + durationMins * 60 * 1000);
+    kembaliTime.setSeconds(0, 0);
+    
+    const keluarStr = keluarTime.toISOString().slice(0, 16);
+    const kembaliStr = kembaliTime.toISOString().slice(0, 16);
+    
+    setWaktuKeluar(keluarStr);
+    setWaktuKembali(kembaliStr);
+    setErrors({});
+  };
 
   // Real-time validation as user types
   const handleKeperluan = (value: string) => {
@@ -125,8 +166,9 @@ export default function GatePassForm() {
 
       setKeperluan('');
       setTujuan('');
-      setWaktuKeluar('');
-      setWaktuKembali('');
+      const resetDefaults = getDefaultTimes();
+      setWaktuKeluar(resetDefaults.keluar);
+      setWaktuKembali(resetDefaults.kembali);
 
       // Check if auto-approved
       if (result?.auto_approved) {
@@ -201,6 +243,42 @@ export default function GatePassForm() {
         required
       />
 
+      {/* Quick Preset Duration Selector */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-text-primary">Durasi Izin Keluar</label>
+        <p className="text-xs text-text-muted mb-3">Pilih preset atau atur manual di bawah</p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <button
+            type="button"
+            onClick={() => applyPreset(30, 60)}
+            className="px-3 py-2 text-sm rounded-lg border border-surface/60 bg-surface/20 text-text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors"
+          >
+            1 jam
+          </button>
+          <button
+            type="button"
+            onClick={() => applyPreset(30, 120)}
+            className="px-3 py-2 text-sm rounded-lg border border-surface/60 bg-surface/20 text-text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors"
+          >
+            2 jam
+          </button>
+          <button
+            type="button"
+            onClick={() => applyPreset(30, 240)}
+            className="px-3 py-2 text-sm rounded-lg border border-surface/60 bg-surface/20 text-text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors"
+          >
+            4 jam
+          </button>
+          <button
+            type="button"
+            onClick={() => applyPreset(30, 480)}
+            className="px-3 py-2 text-sm rounded-lg border border-surface/60 bg-surface/20 text-text-primary hover:bg-primary/10 hover:border-primary/40 transition-colors"
+          >
+            8 jam
+          </button>
+        </div>
+      </div>
+
       <Input
         label="Waktu Keluar"
         type="datetime-local"
@@ -208,7 +286,7 @@ export default function GatePassForm() {
         value={waktuKeluar}
         onChange={(e) => handleWaktuKeluar(e.target.value)}
         error={errors.waktu_keluar}
-        helpText="Tidak boleh mengisi waktu yang sudah lewat"
+        helpText="Waktu rencana. Waktu aktual akan dicatat saat scan di pos jaga."
         required
       />
 
@@ -219,7 +297,7 @@ export default function GatePassForm() {
         value={waktuKembali}
         onChange={(e) => handleWaktuKembali(e.target.value)}
         error={errors.waktu_kembali}
-        helpText="Harus setelah waktu keluar (max 7 hari)"
+        helpText="Waktu rencana. Waktu aktual akan dicatat saat scan masuk kembali."
         required
       />
 
