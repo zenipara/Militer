@@ -28,6 +28,7 @@ const FOCUSABLE_SELECTORS = [
 
 export default function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const hasFocusedOnOpenRef = useRef(false);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -65,19 +66,38 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
     };
 
     if (isOpen) {
+      const previousOverflow = document.body.style.overflow;
       document.addEventListener('keydown', handleKey);
       document.body.style.overflow = 'hidden';
-      // Move focus into the modal on open
-      requestAnimationFrame(() => {
-        const first = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTORS);
-        first?.focus();
-      });
+      return () => {
+        document.removeEventListener('keydown', handleKey);
+        document.body.style.overflow = previousOverflow;
+      };
     }
+
     return () => {
       document.removeEventListener('keydown', handleKey);
-      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      hasFocusedOnOpenRef.current = false;
+      return;
+    }
+
+    // Focus only once per open cycle to avoid stealing focus while typing.
+    if (hasFocusedOnOpenRef.current) return;
+    hasFocusedOnOpenRef.current = true;
+
+    requestAnimationFrame(() => {
+      if (!dialogRef.current) return;
+      if (dialogRef.current.contains(document.activeElement)) return;
+
+      const first = dialogRef.current.querySelector<HTMLElement>(FOCUSABLE_SELECTORS);
+      first?.focus();
+    });
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

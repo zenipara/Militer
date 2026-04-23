@@ -40,6 +40,7 @@ export default function GlobalSearch() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hasFocusedOnOpenRef = useRef(false);
   const query = useDebounce(rawQuery, 300);
 
   const activeRole = user?.role ?? sessionContext?.role;
@@ -75,27 +76,54 @@ export default function GlobalSearch() {
 
   // Close on outside click
   useEffect(() => {
+    if (!isOpen) return;
+
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
     };
+
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [isOpen]);
 
   // Keyboard shortcut: Ctrl+K / Cmd+K
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTypingTarget = Boolean(
+        target
+        && (target.tagName === 'INPUT'
+          || target.tagName === 'TEXTAREA'
+          || target.tagName === 'SELECT'
+          || target.isContentEditable),
+      );
+
+      if (isTypingTarget) return;
+
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setIsOpen(true);
-        setTimeout(() => inputRef.current?.focus(), 50);
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      hasFocusedOnOpenRef.current = false;
+      return;
+    }
+
+    if (hasFocusedOnOpenRef.current) return;
+    hasFocusedOnOpenRef.current = true;
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -109,7 +137,6 @@ export default function GlobalSearch() {
 
   const openSearch = () => {
     setIsOpen(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const closeSearch = () => {
@@ -207,7 +234,6 @@ export default function GlobalSearch() {
                 onChange={(e) => setRawQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none"
-                autoFocus
                 autoComplete="off"
               />
               {isLoading && (
