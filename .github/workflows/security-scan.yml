@@ -28,10 +28,47 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # npm audit exits with non-zero if there are high/critical vulnerabilities.
-      # --audit-level=high means moderate/low do not fail the build.
-      - name: Run npm audit
-        run: npm audit --audit-level=high
+      # Fail build only for high/critical vulnerabilities that have an available fix.
+      # Known no-fix advisories are surfaced as warnings and should be tracked separately.
+      - name: Run npm audit (actionable high/critical only)
+        run: |
+          npm audit --json > audit-report.json || true
+          node <<'EOF'
+          const fs = require('fs');
+
+          const reportPath = 'audit-report.json';
+          const raw = fs.readFileSync(reportPath, 'utf8');
+          const report = JSON.parse(raw);
+          const vulnerabilities = Object.entries(report.vulnerabilities || {}).map(([name, detail]) => ({ name, ...detail }));
+
+          const highOrCritical = vulnerabilities.filter((v) => v.severity === 'high' || v.severity === 'critical');
+          const actionable = highOrCritical.filter((v) => {
+            if (!v.fixAvailable) return false;
+            if (typeof v.fixAvailable === 'boolean') return v.fixAvailable;
+            return true;
+          });
+
+          if (actionable.length > 0) {
+            console.error('Actionable high/critical vulnerabilities found:');
+            for (const vuln of actionable) {
+              const fix = typeof vuln.fixAvailable === 'object'
+                ? `${vuln.fixAvailable.name || vuln.name}@${vuln.fixAvailable.version || 'latest'}`
+                : 'available';
+              console.error(`- ${vuln.name} (${vuln.severity}) | fix: ${fix}`);
+            }
+            process.exit(1);
+          }
+
+          if (highOrCritical.length > 0) {
+            console.warn('No actionable fix for current high/critical vulnerabilities. Continuing with warnings:');
+            for (const vuln of highOrCritical) {
+              const reason = vuln.fixAvailable ? 'manual review needed' : 'no fix available';
+              console.warn(`- ${vuln.name} (${vuln.severity}) | ${reason}`);
+            }
+          } else {
+            console.log('No high/critical vulnerabilities found.');
+          }
+          EOF
 
   secret-scan:
     name: Secret Scanning (Gitleaks)
