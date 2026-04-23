@@ -91,7 +91,8 @@ async function notifyClients(payload) {
 
 async function checkConnectivity() {
   try {
-    const response = await fetch('/v/', { method: 'HEAD', cache: 'no-store' });
+    const scopeUrl = self.registration?.scope || self.location.origin + '/';
+    const response = await fetch(scopeUrl, { method: 'HEAD', cache: 'no-store' });
     isOnline = response.ok;
   } catch {
     isOnline = false;

@@ -3,38 +3,38 @@
   "name": "KARYO OS - Command & Battalion Tracking",
   "short_name": "Karyo OS",
   "description": "Sistem manajemen operasional berbasis web untuk unit militer Indonesia",
-  "start_url": "/v/",
-  "scope": "/v/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "theme_color": "#1f2937",
   "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/v/favicon.ico",
+      "src": "./favicon.ico",
       "sizes": "64x64 32x32 24x24",
       "type": "image/x-icon"
     },
     {
-      "src": "/v/icon-192.png",
+      "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/v/icon-512.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/v/icon-maskable-192.png",
+      "src": "./icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/v/icon-maskable-512.png",
+      "src": "./icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -42,13 +42,13 @@
   ],
   "screenshots": [
     {
-      "src": "/v/screenshot-1.png",
+      "src": "./screenshot-1.png",
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/v/screenshot-2.png",
+      "src": "./screenshot-2.png",
       "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide"
@@ -56,13 +56,13 @@
   ],
   "screenshots_dark": [
     {
-      "src": "/v/screenshot-1-dark.png",
+      "src": "./screenshot-1-dark.png",
       "sizes": "540x720",
       "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/v/screenshot-2-dark.png",
+      "src": "./screenshot-2-dark.png",
       "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide"
@@ -74,10 +74,10 @@
       "name": "Gate Pass Monitoring",
       "short_name": "Gate Pass",
       "description": "Monitor gate pass requests & approvals",
-      "url": "/v/gatepass-monitor",
+      "url": "./gatepass-monitor",
       "icons": [
         {
-          "src": "/v/icon-gatepass.png",
+          "src": "./icon-gatepass.png",
           "sizes": "96x96",
           "type": "image/png"
         }
@@ -87,10 +87,10 @@
       "name": "Task Management",
       "short_name": "Tasks",
       "description": "View & manage assigned tasks",
-      "url": "/v/tasks",
+      "url": "./tasks",
       "icons": [
         {
-          "src": "/v/icon-tasks.png",
+          "src": "./icon-tasks.png",
           "sizes": "96x96",
           "type": "image/png"
         }
@@ -100,10 +100,10 @@
       "name": "Attendance",
       "short_name": "Check In",
       "description": "Mark attendance & check in",
-      "url": "/v/attendance",
+      "url": "./attendance",
       "icons": [
         {
-          "src": "/v/icon-attendance.png",
+          "src": "./icon-attendance.png",
           "sizes": "96x96",
           "type": "image/png"
         }
@@ -111,7 +111,7 @@
     }
   ],
   "share_target": {
-    "action": "/v/share",
+    "action": "./share",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
@@ -129,7 +129,7 @@
   "protocol_handlers": [
     {
       "protocol": "web+karyo",
-      "url": "/v/protocol-handler?url=%s"
+      "url": "./protocol-handler?url=%s"
     }
   ]
 }

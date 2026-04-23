@@ -51,9 +51,31 @@ jobs:
             exit 1
           fi
 
+      - name: Resolve GitHub Pages base path
+        id: pages_base
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pages = await github.request('GET /repos/{owner}/{repo}/pages', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const htmlUrl = pages.data?.html_url;
+            let basePath = `/${context.repo.repo}/`;
+
+            if (htmlUrl) {
+              const parsed = new URL(htmlUrl);
+              const pathname = parsed.pathname || '/';
+              basePath = pathname.endsWith('/') ? pathname : `${pathname}/`;
+            }
+
+            core.info(`Resolved VITE_BASE_PATH=${basePath}`);
+            core.setOutput('basePath', basePath);
+
       - name: Build production bundle
         env:
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_BASE_PATH: ${{ steps.pages_base.outputs.basePath }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
