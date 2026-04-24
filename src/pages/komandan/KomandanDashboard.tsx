@@ -40,9 +40,7 @@ export default function KomandanDashboard() {
     isActive: true,
     orderBy: 'nama',
     ascending: true,
-    serverPaginated: true,
-    page: 1,
-    pageSize: 8,
+    serverPaginated: false,
   });
   const { announcements } = useAnnouncements();
   const { onlineCount, totalPersonel, error, fetchStats } = useKomandanDashboardStore();
