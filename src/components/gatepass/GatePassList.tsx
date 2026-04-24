@@ -41,35 +41,38 @@ const GatePassList: React.FC<Props> = ({ gatePasses, guard }) => {
           <div className="flex gap-4 text-xs">
             <div className="flex items-center gap-2 text-text-muted">
               <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-              <span>Keluar:</span>
+              <span>Waktu pengajuan:</span>
             </div>
-            <div className="flex gap-2">
-              <span className="text-text-primary font-mono">{formatTimeOnly(gp.waktu_keluar)}</span>
-              {gp.actual_keluar && (
-                <div className="flex items-center gap-1 text-success">
-                  <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="font-mono">{formatTimeOnly(gp.actual_keluar)}</span>
-                </div>
-              )}
-            </div>
+            <span className="font-mono text-text-primary">{formatTimeOnly(gp.created_at)}</span>
           </div>
 
-          {/* Waktu Kembali */}
-          <div className="flex gap-4 text-xs">
-            <div className="flex items-center gap-2 text-text-muted">
-              <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-              <span>Kembali:</span>
+          {/* Actual Checkout Time */}
+          {gp.actual_keluar && (
+            <div className="flex gap-4 text-xs">
+              <div className="flex items-center gap-2 text-text-muted">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>Keluar:</span>
+              </div>
+              <div className="flex items-center gap-1 text-success">
+                <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="font-mono">{formatTimeOnly(gp.actual_keluar)}</span>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <span className="text-text-primary font-mono">{formatTimeOnly(gp.waktu_kembali)}</span>
-              {gp.actual_kembali && (
-                <div className="flex items-center gap-1 text-success">
-                  <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="font-mono">{formatTimeOnly(gp.actual_kembali)}</span>
-                </div>
-              )}
+          )}
+
+          {/* Actual Return Time */}
+          {gp.actual_kembali && (
+            <div className="flex gap-4 text-xs">
+              <div className="flex items-center gap-2 text-text-muted">
+                <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>Kembali:</span>
+              </div>
+              <div className="flex items-center gap-1 text-success">
+                <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="font-mono">{formatTimeOnly(gp.actual_kembali)}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ))}
     </div>

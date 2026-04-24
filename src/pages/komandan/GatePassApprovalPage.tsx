@@ -119,7 +119,7 @@ export default function GatePassApprovalPage() {
                       <p className="font-medium text-text-primary truncate">{gp.tujuan}</p>
                       <p className="text-xs text-text-muted truncate">{gp.keperluan}</p>
                       <p className="text-xs text-text-muted">
-                        {gp.waktu_keluar} — {gp.waktu_kembali}
+                        Diajukan: {new Date(gp.created_at).toLocaleString('id-ID')}
                       </p>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-2">

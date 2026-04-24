@@ -40,20 +40,16 @@ export default function ScanResultCard({ data }: { data: GatePass }) {
           <span>Waktu Keluar</span>
         </div>
         <div className="flex justify-between items-center">
-          <div>
-            <div className="text-xs text-text-secondary mb-1">Rencana</div>
-            <div className="font-mono text-sm font-semibold text-text-primary">
-              {formatTimeWithDate(data.waktu_keluar)}
-            </div>
-          </div>
           {data.actual_keluar && (
             <div className="text-right">
-              <div className="text-xs text-text-secondary mb-1">Aktual</div>
+              <div className="text-xs text-text-secondary mb-1">Waktu Aktual</div>
               <div className="font-mono text-sm font-semibold text-success flex items-center gap-2">
                 {formatTimeWithDate(data.actual_keluar)}
                 <CheckCircle className="h-4 w-4 text-success" />
               </div>
             </div>
+          ) || (
+            <div className="text-xs text-text-muted">Belum ada scan keluar</div>
           )}
         </div>
       </div>
@@ -66,15 +62,9 @@ export default function ScanResultCard({ data }: { data: GatePass }) {
             <span>Waktu Kembali</span>
           </div>
           <div className="flex justify-between items-center">
-            <div>
-              <div className="text-xs text-text-secondary mb-1">Rencana</div>
-              <div className="font-mono text-sm font-semibold text-text-primary">
-                {formatTimeWithDate(data.waktu_kembali)}
-              </div>
-            </div>
             {data.actual_kembali ? (
               <div className="text-right">
-                <div className="text-xs text-text-secondary mb-1">Aktual</div>
+                <div className="text-xs text-text-secondary mb-1">Waktu Aktual</div>
                 <div className="font-mono text-sm font-semibold text-success flex items-center gap-2">
                   {formatTimeWithDate(data.actual_kembali)}
                   <CheckCircle className="h-4 w-4 text-success" />

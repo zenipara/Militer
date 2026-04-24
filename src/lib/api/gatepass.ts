@@ -67,8 +67,6 @@ export async function insertGatePass(
     p_caller_role: callerRole,
     p_keperluan: payload.keperluan ?? '',
     p_tujuan: payload.tujuan ?? '',
-    p_waktu_keluar: payload.waktu_keluar ?? '',
-    p_waktu_kembali: payload.waktu_kembali ?? '',
     p_qr_token: payload.qr_token,
     p_submit_latitude: payload.submit_latitude ?? null,
     p_submit_longitude: payload.submit_longitude ?? null,

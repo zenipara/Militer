@@ -35,14 +35,8 @@ function normalizeLegacyStatus(status: GatePassStatus): GatePassStatus {
   return status;
 }
 
-function getEffectiveStatus(gatePass: GatePass, now: Date): GatePassStatus {
-  const normalized = normalizeLegacyStatus(gatePass.status);
-
-  if (normalized === 'checked_in' && gatePass.waktu_kembali) {
-    const backAt = new Date(gatePass.waktu_kembali);
-    if (!Number.isNaN(backAt.getTime()) && backAt < now) return 'overdue';
-  }
-  return normalized;
+function getEffectiveStatus(gatePass: GatePass): GatePassStatus {
+  return normalizeLegacyStatus(gatePass.status);
 }
 
 function formatDateTime(value?: string) {
@@ -56,14 +50,6 @@ function formatDateTime(value?: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
-}
-
-function formatDuration(ms: number) {
-  const totalMinutes = Math.max(0, Math.floor(ms / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours === 0) return `${minutes}m`;
-  return `${hours}j ${minutes}m`;
 }
 
 function getStatusLabel(status: GatePassStatus | 'all') {
@@ -87,7 +73,7 @@ function parseTimeMs(value?: string) {
   return Number.isNaN(ms) ? Number.POSITIVE_INFINITY : ms;
 }
 
-function compareMonitorPriority(a: MonitorGatePass, b: MonitorGatePass, now: Date) {
+function compareMonitorPriority(a: MonitorGatePass, b: MonitorGatePass) {
   const rank: Record<GatePassStatus, number> = {
     overdue: 0,
     checked_in: 1,
@@ -102,43 +88,12 @@ function compareMonitorPriority(a: MonitorGatePass, b: MonitorGatePass, now: Dat
   const statusDelta = rank[a.effectiveStatus] - rank[b.effectiveStatus];
   if (statusDelta !== 0) return statusDelta;
 
-  if (a.effectiveStatus === 'overdue' && b.effectiveStatus === 'overdue') {
-    const aLateMs = now.getTime() - parseTimeMs(a.waktu_kembali);
-    const bLateMs = now.getTime() - parseTimeMs(b.waktu_kembali);
-    return bLateMs - aLateMs;
-  }
-
-  if (a.effectiveStatus === 'checked_in' && b.effectiveStatus === 'checked_in') {
-    return parseTimeMs(a.waktu_kembali) - parseTimeMs(b.waktu_kembali);
-  }
-
-  return parseTimeMs(b.waktu_keluar) - parseTimeMs(a.waktu_keluar);
+  // Same status: sort by created_at (newest first)
+  return parseTimeMs(b.created_at) - parseTimeMs(a.created_at);
 }
 
 function compareLatestFirst(a: MonitorGatePass, b: MonitorGatePass) {
-  return parseTimeMs(b.waktu_keluar || b.created_at) - parseTimeMs(a.waktu_keluar || a.created_at);
-}
-
-function getOverdueDurationMs(gatePass: MonitorGatePass, now: Date): number | null {
-  if (gatePass.effectiveStatus !== 'overdue') return null;
-  const dueMs = parseTimeMs(gatePass.waktu_kembali);
-  if (!Number.isFinite(dueMs)) return null;
-  return Math.max(0, now.getTime() - dueMs);
-}
-
-function matchesOverdueBucket(gatePass: MonitorGatePass, bucket: OverdueBucket, now: Date): boolean {
-  if (bucket === 'all') return true;
-  const overdueMs = getOverdueDurationMs(gatePass, now);
-  if (overdueMs === null) return false;
-
-  const thresholdMs: Record<Exclude<OverdueBucket, 'all'>, number> = {
-    over_30m: 30 * 60 * 1000,
-    over_1h: 60 * 60 * 1000,
-    over_3h: 3 * 60 * 60 * 1000,
-    over_6h: 6 * 60 * 60 * 1000,
-  };
-
-  return overdueMs >= thresholdMs[bucket];
+  return parseTimeMs(b.created_at) - parseTimeMs(a.created_at);
 }
 
 function isWithinDateRange(value: string | undefined, startDate: string, endDate: string) {
@@ -175,8 +130,6 @@ function buildCopyTextForGatePass(gatePass: MonitorGatePass) {
     `Status: ${gatePass.effectiveStatus}`,
     `Tujuan: ${gatePass.tujuan}`,
     `Keperluan: ${gatePass.keperluan}`,
-    `Waktu keluar: ${formatDateTime(gatePass.waktu_keluar)}`,
-    `Batas kembali: ${formatDateTime(gatePass.waktu_kembali)}`,
     `Scan keluar: ${formatDateTime(gatePass.actual_keluar)}`,
     `Scan kembali: ${formatDateTime(gatePass.actual_kembali)}`,
   ];
@@ -206,7 +159,6 @@ export default function GatePassMonitorPage() {
   const [criticalMode, setCriticalMode] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('priority');
   const [displayMode, setDisplayMode] = useState<DisplayMode>(() => loadDisplayMode());
-  const [now, setNow] = useState(() => new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -215,11 +167,6 @@ export default function GatePassMonitorPage() {
   useGatePassRealtime();
   const debouncedQuery = useDebounce(query, 250);
   const copyFeedbackTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     try {
@@ -261,8 +208,8 @@ export default function GatePassMonitorPage() {
   }, [fetchGatePasses]);
 
   const monitorRows = useMemo<MonitorGatePass[]>(
-    () => gatePasses.map(gp => ({ ...gp, effectiveStatus: getEffectiveStatus(gp, now) })),
-    [gatePasses, now],
+    () => gatePasses.map(gp => ({ ...gp, effectiveStatus: getEffectiveStatus(gp) })),
+    [gatePasses],
   );
 
   const filteredRows = useMemo(() => {
@@ -273,10 +220,9 @@ export default function GatePassMonitorPage() {
         if (!statusMatch) return false;
         const unitMatch = unitFilter === 'all' || gp.user?.satuan === unitFilter;
         if (!unitMatch) return false;
-        const dateMatch = isWithinDateRange(gp.waktu_keluar || gp.created_at, startDate, endDate);
+        const dateMatch = isWithinDateRange(gp.created_at, startDate, endDate);
         if (!dateMatch) return false;
         if (criticalMode && gp.effectiveStatus !== 'overdue' && gp.effectiveStatus !== 'checked_in') return false;
-        if (!matchesOverdueBucket(gp, overdueBucket, now)) return false;
         if (!q) return true;
         const haystack = [gp.user?.nama, gp.user?.nrp, gp.user?.satuan, gp.tujuan, gp.keperluan].join(' ').toLowerCase();
         return haystack.includes(q);
@@ -286,8 +232,8 @@ export default function GatePassMonitorPage() {
       return rows.sort(compareLatestFirst);
     }
 
-    return rows.sort((a, b) => compareMonitorPriority(a, b, now));
-  }, [monitorRows, debouncedQuery, statusFilter, unitFilter, startDate, endDate, criticalMode, overdueBucket, sortMode, now]);
+    return rows.sort(compareMonitorPriority);
+  }, [monitorRows, debouncedQuery, statusFilter, unitFilter, startDate, endDate, criticalMode, sortMode]);
 
   const monitorSummary = useMemo(() => {
     const unitMap = new Map<string, { unit: string; total: number; overdue: number; checkedIn: number; approved: number }>();
@@ -303,10 +249,6 @@ export default function GatePassMonitorPage() {
     let keluarCount = 0;
     let completedCount = 0;
     let overdueCount = 0;
-    let longestOverdue: MonitorGatePass | null = null;
-    let longestOverdueMs = Number.NEGATIVE_INFINITY;
-    let nearestDeadline: MonitorGatePass | null = null;
-    let nearestDeadlineMs = Number.POSITIVE_INFINITY;
 
     for (const gatePass of monitorRows) {
       quickStatusStats.all += 1;
@@ -335,22 +277,6 @@ export default function GatePassMonitorPage() {
         if (effectiveStatus === 'approved') current.approved += 1;
         unitMap.set(unit, current);
       }
-
-      if (effectiveStatus === 'overdue') {
-        const dueMs = parseTimeMs(gatePass.waktu_kembali);
-        if (Number.isFinite(dueMs) && dueMs < longestOverdueMs) {
-          longestOverdueMs = dueMs;
-          longestOverdue = gatePass;
-        }
-      }
-
-      if (effectiveStatus === 'checked_in') {
-        const dueMs = parseTimeMs(gatePass.waktu_kembali);
-        if (Number.isFinite(dueMs) && dueMs < nearestDeadlineMs) {
-          nearestDeadlineMs = dueMs;
-          nearestDeadline = gatePass;
-        }
-      }
     }
 
     const unitSummary = Array.from(unitMap.values())
@@ -365,8 +291,6 @@ export default function GatePassMonitorPage() {
       quickStatusStats,
       unitSummary,
       unitOptions,
-      longestOverdue,
-      nearestDeadline,
       approved: approvedCount,
       keluar: keluarCount,
       completed: completedCount,
@@ -395,14 +319,13 @@ export default function GatePassMonitorPage() {
   }, [filteredRows]);
 
   const unitSummary = filteredSummary;
-  const { quickStatusStats, unitOptions, longestOverdue, nearestDeadline, approved, keluar, completed, overdue, personilDiLuar, personilTersedia } = monitorSummary;
+  const { quickStatusStats, unitOptions, approved, keluar, completed, overdue, personilDiLuar, personilTersedia } = monitorSummary;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     setError(null);
     try {
       await fetchGatePasses();
-      setNow(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat ulang data gate pass');
     } finally {
@@ -460,16 +383,9 @@ export default function GatePassMonitorPage() {
       'Status',
       'Tujuan',
       'Keperluan',
-      'Waktu Keluar',
-      'Batas Kembali',
-      'Durasi Kritis (menit)',
     ];
 
     const rows = filteredRows.map((gp) => {
-      const kembaliMs = parseTimeMs(gp.waktu_kembali);
-      const criticalMinutes = Number.isFinite(kembaliMs)
-        ? Math.max(0, Math.floor(Math.abs(now.getTime() - kembaliMs) / 60000))
-        : 0;
       return [
         gp.id,
         gp.user?.nama ?? '-',
@@ -479,9 +395,6 @@ export default function GatePassMonitorPage() {
         getStatusLabel(gp.effectiveStatus),
         gp.tujuan,
         gp.keperluan,
-        gp.waktu_keluar,
-        gp.waktu_kembali,
-        criticalMinutes,
       ].map(csvEscape).join(',');
     });
 
@@ -529,8 +442,6 @@ export default function GatePassMonitorPage() {
             <td>${satuan}</td>
             <td>${getStatusLabel(gp.effectiveStatus)}</td>
             <td>${gp.tujuan}</td>
-            <td>${formatDateTime(gp.waktu_keluar)}</td>
-            <td>${formatDateTime(gp.waktu_kembali)}</td>
           </tr>
         `;
       })
@@ -565,8 +476,6 @@ export default function GatePassMonitorPage() {
               <th>Satuan</th>
               <th>Status</th>
               <th>Tujuan</th>
-              <th>Waktu Keluar</th>
-              <th>Batas Kembali</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -691,27 +600,13 @@ export default function GatePassMonitorPage() {
 
             <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
-                <p className="text-xs text-text-muted">Terlambat Terlama</p>
-                {longestOverdue ? (
-                  <>
-                    <p className="mt-1 text-sm font-semibold text-text-primary">{longestOverdue.user?.nama ?? 'Personil tidak diketahui'}</p>
-                    <p className="text-xs text-accent-red">Terlambat {formatDuration(Math.max(0, now.getTime() - parseTimeMs(longestOverdue.waktu_kembali)))}</p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-xs text-text-muted">Tidak ada kasus overdue.</p>
-                )}
+                <p className="text-xs text-text-muted">Total Terlambat</p>
+                <p className="mt-1 text-2xl font-bold text-accent-red">{quickStatusStats.overdue}</p>
               </div>
 
               <div className="rounded-xl border border-surface/75 bg-surface/20 px-4 py-3">
-                <p className="text-xs text-text-muted">Batas Kembali Terdekat</p>
-                {nearestDeadline ? (
-                  <>
-                    <p className="mt-1 text-sm font-semibold text-text-primary">{nearestDeadline.user?.nama ?? 'Personil tidak diketahui'}</p>
-                    <p className="text-xs text-orange-500">Sisa {formatDuration(Math.max(0, parseTimeMs(nearestDeadline.waktu_kembali) - now.getTime()))}</p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-xs text-text-muted">Tidak ada personil aktif di luar.</p>
-                )}
+                <p className="text-xs text-text-muted">Sedang Keluar</p>
+                <p className="mt-1 text-2xl font-bold text-orange-500">{quickStatusStats.checked_in}</p>
               </div>
             </div>
           </div>
@@ -973,12 +868,6 @@ export default function GatePassMonitorPage() {
                   </thead>
                   <tbody>
                     {filteredRows.map((gp) => {
-                      const kembaliAt = gp.waktu_kembali ? new Date(gp.waktu_kembali) : null;
-                      const isValidKembali = kembaliAt && !Number.isNaN(kembaliAt.getTime());
-                      const deltaMs = isValidKembali ? Math.abs(kembaliAt.getTime() - now.getTime()) : 0;
-                      const showLate = gp.effectiveStatus === 'overdue' && isValidKembali;
-                      const showRemaining = gp.effectiveStatus === 'checked_in' && isValidKembali;
-
                       return (
                         <tr key={gp.id} className="border-t border-surface/75 align-top hover:bg-primary/5">
                           <td className="px-4 py-3">
@@ -990,10 +879,6 @@ export default function GatePassMonitorPage() {
                           <td className="px-4 py-3">
                             <div className="font-semibold text-text-primary">{gp.tujuan}</div>
                             <div className="text-xs text-text-muted">{gp.keperluan}</div>
-                          </td>
-                          <td className="px-4 py-3 text-xs text-text-muted">
-                            <div>Keluar: {formatDateTime(gp.waktu_keluar)}</div>
-                            <div>Kembali: {formatDateTime(gp.waktu_kembali)}</div>
                           </td>
                           <td className="px-4 py-3 text-xs text-text-muted">
                             <div>Out: {formatDateTime(gp.actual_keluar)}</div>
@@ -1017,9 +902,9 @@ export default function GatePassMonitorPage() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-xs font-semibold">
-                            {showLate && <span className="text-accent-red">Terlambat {formatDuration(deltaMs)}</span>}
-                            {showRemaining && <span className="text-orange-500">Sisa {formatDuration(deltaMs)}</span>}
-                            {!showLate && !showRemaining && <span className="text-text-muted">Normal</span>}
+                            {gp.effectiveStatus === 'overdue' && <span className="text-accent-red">Terlambat</span>}
+                            {gp.effectiveStatus === 'checked_in' && <span className="text-orange-500">Sedang Keluar</span>}
+                            {gp.effectiveStatus !== 'overdue' && gp.effectiveStatus !== 'checked_in' && <span className="text-text-muted">{getStatusLabel(gp.effectiveStatus)}</span>}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <Button
@@ -1040,12 +925,6 @@ export default function GatePassMonitorPage() {
           )}
 
           {filteredRows.length > 0 && displayMode === 'cards' && filteredRows.map(gp => {
-            const kembaliAt = gp.waktu_kembali ? new Date(gp.waktu_kembali) : null;
-            const isValidKembali = kembaliAt && !Number.isNaN(kembaliAt.getTime());
-            const deltaMs = isValidKembali ? Math.abs(kembaliAt.getTime() - now.getTime()) : 0;
-            const showLate = gp.effectiveStatus === 'overdue' && isValidKembali;
-            const showRemaining = gp.effectiveStatus === 'checked_in' && isValidKembali;
-
             return (
               <div
                 key={gp.id}
@@ -1065,17 +944,14 @@ export default function GatePassMonitorPage() {
                   <div className="font-bold text-text-primary">{gp.tujuan}</div>
                   <div className="text-sm text-text-muted">{gp.keperluan}</div>
                   <div className="text-xs text-text-muted">
-                    Rencana keluar: {formatDateTime(gp.waktu_keluar)} | Batas kembali: {formatDateTime(gp.waktu_kembali)}
-                  </div>
-                  <div className="text-xs text-text-muted">
                     Scan keluar: {formatDateTime(gp.actual_keluar)} | Scan kembali: {formatDateTime(gp.actual_kembali)}
                   </div>
                 </div>
 
                 <div className="flex flex-col items-start md:items-end gap-1.5">
                   <GatePassStatusBadge gatePass={{ ...gp, status: gp.effectiveStatus }} />
-                  {showLate && <div className="text-xs font-semibold text-accent-red">Terlambat {formatDuration(deltaMs)}</div>}
-                  {showRemaining && <div className="text-xs font-semibold text-orange-500">Sisa waktu {formatDuration(deltaMs)}</div>}
+                  {gp.effectiveStatus === 'overdue' && <div className="text-xs font-semibold text-accent-red">Terlambat</div>}
+                  {gp.effectiveStatus === 'checked_in' && <div className="text-xs font-semibold text-orange-500">Sedang Keluar</div>}
                   <Button
                     size="sm"
                     variant="ghost"

@@ -10,26 +10,6 @@ import {
 import { CheckCircle } from 'lucide-react';
 import { getCurrentGeoCoordinates } from '../../lib/geolocation';
 
-/**
- * Generate otomatis waktu_keluar dan waktu_kembali.
- * Nilai ini dihitung saat submit scan keluar dan akan disesuaikan lagi saat scan kembali.
- */
-function getAutoTimes(): { keluar: string; kembali: string } {
-  const now = new Date();
-  
-  // Waktu keluar: 30 menit dari sekarang
-  const keluarTime = new Date(now.getTime() + 30 * 60 * 1000);
-  keluarTime.setSeconds(0, 0);
-  const keluar = keluarTime.toISOString();
-  
-  // Waktu kembali: 4 jam dari sekarang
-  const kembaliTime = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-  kembaliTime.setSeconds(0, 0);
-  const kembali = kembaliTime.toISOString();
-  
-  return { keluar, kembali };
-}
-
 export default function GatePassForm() {
   const [keperluan, setKeperluan] = useState('');
   const [tujuan, setTujuan] = useState('');
@@ -83,15 +63,11 @@ export default function GatePassForm() {
 
     setLoading(true);
     try {
-      // Generate otomatis waktu keluar dan kembali
-      const { keluar, kembali } = getAutoTimes();
       const gps = await getCurrentGeoCoordinates();
 
       const result = await createGatePass({
         keperluan,
         tujuan,
-        waktu_keluar: keluar,
-        waktu_kembali: kembali,
         submit_latitude: gps?.latitude,
         submit_longitude: gps?.longitude,
         submit_accuracy: gps?.accuracy ?? undefined,
@@ -126,7 +102,7 @@ export default function GatePassForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-text-primary">
-        Isi keperluan dan tujuan izin keluar. Waktu keluar akan dihitung saat mulai scan keluar, dan waktu kembali akan dihitung lagi saat scan kembali.
+        Isi keperluan dan tujuan izin keluar. Waktu keluar akan dicatat saat scan keluar, dan waktu kembali saat scan kembali.
       </div>
       <p className="text-xs text-text-muted">Lokasi GPS pengajuan akan dicatat otomatis saat izin dikirim.</p>
 
