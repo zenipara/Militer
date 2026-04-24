@@ -88,37 +88,64 @@ export default function Login() {
           <div className="pointer-events-none absolute inset-0 bg-military-dark/75 backdrop-blur-[1px]" />
         </>
       )}
+      <div className="pointer-events-none absolute -left-20 top-16 h-72 w-72 rounded-full bg-primary/20 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" aria-hidden="true" />
       <Notification />
       <div className="relative mx-auto grid min-h-[calc(100vh-2rem)] w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Hero — desktop only */}
         <section className="hidden lg:block">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-3 rounded-2xl border border-primary/20 bg-white/80 px-4 py-2 text-sm text-text-muted backdrop-blur-sm dark:bg-bg-card/60 shadow-sm">
+          <div className="space-y-6 animate-fade-up">
+            <div className="inline-flex items-center gap-3 rounded-2xl border border-primary/25 bg-bg-card/75 px-4 py-2 text-sm text-text-muted backdrop-blur-sm shadow-sm">
               <span className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-primary to-blue-700 text-white text-xs shadow-md shadow-primary/30">◈</span>
               Operational Command Platform
+              <span className="chip chip--success ml-1">Online</span>
             </div>
-            <h1 className="max-w-xl text-4xl font-extrabold leading-[1.15] tracking-tight text-text-primary xl:text-5xl">
+
+            <h1 className="max-w-xl text-4xl font-extrabold leading-[1.1] tracking-tight text-text-primary xl:text-5xl">
               {settings.platformName}{' '}
-              <span className="bg-gradient-to-r from-primary via-blue-500 to-indigo-500 bg-clip-text text-transparent">
-                membantu komando
+              <span className="bg-gradient-to-r from-primary via-cyan-500 to-blue-700 bg-clip-text text-transparent">
+                pusat kendali
               </span>{' '}
-              lebih cepat, rapi, dan terukur.
+              operasi yang siap tempur.
             </h1>
-            <p className="max-w-lg text-sm text-text-muted leading-relaxed xl:text-base">
-              Dashboard terpadu untuk personel, tugas, kehadiran, dan logistik — pengalaman setara software SaaS modern.
+
+            <p className="max-w-xl text-sm leading-relaxed text-text-muted xl:text-base">
+              Pantau personel, gerbang, tugas, kehadiran, dan logistik dalam satu alur kerja yang terukur, aman, dan realtime.
             </p>
-            <div className="grid max-w-lg grid-cols-3 gap-3 pt-2">
+
+            <div className="grid max-w-xl grid-cols-3 gap-3">
               {[
-                { title: 'Realtime', desc: 'Status personel aktif', icon: '⚡' },
-                { title: 'Secure', desc: 'PIN & session policy', icon: '🔒' },
-                { title: 'Integrated', desc: 'Tugas & audit log', icon: '🔗' },
-              ].map((item) => (
-                <div key={item.title} className="app-card px-3 py-4 text-center transition-all duration-200 hover:-translate-y-0.5">
-                  <span className="text-2xl" aria-hidden="true">{item.icon}</span>
-                  <p className="mt-2 text-sm font-bold text-text-primary">{item.title}</p>
+                { title: 'Realtime', value: '24/7', desc: 'Pemantauan status', icon: '⚡' },
+                { title: 'Secure', value: 'PIN + Policy', desc: 'Akses tervalidasi', icon: '🔒' },
+                { title: 'Audit Trail', value: 'Tersimpan', desc: 'Riwayat tindakan', icon: '📌' },
+              ].map((item, index) => (
+                <div
+                  key={item.title}
+                  className="app-card bg-bg-card/80 px-3 py-4 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5"
+                  style={{ animationDelay: `${index * 90}ms` }}
+                >
+                  <span className="text-xl" aria-hidden="true">{item.icon}</span>
+                  <p className="mt-2 text-xs uppercase tracking-[0.12em] text-text-muted">{item.title}</p>
+                  <p className="mt-1 text-sm font-bold text-text-primary">{item.value}</p>
                   <p className="mt-0.5 text-xs text-text-muted">{item.desc}</p>
                 </div>
               ))}
+            </div>
+
+            <div className="rounded-2xl border border-surface/70 bg-bg-card/70 p-4 backdrop-blur-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">Ringkas Operasional</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                {[
+                  { label: 'Personel Aktif', value: 'Live' },
+                  { label: 'Monitoring Gate', value: 'Terpadu' },
+                  { label: 'Komando Harian', value: 'Sinkron' },
+                ].map((summary) => (
+                  <div key={summary.label} className="rounded-xl border border-surface/70 bg-surface/25 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.1em] text-text-muted">{summary.label}</p>
+                    <p className="mt-1 text-sm font-semibold text-text-primary">{summary.value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -126,21 +153,22 @@ export default function Login() {
         {/* Login form */}
         <section className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Mobile-only feature chips (hidden on desktop) */}
-          <div className="mb-4 flex flex-wrap justify-center gap-2 lg:hidden">
+          <div className="mb-4 flex flex-wrap justify-center gap-2 lg:hidden animate-fade-up">
             {[
               { label: 'Realtime', icon: '⚡' },
               { label: 'Secure', icon: '🔒' },
               { label: 'Terintegrasi', icon: '🔗' },
             ].map((chip) => (
-              <span key={chip.label} className="chip">
+              <span key={chip.label} className="chip chip--primary">
                 <span aria-hidden="true">{chip.icon}</span>
                 {chip.label}
               </span>
             ))}
           </div>
-          <div className="app-card overflow-hidden p-0">
+
+          <div className="app-card glass overflow-hidden border-primary/15 p-0 animate-fade-up">
             {/* Card gradient top bar */}
-            <div className="h-1.5 w-full bg-gradient-to-r from-primary via-blue-500 to-indigo-400" aria-hidden="true" />
+            <div className="h-1.5 w-full bg-gradient-to-r from-cyan-400 via-primary to-blue-700" aria-hidden="true" />
             <div className="p-7 sm:p-8">
               <div className="mb-6 text-center lg:text-left">
                 <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-blue-700 shadow-lg shadow-primary/30">
@@ -154,7 +182,7 @@ export default function Login() {
                     <span className="text-2xl text-white">◈</span>
                   )}
                 </div>
-                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Masuk ke Sistem</h2>
+                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Akses Komando</h2>
                 <p className="mt-1 text-sm text-text-muted">{settings.platformName} — {settings.platformTagline}</p>
               </div>
 
@@ -224,13 +252,14 @@ export default function Login() {
                   isLoading={isLoading}
                   className="mt-2 w-full"
                 >
-                  {isLoading ? 'Memverifikasi...' : 'Masuk'}
+                  {isLoading ? 'Memverifikasi...' : 'Masuk Sekarang'}
                 </Button>
               </form>
 
-              <p className="mt-5 text-center text-xs text-text-muted lg:text-left">
-                Lupa PIN? Hubungi Administrator satuan Anda.
-              </p>
+              <div className="mt-5 flex items-center justify-between gap-2 text-xs text-text-muted">
+                <p>Lupa PIN? Hubungi Administrator satuan.</p>
+                <span className="chip">v1.5</span>
+              </div>
             </div>
           </div>
 
