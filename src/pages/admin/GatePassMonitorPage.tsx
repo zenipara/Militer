@@ -966,6 +966,7 @@ export default function GatePassMonitorPage() {
                       <th className="px-4 py-3 font-semibold">Tujuan</th>
                       <th className="px-4 py-3 font-semibold">Rencana</th>
                       <th className="px-4 py-3 font-semibold">Scan</th>
+                      <th className="px-4 py-3 font-semibold">Lokasi GPS</th>
                       <th className="px-4 py-3 font-semibold">Kritis</th>
                       <th className="px-4 py-3 font-semibold text-right">Aksi</th>
                     </tr>
@@ -997,6 +998,23 @@ export default function GatePassMonitorPage() {
                           <td className="px-4 py-3 text-xs text-text-muted">
                             <div>Out: {formatDateTime(gp.actual_keluar)}</div>
                             <div>In: {formatDateTime(gp.actual_kembali)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-xs">
+                            {gp.submit_latitude && gp.submit_longitude ? (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  const mapUrl = `https://maps.google.com/?q=${gp.submit_latitude},${gp.submit_longitude}`;
+                                  window.open(mapUrl, '_blank');
+                                }}
+                              >
+                                <span className="hidden sm:inline">Lihat</span>
+                                <span className="sm:hidden">📍</span>
+                              </Button>
+                            ) : (
+                              <span className="text-text-muted text-xs">—</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-xs font-semibold">
                             {showLate && <span className="text-accent-red">Terlambat {formatDuration(deltaMs)}</span>}

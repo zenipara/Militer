@@ -20,6 +20,8 @@ import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh
 import { useFeatureStore } from '../../store/featureStore';
 import { usePlatformStore } from '../../store/platformStore';
 import { isPathEnabled } from '../../lib/featureFlags';
+import MigrationHistoryPanel from '../../components/admin/MigrationHistoryPanel';
+import GPSTrackingHistory from '../../components/admin/GPSTrackingHistory';
 
 const actionLabels: Record<string, string> = {
   LOGIN: 'Login',
@@ -483,6 +485,12 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Monitoring & Tracking */}
+        <div className="grid gap-5 xl:grid-cols-2">
+          <GPSTrackingHistory limit={15} />
+          <MigrationHistoryPanel />
         </div>
       </div>
 
