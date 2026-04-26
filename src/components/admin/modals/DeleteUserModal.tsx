@@ -1,5 +1,6 @@
 import Button from '../../common/Button';
 import Modal from '../../common/Modal';
+import { AlertTriangle } from 'lucide-react';
 import type { User } from '../../../types';
 
 export interface DeleteUserModalProps {
@@ -67,8 +68,9 @@ export default function DeleteUserModal({
     >
       <div className="space-y-4">
         <div className="bg-danger-light rounded-md p-3">
-          <p className="text-sm font-semibold text-danger-dark mb-2">
-            ⚠️ Perhatian!
+          <p className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-danger-dark">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            Perhatian
           </p>
           <p className="text-sm text-danger-dark">
             {isCurrentUser

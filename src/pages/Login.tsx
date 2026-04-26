@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { AlertTriangle, Eye, EyeOff, Link2, Lock, Pin, Zap } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -59,7 +59,7 @@ export default function Login() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-military-dark p-6">
         <div className="w-full max-w-md space-y-5 rounded-2xl border border-accent-red/30 bg-bg-card p-8 text-center">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-accent-red/15">
-            <span className="text-3xl">⚠</span>
+            <AlertTriangle className="h-8 w-8 text-accent-red" aria-hidden="true" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-text-primary">Konfigurasi Tidak Lengkap</h1>
@@ -115,16 +115,16 @@ export default function Login() {
 
             <div className="grid max-w-xl grid-cols-3 gap-3">
               {[
-                { title: 'Realtime', value: '24/7', desc: 'Pemantauan status', icon: '⚡' },
-                { title: 'Secure', value: 'PIN + Policy', desc: 'Akses tervalidasi', icon: '🔒' },
-                { title: 'Audit Trail', value: 'Tersimpan', desc: 'Riwayat tindakan', icon: '📌' },
+                { title: 'Realtime', value: '24/7', desc: 'Pemantauan status', Icon: Zap },
+                { title: 'Secure', value: 'PIN + Policy', desc: 'Akses tervalidasi', Icon: Lock },
+                { title: 'Audit Trail', value: 'Tersimpan', desc: 'Riwayat tindakan', Icon: Pin },
               ].map((item, index) => (
                 <div
                   key={item.title}
                   className="app-card bg-bg-card/80 px-3 py-4 backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5"
                   style={{ animationDelay: `${index * 90}ms` }}
                 >
-                  <span className="text-xl" aria-hidden="true">{item.icon}</span>
+                  <item.Icon className="h-5 w-5 text-primary" aria-hidden="true" />
                   <p className="mt-2 text-xs uppercase tracking-[0.12em] text-text-muted">{item.title}</p>
                   <p className="mt-1 text-sm font-bold text-text-primary">{item.value}</p>
                   <p className="mt-0.5 text-xs text-text-muted">{item.desc}</p>
@@ -155,12 +155,12 @@ export default function Login() {
           {/* Mobile-only feature chips (hidden on desktop) */}
           <div className="mb-4 flex flex-wrap justify-center gap-2 lg:hidden animate-fade-up">
             {[
-              { label: 'Realtime', icon: '⚡' },
-              { label: 'Secure', icon: '🔒' },
-              { label: 'Terintegrasi', icon: '🔗' },
+              { label: 'Realtime', Icon: Zap },
+              { label: 'Secure', Icon: Lock },
+              { label: 'Terintegrasi', Icon: Link2 },
             ].map((chip) => (
               <span key={chip.label} className="chip chip--primary">
-                <span aria-hidden="true">{chip.icon}</span>
+                <chip.Icon className="h-3.5 w-3.5" aria-hidden="true" />
                 {chip.label}
               </span>
             ))}
@@ -240,7 +240,7 @@ export default function Login() {
                     role="alert"
                     className="flex items-start gap-2.5 rounded-xl border border-accent-red/30 bg-accent-red/8 p-3.5 animate-scale-in"
                   >
-                    <span className="mt-0.5 flex-shrink-0 text-accent-red" aria-hidden="true">⚠</span>
+                    <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent-red" aria-hidden="true" />
                     <span className="flex-1 text-sm font-medium text-accent-red">{displayError}</span>
                   </div>
                 )}

@@ -61,7 +61,7 @@ export function useNotifications() {
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `to_user=eq.${userId}` },
       (payload) => {
         const row = payload.new as { isi: string };
-        sendNotification('📨 Pesan Baru', row.isi?.slice(0, 120) ?? 'Anda mendapat pesan baru');
+        sendNotification('Pesan Baru', row.isi?.slice(0, 120) ?? 'Anda mendapat pesan baru');
       }
     );
     // New task assigned
@@ -70,7 +70,7 @@ export function useNotifications() {
       { event: 'INSERT', schema: 'public', table: 'tasks', filter: `assigned_to=eq.${userId}` },
       (payload) => {
         const row = payload.new as { judul: string };
-        sendNotification('🪖 Tugas Baru', `"${row.judul ?? 'Tugas baru'}" telah diberikan kepada Anda`);
+        sendNotification('Tugas Baru', `"${row.judul ?? 'Tugas baru'}" telah diberikan kepada Anda`);
       }
     );
     // Task status updated (e.g., approved/rejected)
@@ -85,9 +85,9 @@ export function useNotifications() {
       (payload) => {
         const row = payload.new as { judul: string; status: string };
         if (row.status === 'approved') {
-          sendNotification('✅ Tugas Disetujui', `"${row.judul}" telah disetujui oleh Komandan`);
+          sendNotification('Tugas Disetujui', `"${row.judul}" telah disetujui oleh Komandan`);
         } else if (row.status === 'in_progress' && (payload.old as { status: string }).status === 'done') {
-          sendNotification('↩ Tugas Dikembalikan', `"${row.judul}" perlu direvisi. Cek catatan Komandan.`);
+          sendNotification('Tugas Dikembalikan', `"${row.judul}" perlu direvisi. Cek catatan Komandan.`);
         }
       }
     );

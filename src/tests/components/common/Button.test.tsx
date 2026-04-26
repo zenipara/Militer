@@ -37,12 +37,12 @@ describe('Button', () => {
   });
 
   it('renders leftIcon when not loading', () => {
-    render(<Button leftIcon={<span data-testid="icon">★</span>}>With Icon</Button>);
+    render(<Button leftIcon={<span data-testid="icon">I</span>}>With Icon</Button>);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
   it('hides leftIcon when isLoading', () => {
-    render(<Button isLoading leftIcon={<span data-testid="icon">★</span>}>Loading</Button>);
+    render(<Button isLoading leftIcon={<span data-testid="icon">I</span>}>Loading</Button>);
     expect(screen.queryByTestId('icon')).not.toBeInTheDocument();
   });
 

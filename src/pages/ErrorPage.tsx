@@ -1,4 +1,5 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { AlertTriangle } from 'lucide-react';
 import { APP_ROUTE_PATHS } from '../lib/rolePermissions';
 
 interface LocationState {
@@ -25,7 +26,7 @@ export default function ErrorPage() {
       <div className="w-full max-w-md space-y-6 rounded-2xl border border-accent-red/30 bg-bg-card p-8 text-center">
         {/* Icon */}
         <div className="mx-auto grid h-20 w-20 place-items-center rounded-2xl bg-accent-red/15">
-          <span className="text-4xl">⚠️</span>
+          <AlertTriangle className="h-10 w-10 text-accent-red" aria-hidden="true" />
         </div>
 
         {/* Error code + title */}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, Plus } from 'lucide-react';
+import { Info, Package, Plus } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -264,8 +264,9 @@ export default function LogisticsRequest() {
             />
           </div>
           <div className="rounded-xl border border-accent-gold/30 bg-accent-gold/10 p-3">
-            <p className="text-xs text-accent-gold">
-              ℹ Permintaan akan diteruskan ke Admin untuk ditinjau. Status dapat dipantau di halaman ini.
+            <p className="inline-flex items-center gap-1.5 text-xs text-accent-gold">
+              <Info className="h-3.5 w-3.5" aria-hidden="true" />
+              Permintaan akan diteruskan ke Admin untuk ditinjau. Status dapat dipantau di halaman ini.
             </p>
           </div>
         </div>

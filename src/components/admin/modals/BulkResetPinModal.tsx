@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Button from '../../common/Button';
 import Modal from '../../common/Modal';
 import Input from '../../common/Input';
+import { AlertTriangle } from 'lucide-react';
 import { validatePin, getFirstErrorMessage } from '../../../lib/validation/personelValidation';
 import type { User } from '../../../types';
 
@@ -76,8 +77,9 @@ export default function BulkResetPinModal({
     >
       <div className="space-y-4">
         <div className="bg-warning-light rounded-md p-3">
-          <p className="text-sm font-semibold text-warning-dark mb-1">
-            ⚠️ Operasi Massal
+          <p className="mb-1 inline-flex items-center gap-1.5 text-sm font-semibold text-warning-dark">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            Operasi Massal
           </p>
           <p className="text-sm text-warning-dark">
             PIN baru akan diubah untuk {selectedUsers.length} personel:

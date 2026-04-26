@@ -9,6 +9,7 @@ import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useKegiatan } from '../../hooks/useKegiatan';
+import { ICONS } from '../../icons';
 import type { Kegiatan, KegiatanJenis } from '../../types';
 
 const JENIS_OPTIONS: { value: KegiatanJenis; label: string }[] = [
@@ -118,7 +119,12 @@ export default function AdminKegiatanPage() {
           </div>
           <p className="font-semibold text-text-primary text-sm truncate">{k.judul}</p>
           <p className="text-xs text-text-muted mt-0.5">{formatRange(k.tanggal_mulai, k.tanggal_selesai)}</p>
-          {k.lokasi && <p className="text-xs text-text-muted">📍 {k.lokasi}</p>}
+          {k.lokasi && (
+            <p className="inline-flex items-center gap-1 text-xs text-text-muted">
+              <ICONS.MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+              {k.lokasi}
+            </p>
+          )}
           {k.deskripsi && <p className="text-xs text-text-secondary mt-1 line-clamp-2">{k.deskripsi}</p>}
         </div>
         {user?.role === 'admin' && (
@@ -133,9 +139,18 @@ export default function AdminKegiatanPage() {
         )}
       </div>
       <div className="flex items-center gap-3 text-xs text-text-muted border-t border-white/5 pt-2">
-        <span>✅ {k.rsvp_hadir ?? 0} hadir</span>
-        <span>❌ {k.rsvp_tidak_hadir ?? 0} tidak hadir</span>
-        <span>⏳ {(k.rsvp_total ?? 0) - (k.rsvp_hadir ?? 0) - (k.rsvp_tidak_hadir ?? 0)} belum</span>
+        <span className="inline-flex items-center gap-1">
+          <ICONS.CheckCircle2 className="h-3.5 w-3.5 text-success" aria-hidden="true" />
+          {k.rsvp_hadir ?? 0} hadir
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <ICONS.XCircle className="h-3.5 w-3.5 text-accent-red" aria-hidden="true" />
+          {k.rsvp_tidak_hadir ?? 0} tidak hadir
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <ICONS.Clock className="h-3.5 w-3.5" aria-hidden="true" />
+          {(k.rsvp_total ?? 0) - (k.rsvp_hadir ?? 0) - (k.rsvp_tidak_hadir ?? 0)} belum
+        </span>
       </div>
     </div>
   );

@@ -287,7 +287,10 @@ export default function PosJagaPage() {
         {qrTarget && (
           <div className="space-y-3">
             <div className="rounded-xl border border-accent-gold/20 bg-accent-gold/10 px-3 py-2 text-xs text-accent-gold">
-              ⚠ Klik <strong>Ganti QR</strong> untuk merotasi token. QR lama tidak berlaku setelah diganti — cetak ulang dan pasang di pos.
+              <span className="inline-flex items-center gap-1.5">
+                <ICONS.AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+                Klik <strong>Ganti QR</strong> untuk merotasi token. QR lama tidak berlaku setelah diganti, cetak ulang dan pasang di pos.
+              </span>
             </div>
             <PosJagaQRCode posJaga={qrTarget} />
           </div>

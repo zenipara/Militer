@@ -161,9 +161,9 @@ export default function Navbar({ title }: NavbarProps) {
             title={isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
           >
             {isDarkMode ? (
-              ICONS.Sun ? <ICONS.Sun className="h-4 w-4" aria-hidden="true" /> : <span aria-hidden="true">🌞</span>
+              ICONS.Sun ? <ICONS.Sun className="h-4 w-4" aria-hidden="true" /> : <span aria-hidden="true">L</span>
             ) : (
-              ICONS.Moon ? <ICONS.Moon className="h-4 w-4" aria-hidden="true" /> : <span aria-hidden="true">🌙</span>
+              ICONS.Moon ? <ICONS.Moon className="h-4 w-4" aria-hidden="true" /> : <span aria-hidden="true">D</span>
             )}
           </button>
 

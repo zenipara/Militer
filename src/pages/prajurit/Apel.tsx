@@ -6,6 +6,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useApel } from '../../hooks/useApel';
+import { ICONS } from '../../icons';
 
 function isSessionOpen(waktuBuka: string, waktuTutup: string): boolean {
   const now = Date.now();
@@ -76,7 +77,7 @@ export default function ApelPage() {
           </div>
         ) : (
           <EmptyState
-            icon="📢"
+            icon={<ICONS.Megaphone className="h-6 w-6" aria-hidden="true" />}
             title="Belum ada sesi apel aktif"
             description="Sesi apel hari ini akan muncul otomatis saat dibuka admin/komandan."
           />

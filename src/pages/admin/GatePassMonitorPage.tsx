@@ -7,6 +7,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { CardListSkeleton, StatCardsSkeleton } from '../../components/common/Skeleton';
+import { MapPin } from 'lucide-react';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { GatePass, GatePassStatus } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -1070,7 +1071,7 @@ export default function GatePassMonitorPage() {
                                 }}
                               >
                                 <span className="hidden sm:inline">Lihat</span>
-                                <span className="sm:hidden">📍</span>
+                                <MapPin className="h-3.5 w-3.5 sm:hidden" aria-hidden="true" />
                               </Button>
                             ) : (
                               <span className="text-text-muted text-xs">—</span>

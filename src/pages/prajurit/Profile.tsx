@@ -354,7 +354,7 @@ export default function Profile() {
               </div>
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
                 <p className="text-xs text-primary">
-                  ℹ Anda hanya bisa mengubah data pribadi dan kontak. Data dinas seperti nama, NRP, pangkat, jabatan, dan satuan tetap dikelola Admin.
+                  Anda hanya bisa mengubah data pribadi dan kontak. Data dinas seperti nama, NRP, pangkat, jabatan, dan satuan tetap dikelola Admin.
                 </p>
               </div>
               <div className="flex gap-3">

@@ -1181,7 +1181,7 @@ export default function UserManagement() {
             </Button>
               <Button variant="secondary" size="sm" onClick={() => setShowImport(true)} className="w-full sm:w-auto">
               <span className="flex items-center gap-1.5">
-                <span aria-hidden="true">⬆</span>
+                <ICONS.Upload className="h-3.5 w-3.5" aria-hidden="true" />
                 Import CSV
               </span>
             </Button>

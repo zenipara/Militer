@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 import { subscribeDataChanges } from '../../lib/dataSync';
 import { ensureStoredSessionContext } from '../../lib/api/sessionContext';
 import { useVisibilityAwareRefresh } from '../../hooks/useVisibilityAwareRefresh';
+import type { IconName } from '../../icons';
 
 interface StafStats {
   totalPersonel: number;
@@ -71,30 +72,30 @@ const BIDANG_LABEL: Record<string, string> = {
 };
 
 /** Quick-access module cards per bidang */
-const BIDANG_MODULES: Record<string, { path: string; label: string; icon: string; color: string }[]> = {
+const BIDANG_MODULES: Record<string, { path: string; label: string; icon: IconName; color: string }[]> = {
   pers: [
-    { path: '/admin/users',       label: 'Manajemen Personel', icon: '👥', color: 'border-blue-500/30 bg-blue-500/5' },
-    { path: '/admin/attendance',  label: 'Rekap Absensi',      icon: '📋', color: 'border-emerald-500/30 bg-emerald-500/5' },
-    { path: '/admin/schedule',    label: 'Jadwal Shift',       icon: '📅', color: 'border-amber-500/30 bg-amber-500/5' },
-    { path: '/staf/messages',     label: 'Pesan',              icon: '💬', color: 'border-purple-500/30 bg-purple-500/5' },
+    { path: '/admin/users',       label: 'Manajemen Personel', icon: 'Users', color: 'border-blue-500/30 bg-blue-500/5' },
+    { path: '/admin/attendance',  label: 'Rekap Absensi',      icon: 'ClipboardCheck', color: 'border-emerald-500/30 bg-emerald-500/5' },
+    { path: '/admin/schedule',    label: 'Jadwal Shift',       icon: 'CalendarDays', color: 'border-amber-500/30 bg-amber-500/5' },
+    { path: '/staf/messages',     label: 'Pesan',              icon: 'MessageSquare', color: 'border-purple-500/30 bg-purple-500/5' },
   ],
   log: [
-    { path: '/admin/logistics',   label: 'Inventaris Logistik', icon: '📦', color: 'border-orange-500/30 bg-orange-500/5' },
-    { path: '/admin/users',       label: 'Data Personel',       icon: '👥', color: 'border-blue-500/30 bg-blue-500/5' },
-    { path: '/staf/messages',     label: 'Pesan',               icon: '💬', color: 'border-purple-500/30 bg-purple-500/5' },
-    { path: '/admin/attendance',  label: 'Rekap Absensi',       icon: '📋', color: 'border-emerald-500/30 bg-emerald-500/5' },
+    { path: '/admin/logistics',   label: 'Inventaris Logistik', icon: 'Package', color: 'border-orange-500/30 bg-orange-500/5' },
+    { path: '/admin/users',       label: 'Data Personel',       icon: 'Users', color: 'border-blue-500/30 bg-blue-500/5' },
+    { path: '/staf/messages',     label: 'Pesan',               icon: 'MessageSquare', color: 'border-purple-500/30 bg-purple-500/5' },
+    { path: '/admin/attendance',  label: 'Rekap Absensi',       icon: 'ClipboardCheck', color: 'border-emerald-500/30 bg-emerald-500/5' },
   ],
   ops: [
-    { path: '/komandan/tasks',    label: 'Manajemen Tugas',     icon: '✅', color: 'border-green-500/30 bg-green-500/5' },
-    { path: '/staf/sprint',       label: 'Surat Perintah',      icon: '📜', color: 'border-cyan-500/30 bg-cyan-500/5' },
-    { path: '/admin/pos-jaga',    label: 'Pos Jaga',            icon: '🛡️', color: 'border-red-500/30 bg-red-500/5' },
-    { path: '/admin/users',       label: 'Data Personel',       icon: '👥', color: 'border-blue-500/30 bg-blue-500/5' },
+    { path: '/komandan/tasks',    label: 'Manajemen Tugas',     icon: 'CheckCircle2', color: 'border-green-500/30 bg-green-500/5' },
+    { path: '/staf/sprint',       label: 'Surat Perintah',      icon: 'ScrollText', color: 'border-cyan-500/30 bg-cyan-500/5' },
+    { path: '/admin/pos-jaga',    label: 'Pos Jaga',            icon: 'Shield', color: 'border-red-500/30 bg-red-500/5' },
+    { path: '/admin/users',       label: 'Data Personel',       icon: 'Users', color: 'border-blue-500/30 bg-blue-500/5' },
   ],
   umum: [
-    { path: '/admin/users',       label: 'Data Personel',       icon: '👥', color: 'border-blue-500/30 bg-blue-500/5' },
-    { path: '/admin/attendance',  label: 'Rekap Absensi',       icon: '📋', color: 'border-emerald-500/30 bg-emerald-500/5' },
-    { path: '/admin/logistics',   label: 'Logistik',            icon: '📦', color: 'border-orange-500/30 bg-orange-500/5' },
-    { path: '/staf/messages',     label: 'Pesan',               icon: '💬', color: 'border-purple-500/30 bg-purple-500/5' },
+    { path: '/admin/users',       label: 'Data Personel',       icon: 'Users', color: 'border-blue-500/30 bg-blue-500/5' },
+    { path: '/admin/attendance',  label: 'Rekap Absensi',       icon: 'ClipboardCheck', color: 'border-emerald-500/30 bg-emerald-500/5' },
+    { path: '/admin/logistics',   label: 'Logistik',            icon: 'Package', color: 'border-orange-500/30 bg-orange-500/5' },
+    { path: '/staf/messages',     label: 'Pesan',               icon: 'MessageSquare', color: 'border-purple-500/30 bg-purple-500/5' },
   ],
 };
 
@@ -222,7 +223,10 @@ export default function StafDashboard() {
                   to={mod.path}
                   className={`dashboard-module-tile ${mod.color}`}
                 >
-                  <span className="text-2xl">{mod.icon}</span>
+                  {(() => {
+                    const ModuleIcon = ICONS[mod.icon];
+                    return <ModuleIcon className="h-6 w-6 text-primary" aria-hidden="true" />;
+                  })()}
                   <span className="break-words text-center text-xs leading-snug">{mod.label}</span>
                 </Link>
               ))}
@@ -239,7 +243,7 @@ export default function StafDashboard() {
                 <CardListSkeleton count={2} />
               ) : pinnedAnnouncements.length === 0 ? (
                 <EmptyState
-                  icon="📢"
+                  icon={<ICONS.Megaphone className="h-6 w-6" aria-hidden="true" />}
                   title="Belum ada pengumuman"
                   description="Pengumuman penting akan muncul di sini"
                 />
@@ -250,7 +254,7 @@ export default function StafDashboard() {
                     className="rounded-2xl border border-surface/70 bg-surface/10 p-4"
                   >
                     <div className="flex items-start gap-3">
-                      <span className="mt-0.5 text-accent-gold text-base" aria-hidden="true">📌</span>
+                      <ICONS.Pin className="mt-0.5 h-4 w-4 text-accent-gold" aria-hidden="true" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-text-primary">{ann.judul}</p>
                         <p className="mt-1 line-clamp-2 text-xs text-text-muted">{ann.isi}</p>

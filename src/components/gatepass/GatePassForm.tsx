@@ -81,7 +81,7 @@ export default function GatePassForm() {
       if (result?.auto_approved) {
         setAutoApproved(true);
         showNotification(
-          result.approval_reason || 'Gate Pass berhasil diajukan dan OTOMATIS DISETUJUI! 🎉',
+          result.approval_reason || 'Gate Pass berhasil diajukan dan otomatis disetujui.',
           'success'
         );
       } else {

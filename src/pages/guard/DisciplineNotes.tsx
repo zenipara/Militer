@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Shield } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Input from '../../components/common/Input';
@@ -92,7 +92,7 @@ export default function GuardDisciplineNotes() {
 
         {/* Info banner */}
         <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/8 px-4 py-3">
-          <span className="mt-0.5 text-base" aria-hidden="true">🛡️</span>
+          <Shield className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold text-primary">Akses Petugas Jaga / Provost</p>
             <p className="mt-0.5 text-xs text-text-muted">

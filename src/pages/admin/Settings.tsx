@@ -1077,7 +1077,7 @@ export default function Settings() {
                 disabled={isExporting}
                 className="self-start"
               >
-                {isExporting ? 'Mengekspor…' : '⬇ Unduh Backup'}
+                {isExporting ? 'Mengekspor…' : 'Unduh Backup'}
               </Button>
             </div>
 
@@ -1109,12 +1109,12 @@ export default function Settings() {
                 disabled={isRestoring}
                 className="self-start"
               >
-                ⬆ Pilih File Backup
+                Pilih File Backup
               </Button>
             </div>
           </div>
           <p className="mt-4 text-xs text-text-muted">
-            ℹ Restore menggunakan upsert — data yang sudah ada diperbarui, data baru ditambahkan. Tidak ada data yang dihapus.
+            Restore menggunakan upsert — data yang sudah ada diperbarui, data baru ditambahkan. Tidak ada data yang dihapus.
           </p>
         </div>
 
@@ -1161,7 +1161,7 @@ export default function Settings() {
 
         <div className="rounded-xl border border-accent-gold/35 bg-accent-gold/10 p-4">
           <p className="text-sm text-accent-gold">
-            ⚠ Pengaturan lanjutan (konfigurasi Supabase, RLS policy, dll.) dikelola langsung melalui Supabase Dashboard.
+            Pengaturan lanjutan (konfigurasi Supabase, RLS policy, dll.) dikelola langsung melalui Supabase Dashboard.
           </p>
         </div>
 

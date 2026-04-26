@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Camera } from 'lucide-react';
 import { uploadAvatar } from '../../lib/api/users';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -128,7 +129,7 @@ export default function AvatarUpload({ onSuccess }: AvatarUploadProps) {
               : 'border-surface/70 bg-surface/20 hover:border-primary/50 hover:bg-surface/40'
           }`}
         >
-          <span className="text-2xl" aria-hidden="true">📷</span>
+          <Camera className="h-6 w-6 text-text-muted" aria-hidden="true" />
           <p className="text-sm text-text-muted text-center">
             Klik atau seret foto ke sini untuk mengganti foto profil
           </p>

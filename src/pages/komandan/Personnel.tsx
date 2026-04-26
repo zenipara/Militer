@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Award, Search } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -66,7 +66,7 @@ export default function Personnel() {
         {/* Komandan scope info banner */}
         {scopeLabel && (
           <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/8 px-4 py-3">
-            <span className="mt-0.5 text-base" aria-hidden="true">🎖️</span>
+            <Award className="mt-0.5 h-4 w-4 text-primary" aria-hidden="true" />
             <div>
               <p className="text-sm font-semibold text-primary">{scopeLabel}</p>
               <p className="mt-0.5 text-xs text-text-muted">{scopeDescription}</p>

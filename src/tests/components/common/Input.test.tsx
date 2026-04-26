@@ -49,12 +49,12 @@ describe('Input', () => {
   });
 
   it('renders leftIcon when provided', () => {
-    render(<Input leftIcon={<span data-testid="left-icon">🔍</span>} />);
+    render(<Input leftIcon={<span data-testid="left-icon">L</span>} />);
     expect(screen.getByTestId('left-icon')).toBeInTheDocument();
   });
 
   it('renders rightIcon when provided', () => {
-    render(<Input rightIcon={<span data-testid="right-icon">👁</span>} />);
+    render(<Input rightIcon={<span data-testid="right-icon">R</span>} />);
     expect(screen.getByTestId('right-icon')).toBeInTheDocument();
   });
 

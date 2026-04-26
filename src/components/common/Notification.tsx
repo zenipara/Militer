@@ -13,8 +13,8 @@ const colors: Record<string, string> = {
 const iconMap: Record<string, IconType | (() => JSX.Element)> = {
   success: ICONS.Check || (() => <span>✓</span>),
   error: ICONS.X || (() => <span>✕</span>),
-  info: ICONS.Info || (() => <span>ℹ</span>),
-  warning: ICONS.AlertTriangle || (() => <span>⚠</span>),
+  info: ICONS.Info || (() => <span>I</span>),
+  warning: ICONS.AlertTriangle || (() => <span>!</span>),
 };
 
 function Toast({ item, onDismiss }: { item: NotificationItem; onDismiss: () => void }) {

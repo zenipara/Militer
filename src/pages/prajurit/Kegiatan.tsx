@@ -6,6 +6,7 @@ import EmptyState from '../../components/common/EmptyState';
 import { CardListSkeleton } from '../../components/common/Skeleton';
 import { useUIStore } from '../../store/uiStore';
 import { useKegiatan } from '../../hooks/useKegiatan';
+import { ICONS } from '../../icons';
 import type { Kegiatan, KegiatanJenis, RsvpStatus } from '../../types';
 
 const JENIS_OPTIONS: { value: KegiatanJenis; label: string }[] = [
@@ -89,7 +90,12 @@ export default function PrajuritKegiatanPage() {
             </div>
             <p className="font-semibold text-text-primary text-sm">{k.judul}</p>
             <p className="text-xs text-text-muted mt-0.5">{formatRange(k.tanggal_mulai, k.tanggal_selesai)}</p>
-            {k.lokasi && <p className="text-xs text-text-muted">📍 {k.lokasi}</p>}
+            {k.lokasi && (
+              <p className="inline-flex items-center gap-1 text-xs text-text-muted">
+                <ICONS.MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                {k.lokasi}
+              </p>
+            )}
             {k.deskripsi && <p className="text-xs text-text-secondary mt-1 line-clamp-2">{k.deskripsi}</p>}
           </div>
           <span className={`text-xs px-2 py-0.5 rounded font-medium shrink-0 ${RSVP_STYLE[rsvp]}`}>
@@ -106,7 +112,7 @@ export default function PrajuritKegiatanPage() {
               isLoading={respondingId === k.id}
               onClick={() => { void handleRsvp(k, 'hadir'); }}
             >
-              ✅ Hadir
+              Hadir
             </Button>
             <Button
               size="sm"
@@ -115,7 +121,7 @@ export default function PrajuritKegiatanPage() {
               isLoading={respondingId === k.id}
               onClick={() => { void handleRsvp(k, 'tidak_hadir'); }}
             >
-              ❌ Tidak Hadir
+              Tidak Hadir
             </Button>
           </div>
         )}

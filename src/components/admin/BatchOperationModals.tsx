@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AlertTriangle, Info } from 'lucide-react';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
 import { ROLE_OPTIONS, isRoleKomandan } from '../../lib/rolePermissions';
@@ -72,8 +73,8 @@ export default function BatchOperationModals({
       >
         <div className="space-y-4">
           <div className="flex items-start gap-3 rounded-2xl border border-accent-red/20 bg-accent-red/5 p-4">
-            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg bg-accent-red/15 text-accent-red font-bold">
-              ⚠
+            <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-lg bg-accent-red/15 text-accent-red">
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-text-primary">
@@ -213,8 +214,8 @@ export default function BatchOperationModals({
       >
         <div className="space-y-4">
           <div className="flex items-start gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-            <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-primary/15 text-primary text-xs font-bold">
-              ℹ
+            <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+              <Info className="h-4 w-4" aria-hidden="true" />
             </span>
             <p className="text-sm text-text-muted">
               Mengubah role untuk <span className="font-semibold text-primary">{selectedUsers.length}</span> personel. 

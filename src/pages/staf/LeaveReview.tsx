@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Info } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Table from '../../components/ui/Table';
 import Button from '../../components/common/Button';
@@ -93,7 +93,7 @@ export default function StafLeaveReview() {
         {/* Access info */}
         {!canWriteLeave && (
           <div className="flex items-start gap-3 rounded-xl border border-accent-gold/30 bg-accent-gold/8 px-4 py-3">
-            <span className="mt-0.5 text-base" aria-hidden="true">ℹ️</span>
+            <Info className="mt-0.5 h-4 w-4 text-accent-gold" aria-hidden="true" />
             <p className="text-sm text-text-muted">
               <span className="font-medium text-accent-gold">{getOperationalRoleLabel(user)}</span> — hanya dapat membaca data. Persetujuan izin dilakukan oleh Staf S-1 atau Komandan.
             </p>

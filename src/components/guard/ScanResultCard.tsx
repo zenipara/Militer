@@ -26,10 +26,10 @@ export default function ScanResultCard({ data }: { data: GatePass }) {
       <div className="text-center mb-5 p-4 rounded-2xl bg-primary/5 border border-primary/20">
         <div className="text-lg font-semibold text-text-primary">
           {isCheckedIn
-            ? '✓ Sudah Keluar'
+            ? 'Sudah Keluar'
             : isCompleted
-            ? '✓✓ Sudah Kembali'
-            : '⏳ Menunggu Keluar'}
+            ? 'Sudah Kembali'
+            : 'Menunggu Keluar'}
         </div>
       </div>
 
