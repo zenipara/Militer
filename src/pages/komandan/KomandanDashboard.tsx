@@ -252,11 +252,9 @@ export default function KomandanDashboard() {
               ))}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              {canOpenTasks && <Link to="/komandan/tasks" className="dashboard-quick-link">Buka tugas</Link>}
               {canOpenAttendance && <Link to="/komandan/attendance" className="dashboard-quick-link">Absensi</Link>}
               {canOpenPersonnel && <Link to="/komandan/personnel" className="dashboard-quick-link">Personel</Link>}
               {canOpenSprint && <Link to="/komandan/sprint" className="dashboard-quick-link">Sprint</Link>}
-              {canOpenGatePass && <Link to="/komandan/gatepass-approval" className="dashboard-quick-link">Gate Pass</Link>}
             </div>
           </div>
 

@@ -215,20 +215,12 @@ export default function PrajuritDashboard() {
         </div>
 
         <div className="dashboard-quick-strip">
-          {canOpenGatePass && (
+          {canOpenGatePass && !activeGatePass && (
             <Link to="/prajurit/gatepass" className="dashboard-quick-link group">
               <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-transform group-hover:scale-105">
                 {ICONS.ClipboardCheck ? <ICONS.ClipboardCheck className="h-4 w-4" aria-hidden="true" /> : null}
               </span>
               <span className="min-w-0 leading-snug">Gate Pass</span>
-            </Link>
-          )}
-          {canOpenScanPos && (
-            <Link to="/prajurit/scan-pos" className="dashboard-quick-link group">
-              <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-success transition-transform group-hover:scale-105">
-                {ICONS.ScanLine ? <ICONS.ScanLine className="h-4 w-4" aria-hidden="true" /> : null}
-              </span>
-              <span className="min-w-0 leading-snug">Scan Pos</span>
             </Link>
           )}
           {canOpenTasks && (

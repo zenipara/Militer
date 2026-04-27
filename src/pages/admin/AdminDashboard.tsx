@@ -6,6 +6,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import Button from '../../components/common/Button';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
+import DashboardShortcutGrid from '../../components/ui/DashboardShortcutGrid';
 import WeatherWidget from '../../components/ui/WeatherWidget';
 import { StatCardsSkeleton } from '../../components/common/Skeleton';
 import { useAuthStore } from '../../store/authStore';
@@ -260,35 +261,16 @@ export default function AdminDashboard() {
         <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-4">
             <div className="app-card p-5">
-              <div className="panel-heading">
-                <div>
-                  <h3 className="panel-heading__title">Aksi Prioritas</h3>
-                  <p className="panel-heading__desc">Gunakan modul inti terlebih dulu untuk respon operasional yang lebih cepat.</p>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {primaryQuickLinks.map((item) => {
-                  const Icon = ICONS[item.icon];
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className="group rounded-2xl border border-surface/70 bg-bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:hover:bg-surface/30"
-                    >
-                      <div className="mb-2 flex items-start gap-2.5">
-                        <span className="grid h-9 w-9 place-items-center rounded-xl border border-surface/60 bg-gradient-to-br from-primary/12 to-primary/4 text-primary transition-transform duration-200 group-hover:scale-110 shadow-sm">
-                          <Icon className="h-4 w-4" aria-hidden="true" />
-                        </span>
-                        <h3 className="min-w-0 break-words text-sm font-semibold leading-snug text-text-primary">{item.title}</h3>
-                      </div>
-                      <p className="text-xs text-text-muted">{item.desc}</p>
-                      <div className="mt-2 inline-flex rounded-full border border-primary/25 bg-primary/8 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                        Modul prioritas
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+              <DashboardShortcutGrid
+                title="Aksi Prioritas"
+                description="Gunakan modul inti terlebih dulu untuk respon operasional yang lebih cepat."
+                items={primaryQuickLinks.map((item) => ({
+                  href: item.href,
+                  label: item.title,
+                  description: item.desc,
+                  icon: item.icon,
+                }))}
+              />
 
               {secondaryQuickLinks.length > 0 && (
                 <div className="mt-4 rounded-2xl border border-surface/70 bg-surface/15 p-3.5">

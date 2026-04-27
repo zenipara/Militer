@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import StatCard, { StatsGrid } from '../../components/ui/StatCard';
 import PageHeader from '../../components/ui/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
+import DashboardShortcutGrid from '../../components/ui/DashboardShortcutGrid';
 import { StatCardsSkeleton, CardListSkeleton } from '../../components/common/Skeleton';
 import Button from '../../components/common/Button';
 import { useAuthStore } from '../../store/authStore';
@@ -213,30 +213,24 @@ export default function StafDashboard() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Quick Access Modules */}
           <div className="app-card p-4 lg:col-span-1">
-            <div className="panel-heading mb-3">
-              <h3 className="panel-heading__title">Modul Akses Cepat</h3>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {modules.map((mod) => (
-                <Link
-                  key={mod.path}
-                  to={mod.path}
-                  className={`dashboard-module-tile ${mod.color}`}
-                >
-                  {(() => {
-                    const ModuleIcon = ICONS[mod.icon];
-                    return <ModuleIcon className="h-6 w-6 text-primary" aria-hidden="true" />;
-                  })()}
-                  <span className="break-words text-center text-xs leading-snug">{mod.label}</span>
-                </Link>
-              ))}
-            </div>
+            <DashboardShortcutGrid
+              title="Modul Akses Cepat"
+              description="Pilih modul yang paling relevan dengan bidang Anda tanpa berpindah menu terlalu jauh."
+              columnsClassName="grid-cols-1 sm:grid-cols-2"
+              items={modules.map((mod) => ({
+                href: mod.path,
+                label: mod.label,
+                description: getModuleDescription(mod.path),
+                icon: mod.icon,
+                toneClass: mod.color,
+              }))}
+            />
           </div>
 
           {/* Announcements */}
           <div className="app-card p-4 lg:col-span-2">
             <div className="panel-heading mb-3">
-              <h3 className="panel-heading__title">Pengumuman Terpinit</h3>
+              <h3 className="panel-heading__title">Pengumuman Tersemat</h3>
             </div>
             <div className="space-y-3">
               {announcementsLoading ? (
@@ -274,4 +268,27 @@ export default function StafDashboard() {
       </div>
     </DashboardLayout>
   );
+}
+
+function getModuleDescription(path: string) {
+  switch (path) {
+    case '/admin/users':
+      return 'Kelola akun, role, dan status personel.';
+    case '/admin/attendance':
+      return 'Tinjau rekap kehadiran harian dan tren.';
+    case '/admin/schedule':
+      return 'Atur rotasi dan jadwal jaga satuan.';
+    case '/staf/messages':
+      return 'Baca dan kirim pesan internal satuan.';
+    case '/admin/logistics':
+      return 'Pantau inventaris dan item yang perlu perhatian.';
+    case '/komandan/tasks':
+      return 'Kelola tugas operasional dan progres personel.';
+    case '/staf/sprint':
+      return 'Akses surat perintah dan dokumen tugas.';
+    case '/admin/pos-jaga':
+      return 'Kelola titik jaga dan QR statis.';
+    default:
+      return 'Akses cepat ke modul terkait.';
+  }
 }
