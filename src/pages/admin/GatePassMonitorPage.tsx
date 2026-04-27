@@ -12,6 +12,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { GatePass, GatePassStatus } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { getGatePassReadResilienceStats } from '../../lib/api/gatepass';
 
 interface MonitorGatePass extends GatePass {
   effectiveStatus: GatePassStatus;
@@ -179,6 +180,7 @@ export default function GatePassMonitorPage() {
   const [error, setError] = useState<string | null>(null);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [totalPersonil, setTotalPersonil] = useState(0);
+  const [resilienceStats, setResilienceStats] = useState(() => getGatePassReadResilienceStats());
   useGatePassRealtime();
   const debouncedQuery = useDebounce(query, 250);
   const copyFeedbackTimerRef = useRef<number | null>(null);
@@ -359,6 +361,18 @@ export default function GatePassMonitorPage() {
       cardScrollerRef.current.scrollTop = 0;
     }
   }, [displayMode, filteredRows.length]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return () => undefined;
+
+    const timer = window.setInterval(() => {
+      setResilienceStats(getGatePassReadResilienceStats());
+    }, 1500);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -750,6 +764,22 @@ export default function GatePassMonitorPage() {
         {copyFeedback && (
           <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
             {copyFeedback}
+          </div>
+        )}
+
+        {import.meta.env.DEV && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-900" data-testid="gatepass-read-resilience-panel">
+            <div className="font-semibold">Gate Pass Read Resilience (DEV)</div>
+            <div className="mt-1 grid gap-1 sm:grid-cols-2 lg:grid-cols-4">
+              <div>Total: {resilienceStats.totalCalls}</div>
+              <div>Sukses: {resilienceStats.successes}</div>
+              <div>Gagal: {resilienceStats.failures}</div>
+              <div>Retry: {resilienceStats.retries}</div>
+              <div>Circuit hit: {resilienceStats.circuitOpenHits}</div>
+              <div>Circuit open: {resilienceStats.circuitOpenedCount}</div>
+              <div>Queued: {resilienceStats.queuedCalls}</div>
+              <div>Queue now: {resilienceStats.pendingQueue}</div>
+            </div>
           </div>
         )}
 

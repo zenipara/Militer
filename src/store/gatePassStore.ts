@@ -8,7 +8,7 @@ import { notifyDataChanged } from '../lib/dataSync';
 
 interface GatePassState {
   gatePasses: GatePass[];
-  fetchGatePasses: (options?: { force?: boolean }) => Promise<void>;
+  fetchGatePasses: (options?: { force?: boolean; suppressErrors?: boolean }) => Promise<void>;
   createGatePass: (payload: Partial<GatePass>) => Promise<InsertGatePassResponse>;
   cancelGatePass: (id: string) => Promise<void>;
   approveGatePass: (id: string, approved: boolean) => Promise<void>;
@@ -26,6 +26,8 @@ const GATEPASS_CACHE_TTL_MS = 5 * 60 * 1000;
 let gatePassFetchInFlight: Promise<void> | null = null;
 let gatePassLastFetchAt = 0;
 let gatePassFetchScope = '';
+let gatePassLastSuppressedWarnAt = 0;
+const SUPPRESSED_ERROR_WARN_COOLDOWN_MS = 10000;
 
 interface GatePassCachePayload {
   ts: number;
@@ -79,6 +81,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     const cacheKey = getGatePassCacheKey(user.id, user.role);
 
     const force = options?.force === true;
+    const suppressErrors = options?.suppressErrors === true;
 
     if (!force && get().gatePasses.length === 0) {
       const cached = readGatePassCache(cacheKey);
@@ -123,6 +126,16 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
         }
         return;
       }
+
+      if (suppressErrors) {
+        const now = Date.now();
+        if (import.meta.env.DEV && now - gatePassLastSuppressedWarnAt >= SUPPRESSED_ERROR_WARN_COOLDOWN_MS) {
+          gatePassLastSuppressedWarnAt = now;
+          console.warn('[GatePassStore] Suppressed fetch error from background refresh', error);
+        }
+        return;
+      }
+
       throw error;
     } finally {
       gatePassFetchInFlight = null;

@@ -31,7 +31,7 @@ export function useGatePassRealtime(options: UseGatePassRealtimeOptions = {}) {
 
   const debouncedFetch = useMemo(
     () => debounce(() => {
-      void fetchGatePasses();
+      void fetchGatePasses({ suppressErrors: true });
     }, 900),
     [fetchGatePasses],
   );

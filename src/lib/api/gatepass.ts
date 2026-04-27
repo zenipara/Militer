@@ -7,11 +7,76 @@ const READ_RETRY_BASE_MS = 220;
 const READ_RETRY_MAX_MS = 1200;
 const READ_CIRCUIT_OPEN_MS = 12000;
 const READ_CIRCUIT_FAILURE_THRESHOLD = 5;
+const READ_MAX_CONCURRENT = 2;
 
 const readCircuitState = {
   consecutiveFailures: 0,
   openedUntil: 0,
 };
+
+const readTelemetry = {
+  totalCalls: 0,
+  retries: 0,
+  failures: 0,
+  successes: 0,
+  circuitOpenHits: 0,
+  circuitOpenedCount: 0,
+  queuedCalls: 0,
+  dequeuedCalls: 0,
+};
+
+let readActiveCount = 0;
+const readQueue: Array<() => void> = [];
+
+function runWithReadConcurrency<T>(operation: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const execute = () => {
+      readActiveCount += 1;
+      void operation()
+        .then(resolve)
+        .catch(reject)
+        .finally(() => {
+          readActiveCount = Math.max(0, readActiveCount - 1);
+          const next = readQueue.shift();
+          if (next) {
+            readTelemetry.dequeuedCalls += 1;
+            next();
+          }
+        });
+    };
+
+    if (readActiveCount < READ_MAX_CONCURRENT) {
+      execute();
+      return;
+    }
+
+    readTelemetry.queuedCalls += 1;
+    readQueue.push(execute);
+  });
+}
+
+export interface GatePassReadResilienceStats {
+  totalCalls: number;
+  retries: number;
+  failures: number;
+  successes: number;
+  circuitOpenHits: number;
+  circuitOpenedCount: number;
+  queuedCalls: number;
+  dequeuedCalls: number;
+  activeReads: number;
+  pendingQueue: number;
+  circuitOpenedUntil: number;
+}
+
+export function getGatePassReadResilienceStats(): GatePassReadResilienceStats {
+  return {
+    ...readTelemetry,
+    activeReads: readActiveCount,
+    pendingQueue: readQueue.length,
+    circuitOpenedUntil: readCircuitState.openedUntil,
+  };
+}
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => {
@@ -42,6 +107,9 @@ function isTransientReadError(error: unknown): boolean {
 function markReadFailure() {
   readCircuitState.consecutiveFailures += 1;
   if (readCircuitState.consecutiveFailures >= READ_CIRCUIT_FAILURE_THRESHOLD) {
+    if (Date.now() >= readCircuitState.openedUntil) {
+      readTelemetry.circuitOpenedCount += 1;
+    }
     readCircuitState.openedUntil = Date.now() + READ_CIRCUIT_OPEN_MS;
   }
 }
@@ -52,7 +120,10 @@ function markReadSuccess() {
 }
 
 async function withResilientRead<T>(operationName: string, operation: () => Promise<T>): Promise<T> {
+  readTelemetry.totalCalls += 1;
+
   if (Date.now() < readCircuitState.openedUntil) {
+    readTelemetry.circuitOpenHits += 1;
     throw new Error('Layanan gate pass sedang sibuk. Coba lagi beberapa detik lagi.');
   }
 
@@ -60,14 +131,16 @@ async function withResilientRead<T>(operationName: string, operation: () => Prom
 
   for (let attempt = 1; attempt <= READ_RETRY_MAX_ATTEMPTS; attempt += 1) {
     try {
-      const result = await operation();
+      const result = await runWithReadConcurrency(operation);
       markReadSuccess();
+      readTelemetry.successes += 1;
       return result;
     } catch (error) {
       lastError = error;
       const canRetry = attempt < READ_RETRY_MAX_ATTEMPTS && isTransientReadError(error);
       if (!canRetry) break;
 
+      readTelemetry.retries += 1;
       const exponential = Math.min(READ_RETRY_MAX_MS, READ_RETRY_BASE_MS * (2 ** (attempt - 1)));
       const jitter = Math.floor(Math.random() * 90);
       await sleep(exponential + jitter);
@@ -75,6 +148,7 @@ async function withResilientRead<T>(operationName: string, operation: () => Prom
   }
 
   markReadFailure();
+  readTelemetry.failures += 1;
   if (import.meta.env.DEV) {
     console.warn(`[GatePassAPI] Read operation failed: ${operationName}`, lastError);
   }
