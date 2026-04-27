@@ -291,6 +291,21 @@ code,
   transform: translateY(-1px);
 }
 
+/* Responsive form control for mobile-first input sizing */
+.form-control--responsive {
+  min-height: 44px;
+  font-size: 1rem; /* 16px on mobile prevents iOS zoom */
+  padding: 0.625rem 0.8rem;
+}
+
+@media (min-width: 768px) {
+  .form-control--responsive {
+    min-height: 40px;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.72rem;
+  }
+}
+
 .form-control:focus::placeholder {
   color: color-mix(in srgb, var(--color-text-muted) 70%, transparent);
 }
@@ -1493,6 +1508,279 @@ textarea.form-control {
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
 }
 
+/* ── Dashboard Grid Layouts ──────────────────────────────── */
+.dashboard-grid-primary {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid-primary {
+    grid-template-columns: 1.15fr 0.85fr;
+  }
+}
+
+.dashboard-grid-secondary {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid-secondary {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+.dashboard-grid-stats {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .dashboard-grid-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.dashboard-grid-modules {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .dashboard-grid-modules {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid-modules {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Card Variants ───────────────────────────────────────── */
+.card-primary {
+  border-radius: 1.125rem;
+  border: 1px solid color-mix(in srgb, var(--color-surface) 88%, transparent);
+  background: color-mix(in srgb, var(--color-bg-card) 99%, transparent);
+  box-shadow: var(--ui-shadow-app-card);
+  transition: box-shadow var(--ui-transition-base), 
+              border-color var(--ui-transition-base), 
+              transform var(--ui-transition-base),
+              background var(--ui-transition-base);
+}
+
+.card-primary:hover {
+  box-shadow: var(--ui-shadow-app-card-hover);
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  background: color-mix(in srgb, var(--color-bg-card) 100%, var(--color-primary) 1%);
+}
+
+.card-subtle {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 15%, transparent);
+  transition: border-color var(--ui-transition-base), background var(--ui-transition-base);
+}
+
+.card-subtle:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 22%, transparent);
+}
+
+.card-ghost {
+  border-radius: 1rem;
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--color-surface) 8%, transparent);
+  transition: border-color var(--ui-transition-base), background var(--ui-transition-base);
+}
+
+.card-ghost:hover {
+  border-color: color-mix(in srgb, var(--color-surface) 40%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 15%, transparent);
+}
+
+/* ── Hero Cards ──────────────────────────────────────────── */
+.hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.375rem;
+  border: 1px solid;
+  padding: 1.25rem;
+  transition: transform var(--ui-transition-base), 
+              box-shadow var(--ui-transition-base),
+              border-color var(--ui-transition-base);
+}
+
+.hero-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.hero-card-primary {
+  border-color: rgba(37, 99, 235, 0.2);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, transparent 100%);
+}
+
+.hero-card-success {
+  border-color: rgba(22, 163, 74, 0.2);
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.06) 0%, transparent 100%);
+}
+
+.hero-card-warning {
+  border-color: rgba(217, 119, 6, 0.25);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.08) 0%, transparent 100%);
+}
+
+.hero-card-danger {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.08) 0%, transparent 100%);
+}
+
+/* ── Alert & Warning Cards ───────────────────────────────── */
+.alert-card {
+  position: relative;
+  border-radius: 1.125rem;
+  border: 1px solid;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  transition: border-color var(--ui-transition-base), background var(--ui-transition-base);
+}
+
+.alert-info {
+  border-color: rgba(37, 99, 235, 0.3);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, transparent 100%);
+}
+
+.alert-success {
+  border-color: rgba(22, 163, 74, 0.3);
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.06) 0%, transparent 100%);
+}
+
+.alert-warning {
+  border-color: rgba(217, 119, 6, 0.35);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(217, 119, 6, 0.02) 100%);
+}
+
+.alert-danger {
+  border-color: rgba(220, 38, 38, 0.35);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.02) 100%);
+}
+
+/* ── Dark mode alert variants ────────────────────────────── */
+[data-theme="dark"] .alert-warning {
+  border-color: rgba(217, 119, 6, 0.4);
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.15) 0%, transparent 100%);
+}
+
+[data-theme="dark"] .alert-danger {
+  border-color: rgba(220, 38, 38, 0.45);
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, transparent 100%);
+}
+
+/* ── Dashboard Spacing Utilities ─────────────────────────── */
+.dashboard-section {
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-section {
+    padding: 1.5rem;
+  }
+}
+
+.dashboard-spacing-xs {
+  gap: 0.5rem;
+}
+
+.dashboard-spacing-sm {
+  gap: 0.75rem;
+}
+
+.dashboard-spacing-md {
+  gap: 1rem;
+}
+
+.dashboard-spacing-lg {
+  gap: 1.25rem;
+}
+
+.dashboard-spacing-xl {
+  gap: 1.5rem;
+}
+
+/* ── Empty State Styling ────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  border-radius: 1rem;
+  border: 1px dashed color-mix(in srgb, var(--color-surface) 60%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 8%, transparent);
+}
+
+.empty-state__icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.empty-state__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state__description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+  max-width: 24rem;
+}
+
+.empty-state__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border-radius: 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
+  background: color-mix(in srgb, var(--color-bg-card) 85%, transparent);
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  transition: all 0.18s ease;
+  text-decoration: none;
+}
+
+.empty-state__action:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
 /* ── Dropdown panel ──────────────────────────────────────── */
 .dropdown-panel {
   position: absolute;
@@ -1546,6 +1834,414 @@ textarea.form-control {
 .dropdown-item:focus-visible {
   outline: var(--ui-focus-ring-width) solid var(--color-primary);
   outline-offset: -1px;
+}
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* ──  RESPONSIVE & TOUCH-FRIENDLY UTILITIES                   ── */
+/* ═══════════════════════════════════════════════════════════════ */
+
+/* ── Touch-Friendly Sizing (44px minimum per WCAG 2.5.5) ─────── */
+/*
+  Ensures all interactive elements meet minimum touch target size on mobile.
+  44px = 176pt diameter (≈ standard fingertip width when accounting for padding).
+*/
+.touch-target-sm {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.touch-target-md {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+.touch-target-lg {
+  min-height: 52px;
+  min-width: 52px;
+}
+
+/* Spacing around touch targets (minimum 0.5rem between interactive elements) */
+.touch-spacing {
+  margin: 0.5rem;
+}
+
+/* ── Responsive Button Heights ───────────────────────────────– */
+/*
+  Mobile: 44px (standard touch target)
+  Tablet/Desktop: 40px (compact)
+*/
+.btn-responsive {
+  min-height: 44px;
+  padding: 0.625rem 1rem;
+  font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  .btn-responsive {
+    min-height: 40px;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.875rem;
+  }
+}
+
+/* ── Form Input Responsive Heights ───────────────────────────– */
+.form-input-responsive {
+  min-height: 44px;
+  padding: 0.625rem 0.8rem;
+  font-size: 1rem; /* 16px prevents auto-zoom on iOS */
+}
+
+@media (min-width: 768px) {
+  .form-input-responsive {
+    min-height: 40px;
+    padding: 0.5rem 0.72rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* ── Mobile-First Form Stacking ──────────────────────────────── */
+/*
+  Mobile: 1 column (full width)
+  Tablet (640px+): 2 columns
+  Desktop (1024px+): 3 columns
+*/
+.form-grid-responsive {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .form-grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .form-grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+/* 2-column only variant */
+.form-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .form-grid-2col {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* ── Responsive Padding System ───────────────────────────────── */
+/*
+  Card padding adjusts based on screen size to maintain visual hierarchy
+  and optimize space usage across all devices.
+*/
+.card-padding-responsive {
+  padding: 1rem;           /* Mobile: 16px */
+}
+
+@media (min-width: 640px) {
+  .card-padding-responsive {
+    padding: 1.25rem;      /* Tablet: 20px */
+  }
+}
+
+@media (min-width: 768px) {
+  .card-padding-responsive {
+    padding: 1.5rem;       /* Tablet+: 24px */
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-padding-responsive {
+    padding: 1.75rem;      /* Desktop: 28px */
+  }
+}
+
+/* Section padding (larger containers) */
+.section-padding-responsive {
+  padding: 1.25rem;        /* Mobile: 20px */
+}
+
+@media (min-width: 640px) {
+  .section-padding-responsive {
+    padding: 1.5rem;       /* Tablet: 24px */
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-padding-responsive {
+    padding: 2rem;         /* Desktop: 32px */
+  }
+}
+
+/* ── Responsive Gap System ───────────────────────────────────– */
+.gap-responsive-sm {
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .gap-responsive-sm {
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gap-responsive-sm {
+    gap: 1rem;
+  }
+}
+
+.gap-responsive-md {
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .gap-responsive-md {
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gap-responsive-md {
+    gap: 1.25rem;
+  }
+}
+
+.gap-responsive-lg {
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .gap-responsive-lg {
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gap-responsive-lg {
+    gap: 1.5rem;
+  }
+}
+
+/* ── Responsive Flex Stacking ────────────────────────────────– */
+/*
+  Mobile: stacks vertically
+  Tablet+: displays horizontally
+*/
+.flex-responsive {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .flex-responsive {
+    flex-direction: row;
+    gap: 1.25rem;
+  }
+}
+
+.flex-responsive--align-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .flex-responsive--align-center {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.25rem;
+  }
+}
+
+/* ── Responsive Grid for Cards/Modules ──────────────────────── */
+/*
+  Dynamically adjusts card columns based on screen size
+*/
+.grid-cards-responsive {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-cards-responsive {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* ── Responsive List Layout ──────────────────────────────────– */
+/*
+  For tables, lists that need layout adjustment on mobile
+*/
+.list-responsive {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .list-responsive {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+    gap: 0;
+  }
+
+  .list-responsive > * {
+    display: table-row;
+  }
+}
+
+/* ── Mobile Menu / Overlay Stack ─────────────────────────────– */
+/*
+  Ensures modals, dropdowns, and overlay menus stack properly on mobile
+*/
+.overlay-responsive {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .overlay-responsive {
+    position: absolute;
+    inset: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: none;
+    z-index: 50;
+  }
+}
+
+.overlay-content-responsive {
+  border-radius: 1.5rem 1.5rem 0 0;
+  width: 100%;
+  max-height: 80vh;
+  background: var(--color-bg-card);
+  animation: slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 768px) {
+  .overlay-content-responsive {
+    border-radius: 1.125rem;
+    width: auto;
+    max-width: 90vw;
+    max-height: 90vh;
+    animation: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* ── Responsive Typography Stack ─────────────────────────────– */
+/*
+  Adjusts heading/text sizes for better readability on mobile vs desktop
+*/
+.text-responsive-lg {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .text-responsive-lg {
+    font-size: 1.125rem;
+    line-height: 1.75;
+  }
+}
+
+@media (min-width: 1024px) {
+  .text-responsive-lg {
+    font-size: 1.25rem;
+    line-height: 1.75;
+  }
+}
+
+.text-responsive-md {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .text-responsive-md {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+}
+
+/* ── Responsive Container Margins ────────────────────────────– */
+.container-margin-responsive {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-margin-responsive {
+    margin-left: 1.5rem;
+    margin-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-margin-responsive {
+    margin-left: 2rem;
+    margin-right: 2rem;
+  }
+}
+
+/* ── Link/Button Touch Padding ───────────────────────────────– */
+.link-responsive {
+  padding: 0.5rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color var(--ui-transition-fast), color var(--ui-transition-fast);
+  text-decoration: none;
+}
+
+.link-responsive:hover {
+  background: color-mix(in srgb, var(--color-surface) 40%, transparent);
+  color: var(--color-primary);
+}
+
+@media (min-width: 768px) {
+  .link-responsive {
+    padding: 0.375rem 0.625rem;
+    min-height: auto;
+  }
 }
 
 /* ── Print improvements ─────────────────────────────────── */

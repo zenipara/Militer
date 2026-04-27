@@ -49,7 +49,7 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="rounded-lg border border-surface/70 bg-surface/35 px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+          className="touch-target-sm rounded-lg border border-surface/70 bg-surface/35 px-3 text-sm text-text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Halaman sebelumnya"
         >
           ←
@@ -66,7 +66,7 @@ export default function Pagination({
             <button
               key={p}
               onClick={() => onPageChange(p)}
-              className={`min-w-[32px] rounded-lg px-2 py-1.5 text-sm font-medium transition-colors ${
+              className={`touch-target-sm rounded-lg px-2 text-sm font-medium transition-colors ${
                 p === currentPage ? 'bg-primary text-white' : 'border border-surface/70 bg-surface/35 text-text-muted hover:bg-surface'
               } ${compactOnMobile && p !== currentPage && p !== 1 && p !== totalPages ? 'hidden sm:inline-flex' : ''}`}
               aria-current={p === currentPage ? 'page' : undefined}
@@ -78,7 +78,7 @@ export default function Pagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="rounded-lg border border-surface/70 bg-surface/35 px-3 py-1.5 text-sm text-text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+          className="touch-target-sm rounded-lg border border-surface/70 bg-surface/35 px-3 text-sm text-text-muted transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
           aria-label="Halaman berikutnya"
         >
           →

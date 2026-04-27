@@ -258,9 +258,9 @@ export default function AdminDashboard() {
           </StatsGrid>
         )}
 
-        <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="dashboard-grid-primary">
           <div className="space-y-4">
-            <div className="app-card p-5">
+            <div className="app-card dashboard-section">
               <DashboardShortcutGrid
                 title="Aksi Prioritas"
                 description="Gunakan modul inti terlebih dulu untuk respon operasional yang lebih cepat."
@@ -302,18 +302,18 @@ export default function AdminDashboard() {
               )}
             </div>
 
-            <div className="app-card p-5">
+            <div className="app-card dashboard-section">
               <div className="panel-heading">
                 <div>
                   <h3 className="panel-heading__title">Pantauan Operasional</h3>
                   <p className="panel-heading__desc">Ringkasan yang langsung berguna untuk pengambilan keputusan.</p>
                 </div>
               </div>
-              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+              <div className="mt-4 grid-cards-responsive gap-2.5">
                 {operationalHighlights.map((item) => (
                   <div
                     key={item.label}
-                    className={`group rounded-2xl border bg-surface/15 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${
+                    className={`group rounded-2xl border bg-surface/15 card-padding-responsive transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${
                       item.tone === 'danger'
                         ? 'border-accent-red/35 hover:border-accent-red/45'
                         : item.tone === 'warn'
@@ -351,7 +351,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-2xl border border-surface/70 bg-bg-card p-4">
+              <div className="mt-4 rounded-2xl border border-surface/70 bg-bg-card card-padding-responsive">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <h4 className="flex items-center gap-2 font-semibold text-text-primary">
                     <span className="grid h-6 w-6 place-items-center rounded-lg bg-accent-red/10 text-accent-red">
@@ -386,7 +386,7 @@ export default function AdminDashboard() {
             </div>
 
             {isUserManagementEnabled && (
-              <div className="app-card p-5">
+            <div className="app-card dashboard-section">
                 <div className="panel-heading">
                   <div>
                     <h3 className="panel-heading__title">Hapus Anggota Cepat</h3>
@@ -457,7 +457,7 @@ export default function AdminDashboard() {
               onConfigureClick={() => navigate('/admin/settings')}
             />
 
-            <div className="app-card overflow-hidden p-0">
+            <div className="app-card overflow-hidden">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-surface/60 bg-surface/10 px-5 py-4 sm:items-center">
                 <div className="flex items-center gap-2">
                   <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -510,7 +510,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="app-card p-5">
+            <div className="app-card dashboard-section">
               <div className="mb-1 flex items-center gap-2">
                 <span className="grid h-7 w-7 place-items-center rounded-lg bg-success/10 text-success">
                   <ICONS.BarChart2 className="h-4 w-4" aria-hidden="true" />
@@ -534,7 +534,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="app-card p-5">
+        <div className="app-card dashboard-section">
           <h3 className="text-lg font-bold text-text-primary">Statistik Kehadiran</h3>
           <p className="text-sm text-text-muted">Visualisasi 30 hari terakhir untuk monitoring tren disiplin kehadiran.</p>
           <div className="mt-4">
@@ -542,7 +542,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="dashboard-grid-secondary">
           <GPSTrackingHistory limit={15} />
           <MigrationHistoryPanel />
         </div>

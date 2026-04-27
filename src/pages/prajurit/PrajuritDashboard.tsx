@@ -134,7 +134,7 @@ export default function PrajuritDashboard() {
         {canOpenScanPos && (
           <Link
             to="/prajurit/scan-pos"
-            className="group relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 via-bg-card to-primary/5 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/35 hover:shadow-md"
+            className="hero-card hero-card-success group"
           >
             <div className="relative flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
               <span className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl bg-emerald-500/15 text-success shadow-sm transition-transform duration-200 group-hover:scale-105">
@@ -156,7 +156,7 @@ export default function PrajuritDashboard() {
 
         {/* Alert: gate pass sedang aktif (checked_in / overdue) */}
         {activeGatePass && (
-          <div className={`flex items-start gap-3 rounded-2xl border p-4 shadow-sm ${activeGatePass.status === 'overdue' ? 'border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5' : 'border-primary/30 bg-gradient-to-r from-primary/8 to-emerald-500/5'}`}>
+          <div className={`alert-card ${activeGatePass.status === 'overdue' ? 'alert-danger' : 'alert-info'}`}>
             <span className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl ${activeGatePass.status === 'overdue' ? 'bg-accent-red/15 text-accent-red' : 'bg-primary/15 text-primary'}`}>
               <ICONS.ClipboardCheck className="h-4 w-4" aria-hidden="true" />
             </span>
@@ -178,9 +178,9 @@ export default function PrajuritDashboard() {
           </div>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid-cards-responsive">
           {canOpenTasks && (
-            <Link to="/prajurit/tasks" className="group app-card flex items-center gap-4 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+            <Link to="/prajurit/tasks" className="group app-card flex items-center gap-4 card-padding-responsive transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
               <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 text-accent-gold shadow-sm transition-transform duration-200 group-hover:scale-105">
                 <ICONS.ClipboardList className="h-5 w-5" aria-hidden="true" />
               </span>
@@ -191,7 +191,7 @@ export default function PrajuritDashboard() {
             </Link>
           )}
           {canOpenMessages && (
-            <Link to="/prajurit/messages" className="group app-card flex items-center gap-4 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+            <Link to="/prajurit/messages" className="group app-card flex items-center gap-4 card-padding-responsive transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
               <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/20 to-blue-600/10 text-primary shadow-sm transition-transform duration-200 group-hover:scale-105">
                 <ICONS.Megaphone className="h-5 w-5" aria-hidden="true" />
               </span>
@@ -202,7 +202,7 @@ export default function PrajuritDashboard() {
             </Link>
           )}
           {canOpenAttendance && (
-            <Link to="/prajurit/attendance" className="group app-card flex items-center gap-4 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+            <Link to="/prajurit/attendance" className="group app-card flex items-center gap-4 card-padding-responsive transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
               <span className={`grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl shadow-sm transition-transform duration-200 group-hover:scale-105 ${todayAttendance ? 'bg-gradient-to-br from-success/20 to-emerald-600/10 text-success' : 'bg-gradient-to-br from-surface/60 to-surface/30 text-text-muted'}`}>
                 <ICONS.CalendarDays className="h-5 w-5" aria-hidden="true" />
               </span>
@@ -251,7 +251,7 @@ export default function PrajuritDashboard() {
 
         {/* Alert: rejected tasks */}
         {canViewTaskModules && rejectedTasks.length > 0 && (
-          <div className="flex items-start gap-3 rounded-2xl border border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5 p-4 shadow-sm">
+          <div className="alert-card alert-danger">
             <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-xl bg-accent-red/15 text-accent-red">
               <ICONS.AlertTriangle className="h-4 w-4" aria-hidden="true" />
             </span>

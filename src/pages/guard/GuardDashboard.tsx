@@ -85,8 +85,8 @@ export default function GuardDashboard() {
           <StatCard accent="green" icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Selesai Hari Ini" value={scanStats.selesai} />
         </StatsGrid>
 
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="app-card overflow-hidden p-0">
+        <div className="dashboard-grid-secondary">
+          <div className="app-card overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-primary/10 via-blue-500/5 to-transparent border-b border-surface/60 px-6 py-4">
               <div className="flex items-start gap-3">
@@ -101,13 +101,13 @@ export default function GuardDashboard() {
                 </div>
               </div>
             </div>
-            <div className="p-6">
+            <div className="card-padding-responsive">
               <QRScanner key={scannerKey} onScan={onScan} />
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="app-card p-5">
+            <div className="app-card dashboard-section">
               <div className="flex items-center gap-2.5 mb-4">
                 <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
                   <ICONS.ClipboardList className="h-4 w-4" aria-hidden="true" />
@@ -129,7 +129,7 @@ export default function GuardDashboard() {
             </div>
 
             {error && (
-              <div className="rounded-2xl border border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5 px-4 py-3.5 text-sm text-accent-red flex items-center gap-2.5">
+              <div className="rounded-2xl border border-accent-red/30 bg-gradient-to-r from-accent-red/10 to-rose-500/5 card-padding-responsive text-sm text-accent-red flex items-center gap-2.5">
                 <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg bg-accent-red/15">
                   <ICONS.AlertTriangle className="h-4 w-4" aria-hidden="true" />
                 </span>
@@ -140,7 +140,7 @@ export default function GuardDashboard() {
             {result ? (
               <ScanResultCard data={result} />
             ) : (
-              <div className="rounded-2xl border border-dashed border-surface/80 bg-surface/10 p-6 text-center">
+              <div className="rounded-2xl border border-dashed border-surface/80 bg-surface/10 card-padding-responsive text-center">
                 <span className="grid h-12 w-12 mx-auto mb-3 place-items-center rounded-2xl bg-surface/40 text-text-muted">
                   <ICONS.ScanLine className="h-6 w-6" aria-hidden="true" />
                 </span>

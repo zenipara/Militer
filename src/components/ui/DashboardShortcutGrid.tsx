@@ -33,14 +33,14 @@ export default function DashboardShortcutGrid({
           </div>
         </div>
       )}
-      <div className={`grid gap-3 ${columnsClassName}`}>
+      <div className={`grid-cards-responsive gap-3 ${columnsClassName}`}>
         {items.map((item) => {
           const Icon = ICONS[item.icon];
           return (
             <Link
               key={`${item.href}-${item.label}`}
               to={item.href}
-              className={`group rounded-2xl border border-surface/70 bg-bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:hover:bg-surface/30 ${item.toneClass ?? ''}`}
+              className={`group rounded-2xl border border-surface/70 bg-bg-card card-padding-responsive transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg dark:hover:bg-surface/30 ${item.toneClass ?? ''}`}
             >
               <div className="mb-2 flex items-start gap-2.5">
                 <span className="grid h-9 w-9 place-items-center rounded-xl border border-surface/60 bg-gradient-to-br from-primary/12 to-primary/4 text-primary transition-transform duration-200 group-hover:scale-110 shadow-sm">

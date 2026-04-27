@@ -188,12 +188,12 @@ export default function KomandanDashboard() {
             <>
               <Button variant="outline" onClick={() => void refresh()} isLoading={isRefreshing}>Muat Ulang</Button>
               {canOpenTasks && (
-                <Link to="/komandan/tasks" className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25">
+                <Link to="/komandan/tasks" className="inline-flex touch-target-sm items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25">
                   Kelola Tugas
                 </Link>
               )}
               {canOpenGatePassMonitor && (
-                <Link to="/komandan/gatepass-monitor" className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary transition-all hover:border-primary/40 hover:text-primary">
+                <Link to="/komandan/gatepass-monitor" className="inline-flex touch-target-sm items-center justify-center rounded-xl border border-surface/70 bg-bg-card px-4 py-2.5 text-sm font-semibold text-text-primary transition-all hover:border-primary/40 hover:text-primary">
                   Monitor Gate Pass
                 </Link>
               )}
@@ -221,8 +221,8 @@ export default function KomandanDashboard() {
           {canOpenTasks && <StatCard accent="green" icon={<ICONS.BadgeCheck className="h-5 w-5 text-success" aria-hidden="true" />} label="Tugas Disetujui" value={approvedTasks.length} trend={doneTasks.length > 0 ? `${doneTasks.length} menunggu review` : 'belum ada'} />}
         </StatsGrid>
 
-        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="app-card p-5">
+        <div className="dashboard-grid-secondary">
+          <div className="app-card dashboard-section">
             <div className="flex flex-wrap items-start justify-between gap-3 sm:items-center">
               <div className="flex min-w-0 items-center gap-2.5">
                 <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary/10 text-primary">
@@ -235,7 +235,7 @@ export default function KomandanDashboard() {
               </div>
               {canOpenReports && <Link to="/komandan/reports" className="text-sm font-medium text-primary hover:underline">Lihat laporan →</Link>}
             </div>
-            <div className="mt-4 grid gap-2.5 sm:grid-cols-3">
+            <div className="mt-4 grid-cards-responsive gap-2.5 sm:grid-cols-3">
               {[
                 ...(canOpenTasks ? [
                   { label: 'Pending', value: pendingTasks.length, color: 'text-accent-gold', bg: 'bg-amber-500/10' },
@@ -243,7 +243,7 @@ export default function KomandanDashboard() {
                 ] : []),
                 { label: 'Pin pengumuman', value: pinnedAnnouncements.length, color: 'text-primary', bg: 'bg-primary/10' },
               ].map((item) => (
-                <div key={item.label} className="rounded-2xl border border-surface/70 bg-surface/15 p-4">
+                <div key={item.label} className="rounded-2xl border border-surface/70 bg-surface/15 card-padding-responsive">
                   <div className={`mb-2 grid h-8 w-8 place-items-center rounded-lg ${item.bg}`}>
                     <span className={`text-lg font-black leading-none ${item.color}`}>{item.value}</span>
                   </div>
@@ -258,7 +258,7 @@ export default function KomandanDashboard() {
             </div>
           </div>
 
-          <div className="app-card p-5">
+          <div className="app-card dashboard-section">
             <div className="panel-heading mb-4">
               <div className="flex items-center gap-2.5">
                 <span className="grid h-8 w-8 place-items-center rounded-xl bg-accent-gold/15 text-accent-gold">
@@ -280,7 +280,7 @@ export default function KomandanDashboard() {
             ) : (
               <div className="space-y-2">
                 {pinnedAnnouncements.slice(0, 3).map((announcement) => (
-                  <div key={announcement.id} className="rounded-2xl border border-accent-gold/30 bg-gradient-to-r from-amber-50/80 to-transparent p-4 dark:from-amber-900/10">
+                  <div key={announcement.id} className="rounded-2xl border border-accent-gold/30 bg-gradient-to-r from-amber-50/80 to-transparent card-padding-responsive dark:from-amber-900/10">
                     <div className="flex items-start gap-2 mb-1">
                       <span className="mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-md bg-accent-gold/15 text-accent-gold">
                         <ICONS.Pin className="h-3 w-3" aria-hidden="true" />
@@ -296,7 +296,7 @@ export default function KomandanDashboard() {
         </div>
 
         {canOpenPersonnel && (
-          <div className="app-card p-5">
+          <div className="app-card dashboard-section">
             <div className="panel-heading">
               <div>
                 <h3 className="panel-heading__title">Personel Operasional</h3>
@@ -336,7 +336,7 @@ export default function KomandanDashboard() {
                 />
               ) : (
                 filteredPersonnel.slice(0, 6).map((personel) => (
-                  <div key={personel.id} className="flex flex-col gap-3 rounded-2xl border border-surface/60 bg-surface/15 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div key={personel.id} className="flex flex-col gap-3 rounded-2xl border border-surface/60 bg-surface/15 card-padding-responsive sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-text-primary">{personel.nama}</p>
                       <p className="text-xs text-text-muted">NRP {personel.nrp} · {personel.pangkat ?? '—'} {personel.jabatan ? `· ${personel.jabatan}` : ''}</p>

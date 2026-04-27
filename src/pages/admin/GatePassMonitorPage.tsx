@@ -937,14 +937,15 @@ export default function GatePassMonitorPage() {
             </div>
             <div className="text-xs font-medium text-text-muted">{filteredRows.length} hasil</div>
           </div>
-          <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+          <div className="form-grid-2col gap-3 md:grid-cols-[1fr_220px]">
             <Input
+              className="form-control form-input-responsive"
               placeholder="Cari nama, NRP, tujuan, atau keperluan"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
             <select
-              className="form-control"
+              className="form-control form-input-responsive"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as GatePassStatus | 'all')}
               data-testid="gatepass-monitor-status-filter"
@@ -980,11 +981,11 @@ export default function GatePassMonitorPage() {
               );
             })}
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3 form-grid-responsive gap-3 lg:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs font-semibold text-text-muted">Satuan</label>
               <select
-                className="form-control"
+                className="form-control form-input-responsive"
                 value={unitFilter}
                 onChange={(e) => setUnitFilter(e.target.value)}
                 data-testid="gatepass-monitor-unit-filter"
@@ -998,7 +999,7 @@ export default function GatePassMonitorPage() {
             <div>
               <label className="mb-1 block text-xs font-semibold text-text-muted">Durasi terlambat</label>
               <select
-                className="form-control"
+                className="form-control form-input-responsive"
                 value={overdueBucket}
                 onChange={(e) => setOverdueBucket(e.target.value as OverdueBucket)}
                 data-testid="gatepass-monitor-overdue-filter"
@@ -1011,12 +1012,14 @@ export default function GatePassMonitorPage() {
               </select>
             </div>
             <Input
+              className="form-control form-input-responsive"
               label="Tanggal keluar dari"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
             <Input
+              className="form-control form-input-responsive"
               label="Tanggal keluar sampai"
               type="date"
               value={endDate}

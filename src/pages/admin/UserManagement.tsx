@@ -1119,7 +1119,7 @@ export default function UserManagement() {
         {/* Header actions */}
         <div className="app-card space-y-4 p-4 sm:p-5">
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
+            <div className="form-grid-2col gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
               <div className="relative sm:col-span-2 lg:col-span-1">
               <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-muted">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -1129,13 +1129,13 @@ export default function UserManagement() {
                 placeholder="Cari nama atau NRP..."
                 value={searchRaw}
                 onChange={(e) => { setSearchRaw(e.target.value); setPage(1); }}
-                className="form-control w-full bg-bg-card pl-9"
+                className="form-control form-input-responsive w-full bg-bg-card pl-9"
               />
             </div>
               <select
                 value={filterRole}
                 onChange={(e) => { setFilterRole(e.target.value as Role | ''); setPage(1); }}
-                className="form-control w-full bg-bg-card"
+                className="form-control form-input-responsive w-full bg-bg-card"
               >
                 <option value="">Semua Role</option>
                 {ROLE_OPTIONS.map((option) => (
@@ -1145,7 +1145,7 @@ export default function UserManagement() {
               <select
                 value={filterStatus}
                 onChange={(e) => { setFilterStatus(e.target.value as 'active' | 'inactive' | ''); setPage(1); }}
-                className="form-control w-full bg-bg-card"
+                className="form-control form-input-responsive w-full bg-bg-card"
               >
                 <option value="">Semua Status</option>
                 <option value="active">Aktif</option>

@@ -210,9 +210,9 @@ export default function StafDashboard() {
           </StatsGrid>
         )}
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Quick Access Modules */}
-          <div className="app-card p-4 lg:col-span-1">
+          <div className="app-card dashboard-section lg:col-span-1">
             <DashboardShortcutGrid
               title="Modul Akses Cepat"
               description="Pilih modul yang paling relevan dengan bidang Anda tanpa berpindah menu terlalu jauh."
@@ -228,7 +228,7 @@ export default function StafDashboard() {
           </div>
 
           {/* Announcements */}
-          <div className="app-card p-4 lg:col-span-2">
+          <div className="app-card dashboard-section lg:col-span-2">
             <div className="panel-heading mb-3">
               <h3 className="panel-heading__title">Pengumuman Tersemat</h3>
             </div>
