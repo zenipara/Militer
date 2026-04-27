@@ -42,7 +42,6 @@ export default function GatePassApprovalPage() {
         approved ? 'Gate Pass berhasil disetujui' : 'Gate Pass ditolak',
         approved ? 'success' : 'warning',
       );
-      await fetchGatePasses();
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Gagal memproses gate pass', 'error');
     } finally {

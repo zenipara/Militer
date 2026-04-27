@@ -2,51 +2,139 @@ import { supabase } from '../supabase';
 import type { GatePass } from '../../types';
 import { ensureSessionContext } from './sessionContext';
 
-export async function fetchGatePassesByUser(callerId: string, callerRole: string, userId: string): Promise<GatePass[]> {
-  await ensureSessionContext(callerId, callerRole);
-  const { data, error } = await supabase.rpc('api_get_gate_passes', {
-    p_user_id: callerId,
-    p_role: callerRole,
-    p_target_user_id: userId,
-    p_status_filter: null,
+const READ_RETRY_MAX_ATTEMPTS = 3;
+const READ_RETRY_BASE_MS = 220;
+const READ_RETRY_MAX_MS = 1200;
+const READ_CIRCUIT_OPEN_MS = 12000;
+const READ_CIRCUIT_FAILURE_THRESHOLD = 5;
+
+const readCircuitState = {
+  consecutiveFailures: 0,
+  openedUntil: 0,
+};
+
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
   });
-  if (error) throw error;
-  return (data as GatePass[]) ?? [];
+}
+
+function isTransientReadError(error: unknown): boolean {
+  const status = typeof error === 'object' && error !== null && 'status' in error
+    ? Number((error as { status?: unknown }).status)
+    : null;
+  if (status === 408 || status === 409 || status === 425 || status === 429) return true;
+  if (status !== null && status >= 500) return true;
+
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return (
+    message.includes('failed to fetch')
+    || message.includes('network')
+    || message.includes('timeout')
+    || message.includes('temporar')
+    || message.includes('429')
+    || message.includes('503')
+    || message.includes('502')
+    || message.includes('504')
+  );
+}
+
+function markReadFailure() {
+  readCircuitState.consecutiveFailures += 1;
+  if (readCircuitState.consecutiveFailures >= READ_CIRCUIT_FAILURE_THRESHOLD) {
+    readCircuitState.openedUntil = Date.now() + READ_CIRCUIT_OPEN_MS;
+  }
+}
+
+function markReadSuccess() {
+  readCircuitState.consecutiveFailures = 0;
+  readCircuitState.openedUntil = 0;
+}
+
+async function withResilientRead<T>(operationName: string, operation: () => Promise<T>): Promise<T> {
+  if (Date.now() < readCircuitState.openedUntil) {
+    throw new Error('Layanan gate pass sedang sibuk. Coba lagi beberapa detik lagi.');
+  }
+
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= READ_RETRY_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const result = await operation();
+      markReadSuccess();
+      return result;
+    } catch (error) {
+      lastError = error;
+      const canRetry = attempt < READ_RETRY_MAX_ATTEMPTS && isTransientReadError(error);
+      if (!canRetry) break;
+
+      const exponential = Math.min(READ_RETRY_MAX_MS, READ_RETRY_BASE_MS * (2 ** (attempt - 1)));
+      const jitter = Math.floor(Math.random() * 90);
+      await sleep(exponential + jitter);
+    }
+  }
+
+  markReadFailure();
+  if (import.meta.env.DEV) {
+    console.warn(`[GatePassAPI] Read operation failed: ${operationName}`, lastError);
+  }
+
+  throw (lastError instanceof Error ? lastError : new Error('Gagal memuat data gate pass'));
+}
+
+export async function fetchGatePassesByUser(callerId: string, callerRole: string, userId: string): Promise<GatePass[]> {
+  return withResilientRead('fetchGatePassesByUser', async () => {
+    await ensureSessionContext(callerId, callerRole);
+    const { data, error } = await supabase.rpc('api_get_gate_passes', {
+      p_user_id: callerId,
+      p_role: callerRole,
+      p_target_user_id: userId,
+      p_status_filter: null,
+    });
+    if (error) throw error;
+    return (data as GatePass[]) ?? [];
+  });
 }
 
 export async function fetchGatePassesByUserAndStatus(callerId: string, callerRole: string, userId: string, status: GatePass['status']): Promise<GatePass[]> {
-  await ensureSessionContext(callerId, callerRole);
-  const { data, error } = await supabase.rpc('api_get_gate_passes', {
-    p_user_id: callerId,
-    p_role: callerRole,
-    p_target_user_id: userId,
-    p_status_filter: status,
+  return withResilientRead('fetchGatePassesByUserAndStatus', async () => {
+    await ensureSessionContext(callerId, callerRole);
+    const { data, error } = await supabase.rpc('api_get_gate_passes', {
+      p_user_id: callerId,
+      p_role: callerRole,
+      p_target_user_id: userId,
+      p_status_filter: status,
+    });
+    if (error) throw error;
+    return (data as GatePass[]) ?? [];
   });
-  if (error) throw error;
-  return (data as GatePass[]) ?? [];
 }
 
 export async function fetchAllGatePasses(callerId: string, callerRole: string): Promise<GatePass[]> {
-  await ensureSessionContext(callerId, callerRole);
-  const { data, error } = await supabase.rpc('api_get_gate_passes', {
-    p_user_id: callerId,
-    p_role: callerRole,
-    p_target_user_id: null,
-    p_status_filter: null,
+  return withResilientRead('fetchAllGatePasses', async () => {
+    await ensureSessionContext(callerId, callerRole);
+    const { data, error } = await supabase.rpc('api_get_gate_passes', {
+      p_user_id: callerId,
+      p_role: callerRole,
+      p_target_user_id: null,
+      p_status_filter: null,
+    });
+    if (error) throw error;
+    return (data as GatePass[]) ?? [];
   });
-  if (error) throw error;
-  return (data as GatePass[]) ?? [];
 }
 
 export async function fetchGatePassByQrToken(callerId: string, callerRole: string, qrToken: string): Promise<GatePass | null> {
-  await ensureSessionContext(callerId, callerRole);
-  const { data, error } = await supabase
-    .from('gate_pass')
-    .select('*, user:user_id(id,nama,nrp,pangkat,satuan)')
-    .eq('qr_token', qrToken)
-    .single();
-  if (error) return null;
-  return (data as GatePass) ?? null;
+  return withResilientRead('fetchGatePassByQrToken', async () => {
+    await ensureSessionContext(callerId, callerRole);
+    const { data, error } = await supabase
+      .from('gate_pass')
+      .select('*, user:user_id(id,nama,nrp,pangkat,satuan)')
+      .eq('qr_token', qrToken)
+      .single();
+    if (error) return null;
+    return (data as GatePass) ?? null;
+  });
 }
 
 export interface InsertGatePassResponse {
@@ -133,10 +221,12 @@ export interface ApprovalStats {
 }
 
 export async function fetchApprovalStats(callerId: string, userId: string): Promise<ApprovalStats | null> {
-  await ensureSessionContext(callerId, 'prajurit');
-  const { data, error } = await supabase.rpc('api_get_approval_stats', {
-    p_user_id: userId,
+  return withResilientRead('fetchApprovalStats', async () => {
+    await ensureSessionContext(callerId, 'prajurit');
+    const { data, error } = await supabase.rpc('api_get_approval_stats', {
+      p_user_id: userId,
+    });
+    if (error) return null;
+    return (data?.[0] as ApprovalStats) ?? null;
   });
-  if (error) return null;
-  return (data?.[0] as ApprovalStats) ?? null;
 }

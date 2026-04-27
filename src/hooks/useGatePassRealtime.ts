@@ -16,7 +16,7 @@ interface UseGatePassRealtimeOptions {
  * The subscription is automatically cleaned up when the component unmounts.
  * 
  * Optimization:
- * - Debounced fetch (500ms) to prevent thrashing from multiple rapid updates
+ * - Debounced fetch (900ms) to prevent thrashing from multiple rapid updates
  * - Only subscribes to status changes (INSERT, UPDATE on specific columns)
  */
 export function useGatePassRealtime(options: UseGatePassRealtimeOptions = {}) {
@@ -32,7 +32,7 @@ export function useGatePassRealtime(options: UseGatePassRealtimeOptions = {}) {
   const debouncedFetch = useMemo(
     () => debounce(() => {
       void fetchGatePasses();
-    }, 500),
+    }, 900),
     [fetchGatePasses],
   );
 

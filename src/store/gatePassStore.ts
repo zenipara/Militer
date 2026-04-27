@@ -8,7 +8,7 @@ import { notifyDataChanged } from '../lib/dataSync';
 
 interface GatePassState {
   gatePasses: GatePass[];
-  fetchGatePasses: () => Promise<void>;
+  fetchGatePasses: (options?: { force?: boolean }) => Promise<void>;
   createGatePass: (payload: Partial<GatePass>) => Promise<InsertGatePassResponse>;
   cancelGatePass: (id: string) => Promise<void>;
   approveGatePass: (id: string, approved: boolean) => Promise<void>;
@@ -21,26 +21,112 @@ interface GatePassState {
   scanGatePass: (qrToken: string) => Promise<GatePass>;
 }
 
+const GATEPASS_FETCH_COOLDOWN_MS = 900;
+const GATEPASS_CACHE_TTL_MS = 5 * 60 * 1000;
+let gatePassFetchInFlight: Promise<void> | null = null;
+let gatePassLastFetchAt = 0;
+let gatePassFetchScope = '';
+
+interface GatePassCachePayload {
+  ts: number;
+  gatePasses: GatePass[];
+}
+
+function getGatePassCacheKey(userId: string, role: string) {
+  return `karyo:gatepass-cache:${userId}:${role}`;
+}
+
+function readGatePassCache(cacheKey: string): GatePass[] | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(cacheKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as GatePassCachePayload;
+    if (!parsed || !Array.isArray(parsed.gatePasses)) return null;
+    if (Date.now() - (parsed.ts ?? 0) > GATEPASS_CACHE_TTL_MS) return null;
+    return parsed.gatePasses;
+  } catch {
+    return null;
+  }
+}
+
+function writeGatePassCache(cacheKey: string, gatePasses: GatePass[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload: GatePassCachePayload = { ts: Date.now(), gatePasses };
+    localStorage.setItem(cacheKey, JSON.stringify(payload));
+  } catch {
+    // Ignore storage quota/access errors.
+  }
+}
+
 export const useGatePassStore = create<GatePassState>()((set, get) => ({
   gatePasses: [],
 
-  async fetchGatePasses() {
+  async fetchGatePasses(options) {
     const user = useAuthStore.getState().user;
     if (!user) {
       set({ gatePasses: [] });
       return;
     }
 
-    // Admin, komandan, dan guard perlu melihat semua gate pass (untuk monitoring &
-    // approval). Prajurit hanya perlu melihat gate pass milik sendiri.
-    const data =
-      isRolePrajurit(user.role)
-        ? await fetchGatePassesByUser(user.id, user.role, user.id)
-        : await fetchAllGatePasses(user.id, user.role);
+    const fetchScope = `${user.id}:${user.role}`;
+    if (gatePassFetchScope !== fetchScope) {
+      gatePassFetchScope = fetchScope;
+      gatePassLastFetchAt = 0;
+      gatePassFetchInFlight = null;
+    }
+    const cacheKey = getGatePassCacheKey(user.id, user.role);
 
-    // Store fetched gate passes as-is
-    // Overdue status is now determined by the backend
-    set({ gatePasses: data });
+    const force = options?.force === true;
+
+    if (!force && get().gatePasses.length === 0) {
+      const cached = readGatePassCache(cacheKey);
+      if (cached && cached.length > 0) {
+        set({ gatePasses: cached });
+      }
+    }
+
+    if (gatePassFetchInFlight) {
+      await gatePassFetchInFlight;
+      return;
+    }
+
+    const now = Date.now();
+    if (!force && now - gatePassLastFetchAt < GATEPASS_FETCH_COOLDOWN_MS) {
+      return;
+    }
+
+    gatePassFetchInFlight = (async () => {
+      // Admin, komandan, dan guard perlu melihat semua gate pass (untuk monitoring &
+      // approval). Prajurit hanya perlu melihat gate pass milik sendiri.
+      const data =
+        isRolePrajurit(user.role)
+          ? await fetchGatePassesByUser(user.id, user.role, user.id)
+          : await fetchAllGatePasses(user.id, user.role);
+
+      gatePassLastFetchAt = Date.now();
+      // Store fetched gate passes as-is
+      // Overdue status is now determined by the backend
+      set({ gatePasses: data });
+      writeGatePassCache(cacheKey, data);
+    })();
+
+    try {
+      await gatePassFetchInFlight;
+    } catch (error) {
+      const fallback = readGatePassCache(cacheKey);
+      if (fallback && fallback.length > 0) {
+        set({ gatePasses: fallback });
+        if (import.meta.env.DEV) {
+          console.warn('[GatePassStore] Using stale cache fallback after fetch error', error);
+        }
+        return;
+      }
+      throw error;
+    } finally {
+      gatePassFetchInFlight = null;
+    }
   },
 
   async createGatePass(payload) {
@@ -48,7 +134,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     if (!user) throw new Error('User tidak ditemukan');
     const qr_token = generateQrToken();
     const response = await insertGatePass(user.id, user.role, { ...payload, user_id: user.id, qr_token });
-    await get().fetchGatePasses();
+    await get().fetchGatePasses({ force: true });
     notifyDataChanged('gate_pass');
     return response;
   },
@@ -72,7 +158,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     }
 
     await patchGatePassStatus(user.id, user.role, id, 'cancelled', undefined, 'Dibatalkan oleh pemohon');
-    await get().fetchGatePasses();
+    await get().fetchGatePasses({ force: true });
     notifyDataChanged('gate_pass');
   },
 
@@ -81,7 +167,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     if (!user) throw new Error('User tidak ditemukan');
     const status: GatePassStatus = approved ? 'approved' : 'rejected';
     await patchGatePassStatus(user.id, user.role, id, status, user.id);
-    await get().fetchGatePasses();
+    await get().fetchGatePasses({ force: true });
     notifyDataChanged('gate_pass');
   },
 
@@ -99,7 +185,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     const approved = results.filter((r) => r.status === 'fulfilled').length;
     const failed = results.length - approved;
 
-    await get().fetchGatePasses();
+    await get().fetchGatePasses({ force: true });
     notifyDataChanged('gate_pass');
 
     return { approved, failed };
@@ -115,7 +201,7 @@ export const useGatePassStore = create<GatePassState>()((set, get) => ({
     // Fetch the updated gate pass with user data so callers can render scan result
     const updated = await fetchGatePassByQrToken(user.id, user.role, normalizedToken);
     if (!updated) throw new Error('Gate pass tidak ditemukan setelah scan');
-    await get().fetchGatePasses();
+    await get().fetchGatePasses({ force: true });
     notifyDataChanged('gate_pass');
     return updated;
   },

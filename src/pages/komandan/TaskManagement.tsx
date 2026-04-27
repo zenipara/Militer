@@ -58,13 +58,30 @@ export default function TaskManagement() {
     });
   }, [filterStatus, searchRaw, tasks]);
 
-  const stats = {
-    total: tasks.length,
-    pending: tasks.filter((t) => t.status === 'pending').length,
-    inProgress: tasks.filter((t) => t.status === 'in_progress').length,
-    done: tasks.filter((t) => t.status === 'done').length,
-    approved: tasks.filter((t) => t.status === 'approved').length,
-  };
+  const stats = useMemo(() => {
+    let pending = 0;
+    let inProgress = 0;
+    let done = 0;
+    let approved = 0;
+    let rejected = 0;
+
+    for (const task of tasks) {
+      if (task.status === 'pending') pending += 1;
+      else if (task.status === 'in_progress') inProgress += 1;
+      else if (task.status === 'done') done += 1;
+      else if (task.status === 'approved') approved += 1;
+      else if (task.status === 'rejected') rejected += 1;
+    }
+
+    return {
+      total: tasks.length,
+      pending,
+      inProgress,
+      done,
+      approved,
+      rejected,
+    };
+  }, [tasks]);
 
   const openDetail = async (task: Task) => {
     setSelectedTask(task);
@@ -211,7 +228,7 @@ export default function TaskManagement() {
                 {f.label}
                 {f.value !== '' && (
                   <span className="ml-1.5 text-xs opacity-70">
-                    ({tasks.filter((t) => t.status === f.value).length})
+                    ({f.value === 'in_progress' ? stats.inProgress : stats[f.value as keyof typeof stats]})
                   </span>
                 )}
               </button>

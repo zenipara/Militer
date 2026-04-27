@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckSquare } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -30,10 +30,40 @@ export default function MyTasks() {
   const [reportText, setReportText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const filtered = tasks.filter((t) => !filterStatus || t.status === filterStatus);
-  const activeCount = tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length;
-  const doneCount = tasks.filter((t) => t.status === 'done' || t.status === 'approved').length;
-  const rejectedCount = tasks.filter((t) => t.status === 'rejected').length;
+  const filtered = useMemo(
+    () => tasks.filter((t) => !filterStatus || t.status === filterStatus),
+    [tasks, filterStatus],
+  );
+
+  const statusCounts = useMemo(() => {
+    let pending = 0;
+    let inProgress = 0;
+    let done = 0;
+    let approved = 0;
+    let rejected = 0;
+
+    for (const task of tasks) {
+      if (task.status === 'pending') pending += 1;
+      else if (task.status === 'in_progress') inProgress += 1;
+      else if (task.status === 'done') done += 1;
+      else if (task.status === 'approved') approved += 1;
+      else if (task.status === 'rejected') rejected += 1;
+    }
+
+    return {
+      pending,
+      inProgress,
+      done,
+      approved,
+      rejected,
+      active: pending + inProgress,
+      completed: done + approved,
+    };
+  }, [tasks]);
+
+  const activeCount = statusCounts.active;
+  const doneCount = statusCounts.completed;
+  const rejectedCount = statusCounts.rejected;
 
   const handleStartTask = async (task: Task) => {
     try {
@@ -124,7 +154,7 @@ export default function MyTasks() {
               {f.label}
               {f.value !== '' && (
                 <span className="ml-1.5 text-xs opacity-70">
-                  ({tasks.filter((t) => t.status === f.value).length})
+                    ({f.value === 'in_progress' ? statusCounts.inProgress : statusCounts[f.value as keyof typeof statusCounts]})
                 </span>
               )}
             </button>

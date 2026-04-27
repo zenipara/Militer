@@ -8,12 +8,14 @@ import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { CardListSkeleton, StatCardsSkeleton } from '../../components/common/Skeleton';
 import { MapPin } from 'lucide-react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { GatePass, GatePassStatus } from '../../types';
 import { supabase } from '../../lib/supabase';
 
 interface MonitorGatePass extends GatePass {
   effectiveStatus: GatePassStatus;
+  searchText: string;
 }
 
 type SortMode = 'priority' | 'latest';
@@ -180,6 +182,7 @@ export default function GatePassMonitorPage() {
   useGatePassRealtime();
   const debouncedQuery = useDebounce(query, 250);
   const copyFeedbackTimerRef = useRef<number | null>(null);
+  const cardScrollerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
@@ -221,7 +224,15 @@ export default function GatePassMonitorPage() {
   }, [fetchGatePasses]);
 
   const monitorRows = useMemo<MonitorGatePass[]>(
-    () => gatePasses.map(gp => ({ ...gp, effectiveStatus: getEffectiveStatus(gp) })),
+    () => gatePasses.map((gp) => {
+      const effectiveStatus = getEffectiveStatus(gp);
+      return {
+        ...gp,
+        status: effectiveStatus,
+        effectiveStatus,
+        searchText: [gp.user?.nama, gp.user?.nrp, gp.user?.satuan, gp.tujuan, gp.keperluan].join(' ').toLowerCase(),
+      };
+    }),
     [gatePasses],
   );
 
@@ -237,8 +248,7 @@ export default function GatePassMonitorPage() {
         if (!dateMatch) return false;
         if (criticalMode && gp.effectiveStatus !== 'overdue' && gp.effectiveStatus !== 'checked_in') return false;
         if (!q) return true;
-        const haystack = [gp.user?.nama, gp.user?.nrp, gp.user?.satuan, gp.tujuan, gp.keperluan].join(' ').toLowerCase();
-        return haystack.includes(q);
+        return gp.searchText.includes(q);
       });
 
     if (sortMode === 'latest') {
@@ -333,6 +343,22 @@ export default function GatePassMonitorPage() {
 
   const unitSummary = filteredSummary;
   const { quickStatusStats, unitOptions, approved, keluar, completed, overdue, personilDiLuar, personilTersedia } = monitorSummary;
+
+  const cardVirtualizer = useVirtualizer({
+    count: displayMode === 'cards' ? filteredRows.length : 0,
+    getScrollElement: () => cardScrollerRef.current,
+    estimateSize: () => 172,
+    overscan: 8,
+  });
+
+  const virtualCards = displayMode === 'cards' ? cardVirtualizer.getVirtualItems() : [];
+  const virtualCardsTotalSize = displayMode === 'cards' ? cardVirtualizer.getTotalSize() : 0;
+
+  useEffect(() => {
+    if (displayMode === 'cards' && cardScrollerRef.current) {
+      cardScrollerRef.current.scrollTop = 0;
+    }
+  }, [displayMode, filteredRows.length]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -1051,7 +1077,7 @@ export default function GatePassMonitorPage() {
                             <div className="text-xs text-text-muted">NRP: {gp.user?.nrp ?? '-'}</div>
                           </td>
                           <td className="px-4 py-3 text-text-muted">{gp.user?.satuan ?? '-'}</td>
-                          <td className="px-4 py-3"><GatePassStatusBadge gatePass={{ ...gp, status: gp.effectiveStatus }} /></td>
+                          <td className="px-4 py-3"><GatePassStatusBadge gatePass={gp} /></td>
                           <td className="px-4 py-3">
                             <div className="font-semibold text-text-primary">{gp.tujuan}</div>
                             <div className="text-xs text-text-muted">{gp.keperluan}</div>
@@ -1100,45 +1126,61 @@ export default function GatePassMonitorPage() {
             </div>
           )}
 
-          {filteredRows.length > 0 && displayMode === 'cards' && filteredRows.map(gp => {
-            return (
-              <div
-                key={gp.id}
-                data-testid={`monitor-card-${gp.id}`}
-                className={
-                  gp.effectiveStatus === 'overdue'
-                    ? 'rounded-xl border border-accent-red/40 bg-accent-red/5 p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between'
-                    : 'rounded-xl border border-surface/80 bg-bg-card p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between'
-                }
-              >
-                <div className="space-y-1">
-                  {gp.user && (
-                    <div className="text-sm font-semibold text-primary">
-                      {gp.user.nama} ({gp.user.nrp})
-                    </div>
-                  )}
-                  <div className="font-bold text-text-primary">{gp.tujuan}</div>
-                  <div className="text-sm text-text-muted">{gp.keperluan}</div>
-                  <div className="text-xs text-text-muted">
-                    Scan keluar: {formatDateTime(gp.actual_keluar)} | Scan kembali: {formatDateTime(gp.actual_kembali)}
-                  </div>
-                </div>
+          {filteredRows.length > 0 && displayMode === 'cards' && (
+            <div ref={cardScrollerRef} className="max-h-[68vh] overflow-auto pr-1" data-testid="gatepass-monitor-cards-virtualized">
+              <div className="relative" style={{ height: `${virtualCardsTotalSize}px` }}>
+                {virtualCards.map((virtualRow) => {
+                  const gp = filteredRows[virtualRow.index];
+                  if (!gp) return null;
 
-                <div className="flex flex-col items-start md:items-end gap-1.5">
-                  <GatePassStatusBadge gatePass={{ ...gp, status: gp.effectiveStatus }} />
-                  {gp.effectiveStatus === 'overdue' && <div className="text-xs font-semibold text-accent-red">Terlambat</div>}
-                  {gp.effectiveStatus === 'checked_in' && <div className="text-xs font-semibold text-orange-500">Sedang Keluar</div>}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => void handleCopyText(buildCopyTextForGatePass(gp), `Detail ${gp.user?.nama ?? gp.id} disalin`)}
-                  >
-                    Salin detail
-                  </Button>
-                </div>
+                  return (
+                    <div
+                      key={gp.id}
+                      data-index={virtualRow.index}
+                      ref={cardVirtualizer.measureElement}
+                      style={{ transform: `translateY(${virtualRow.start}px)` }}
+                      className="absolute left-0 top-0 w-full pb-2"
+                    >
+                      <div
+                        data-testid={`monitor-card-${gp.id}`}
+                        className={
+                          gp.effectiveStatus === 'overdue'
+                            ? 'rounded-xl border border-accent-red/40 bg-accent-red/5 p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between'
+                            : 'rounded-xl border border-surface/80 bg-bg-card p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between'
+                        }
+                      >
+                        <div className="space-y-1">
+                          {gp.user && (
+                            <div className="text-sm font-semibold text-primary">
+                              {gp.user.nama} ({gp.user.nrp})
+                            </div>
+                          )}
+                          <div className="font-bold text-text-primary">{gp.tujuan}</div>
+                          <div className="text-sm text-text-muted">{gp.keperluan}</div>
+                          <div className="text-xs text-text-muted">
+                            Scan keluar: {formatDateTime(gp.actual_keluar)} | Scan kembali: {formatDateTime(gp.actual_kembali)}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-start md:items-end gap-1.5">
+                          <GatePassStatusBadge gatePass={gp} />
+                          {gp.effectiveStatus === 'overdue' && <div className="text-xs font-semibold text-accent-red">Terlambat</div>}
+                          {gp.effectiveStatus === 'checked_in' && <div className="text-xs font-semibold text-orange-500">Sedang Keluar</div>}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => void handleCopyText(buildCopyTextForGatePass(gp), `Detail ${gp.user?.nama ?? gp.id} disalin`)}
+                          >
+                            Salin detail
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>
