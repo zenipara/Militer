@@ -45,7 +45,7 @@ export default function Input({
             placeholder:text-text-muted
             transition-all duration-200 focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15
             disabled:cursor-not-allowed disabled:opacity-50
-            ${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''}
+            ${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-16' : ''}
             ${error ? 'border-accent-red focus:border-accent-red focus:ring-accent-red/50' : ''}
             ${className}
           `}

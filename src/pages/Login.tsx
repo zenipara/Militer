@@ -56,7 +56,7 @@ export default function Login() {
 
   if (!isSupabaseConfigured) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-military-dark p-6">
+      <main className="flex min-h-screen flex-col items-center justify-center bg-military-dark p-6" role="main">
         <div className="w-full max-w-md space-y-5 rounded-2xl border border-accent-red/30 bg-bg-card p-8 text-center">
           <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-accent-red/15">
             <AlertTriangle className="h-8 w-8 text-accent-red" aria-hidden="true" />
@@ -72,12 +72,12 @@ export default function Login() {
             </p>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="desktop-shell relative min-h-screen overflow-hidden bg-military-dark p-4 sm:p-6">
+    <main className="desktop-shell relative min-h-screen overflow-hidden bg-military-dark p-4 sm:p-6" role="main">
       {settings.platformLoginBackgroundUrl && (
         <>
           <img
@@ -101,13 +101,13 @@ export default function Login() {
               <span className="chip chip--success ml-1">Online</span>
             </div>
 
-            <h1 className="max-w-xl text-4xl font-extrabold leading-[1.1] tracking-tight text-text-primary xl:text-5xl">
+            <div className="max-w-xl text-4xl font-extrabold leading-[1.1] tracking-tight text-text-primary xl:text-5xl">
               {settings.platformName}{' '}
               <span className="bg-gradient-to-r from-primary via-cyan-500 to-blue-700 bg-clip-text text-transparent">
                 pusat kendali
               </span>{' '}
               operasi yang siap tempur.
-            </h1>
+            </div>
 
             <p className="max-w-xl text-sm leading-relaxed text-text-muted xl:text-base">
               Pantau personel, gerbang, tugas, kehadiran, dan logistik dalam satu alur kerja yang terukur, aman, dan realtime.
@@ -182,7 +182,7 @@ export default function Login() {
                     <span className="text-2xl text-white">◈</span>
                   )}
                 </div>
-                <h2 className="text-2xl font-bold tracking-tight text-text-primary">Akses Komando</h2>
+                <h1 className="text-2xl font-bold tracking-tight text-text-primary">Akses Komando</h1>
                 <p className="mt-1 text-sm text-text-muted">{settings.platformName} — {settings.platformTagline}</p>
               </div>
 
@@ -225,7 +225,7 @@ export default function Login() {
                     <button
                       type="button"
                       onClick={() => setShowPin(!showPin)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-text-muted transition-all duration-150 hover:text-text-primary hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/30 dark:hover:bg-surface/60"
+                      className="flex h-11 min-w-[60px] items-center justify-center rounded-lg px-4 text-text-muted transition-all duration-150 hover:text-text-primary hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/30 dark:hover:bg-surface/60"
                       aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
                     >
                       {showPin
@@ -268,6 +268,6 @@ export default function Login() {
           </p>
         </section>
       </div>
-    </div>
+    </main>
   );
 }

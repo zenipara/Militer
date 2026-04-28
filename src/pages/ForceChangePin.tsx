@@ -56,7 +56,7 @@ export default function ForceChangePin() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-military-dark p-4">
+    <main className="flex min-h-screen items-center justify-center bg-military-dark p-4" role="main">
       <div className="app-card w-full max-w-md p-6 sm:p-8">
         <h1 className="text-2xl font-bold text-text-primary">Wajib Ganti PIN</h1>
         <p className="mt-2 text-sm text-text-secondary">
@@ -109,6 +109,6 @@ export default function ForceChangePin() {
           </Button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }

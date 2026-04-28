@@ -1192,8 +1192,8 @@ textarea.form-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;    /* 40px */
-  height: 2.5rem;
+  width: 2.75rem;   /* 44px */
+  height: 2.75rem;
   border-radius: 0.75rem;
   border: 1px solid color-mix(in srgb, var(--color-surface) 70%, transparent);
   background: color-mix(in srgb, var(--color-bg-card) 80%, transparent);
@@ -1220,8 +1220,8 @@ textarea.form-control {
 }
 
 .icon-btn--sm {
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 0.5rem;
 }
 

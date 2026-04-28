@@ -22,7 +22,7 @@ export default function ErrorPage() {
   const code = state?.code ?? '500';
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-military-dark p-6">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-military-dark p-6" role="main">
       <div className="w-full max-w-md space-y-6 rounded-2xl border border-accent-red/30 bg-bg-card p-8 text-center">
         {/* Icon */}
         <div className="mx-auto grid h-20 w-20 place-items-center rounded-2xl bg-accent-red/15">
@@ -72,6 +72,6 @@ export default function ErrorPage() {
       <p className="mt-6 text-xs text-text-muted">
         KARYO OS v1.2.1 — Jika masalah berlanjut, hubungi Administrator.
       </p>
-    </div>
+    </main>
   );
 }

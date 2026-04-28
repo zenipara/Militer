@@ -53,7 +53,7 @@ export default function PageHeader({ title, subtitle, actions, meta, breadcrumbs
           )}
         </div>
         {actions && (
-          <div className="flex w-full space-compact-mobile items-stretch lg:w-auto lg:justify-end [&>*]:min-h-[44px] [&>*]:justify-center">
+          <div className="flex w-full flex-wrap space-compact-mobile items-stretch lg:w-auto lg:justify-end [&>*]:min-h-[44px] [&>*]:justify-center">
             {actions}
           </div>
         )}

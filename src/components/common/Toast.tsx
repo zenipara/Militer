@@ -79,7 +79,7 @@ function ToastItem({ id, type, message, description, action, onClose }: ToastIte
         )}
         <button
           onClick={() => onClose(id)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg opacity-50 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10 transition"
+          className="icon-btn icon-btn--sm border-0 bg-transparent opacity-50 hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10"
           aria-label="Tutup"
         >
           <X className="w-3.5 h-3.5" aria-hidden="true" />
