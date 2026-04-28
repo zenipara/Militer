@@ -22,6 +22,12 @@ import { measurePageLoad } from './lib/metrics';
 // Mulai pengukuran load halaman sebelum render pertama
 measurePageLoad();
 
+function AuthenticatedRuntimeEffects() {
+  useGlobalRealtimeSync();
+  useNotifications();
+  return null;
+}
+
 export function App() {
   const restoreSession = useAuthStore((s) => s.restoreSession);
   const updateOnlineStatus = useAuthStore((s) => s.updateOnlineStatus);
@@ -31,8 +37,6 @@ export function App() {
   const { loadPlatformBranding } = usePlatformStore();
   const { loadFeatureFlags } = useFeatureStore();
   const { loadUserPreferences } = useUIStore();
-  useGlobalRealtimeSync();
-  useNotifications();
 
   useEffect(() => {
     void restoreSession();
@@ -84,7 +88,12 @@ export function App() {
     return <LoadingSpinner fullScreen />;
   }
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      {hasUser && <AuthenticatedRuntimeEffects />}
+      <RouterProvider router={router} />
+    </>
+  );
 }
 
 const root = document.getElementById('root');
