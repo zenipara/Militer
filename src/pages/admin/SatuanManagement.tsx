@@ -48,6 +48,7 @@ export default function SatuanManagement() {
   const [showDelete, setShowDelete] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Satuan | null>(null);
   const [selected, setSelected] = useState<Satuan | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -131,7 +132,6 @@ export default function SatuanManagement() {
           tingkat: form.tingkat || null,
           logo_url: form.logo_url || null,
           is_active: form.is_active,
-          created_by: user?.id ?? null,
         });
         showNotification('Satuan berhasil diperbarui', 'success');
       } else {
@@ -174,6 +174,24 @@ export default function SatuanManagement() {
       showNotification(error instanceof Error ? error.message : 'Gagal menghapus satuan', 'error');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleToggleActive = async (satuan: Satuan) => {
+    setUpdatingId(satuan.id);
+    try {
+      await updateSatuan(satuan.id, {
+        is_active: !satuan.is_active,
+      });
+      showNotification(
+        satuan.is_active ? 'Satuan dinonaktifkan' : 'Satuan diaktifkan',
+        'success',
+      );
+      await loadSatuans();
+    } catch (error) {
+      showNotification(error instanceof Error ? error.message : 'Gagal memperbarui status satuan', 'error');
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -333,6 +351,15 @@ export default function SatuanManagement() {
               header: 'Aksi',
               render: (item) => (
                 <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={item.is_active ? 'outline' : 'secondary'}
+                    leftIcon={<CircleDot className="h-3.5 w-3.5" />}
+                    onClick={() => handleToggleActive(item)}
+                    isLoading={updatingId === item.id}
+                  >
+                    {item.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                  </Button>
                   <Button size="sm" variant="outline" leftIcon={<Edit2 className="h-3.5 w-3.5" />} onClick={() => openEdit(item)}>
                     Edit
                   </Button>
