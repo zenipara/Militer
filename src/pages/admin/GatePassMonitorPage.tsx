@@ -8,7 +8,7 @@ import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { CardListSkeleton, StatCardsSkeleton } from '../../components/common/Skeleton';
 import { MapPin } from 'lucide-react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { GatePass, GatePassStatus } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -1201,7 +1201,7 @@ export default function GatePassMonitorPage() {
             <div ref={cardScrollerRef} className="max-h-[68vh] overflow-auto pr-1" data-testid="gatepass-monitor-cards-virtualized">
               {shouldVirtualizeCards ? (
                 <div className="relative" style={{ height: `${virtualCardsTotalSize}px` }}>
-                  {virtualCards.map((virtualRow) => {
+                  {virtualCards.map((virtualRow: VirtualItem) => {
                     const gp = filteredRows[virtualRow.index];
                     if (!gp) return null;
 

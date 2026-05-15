@@ -36,7 +36,10 @@ export function useAnnouncements() {
   const setAnnouncementsIfChanged = useCallback((next: Announcement[]) => {
     setAnnouncements((prev) => {
       if (prev.length === next.length) {
-        const unchanged = prev.every((item, idx) => item.id === next[idx]?.id && item.updated_at === next[idx]?.updated_at);
+        const unchanged = prev.every((item, idx) => {
+          const nextItem = next[idx];
+          return item.id === nextItem?.id && item.updated_at === nextItem?.updated_at;
+        });
         if (unchanged) return prev;
       }
       return next;

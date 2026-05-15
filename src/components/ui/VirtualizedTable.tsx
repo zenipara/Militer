@@ -1,5 +1,5 @@
 import { ReactNode, useRef } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, type VirtualItem } from '@tanstack/react-virtual';
 import EmptyState from '../common/EmptyState';
 import { useUIStore } from '../../store/uiStore';
 
@@ -135,7 +135,7 @@ export default function VirtualizedTable<T>({
                   <td colSpan={columns.length} />
                 </tr>
               )}
-              {virtualItems.map((virtualItem) => {
+              {virtualItems.map((virtualItem: VirtualItem) => {
                 const row = data[virtualItem.index];
                 if (!row) return null;
                 const idx = virtualItem.index;

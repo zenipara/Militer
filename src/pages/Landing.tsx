@@ -63,7 +63,7 @@ export default function Landing() {
           <div className="flex items-center gap-2">
             <Shield className="h-8 w-8 text-accent-red" />
             <h1 className="text-2xl font-bold text-text-primary">
-              {settings?.appName || 'Sistem Operasional Militer'}
+              {settings?.platformName || 'Sistem Operasional Militer'}
             </h1>
           </div>
           <button
@@ -174,7 +174,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-accent-red/20 bg-military-dark/50 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center text-text-muted text-sm">
-          <p>&copy; {new Date().getFullYear()} {settings?.appName || 'Sistem Operasional Militer'}. Semua hak dilindungi.</p>
+          <p>&copy; {new Date().getFullYear()} {settings?.platformName || 'Sistem Operasional Militer'}. Semua hak dilindungi.</p>
         </div>
       </footer>
     </main>

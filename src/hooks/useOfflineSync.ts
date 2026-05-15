@@ -253,14 +253,14 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}) {
         }
       };
 
-      navigator.serviceWorker.addEventListener('message', onMessage);
+      navigator.serviceWorker?.addEventListener('message', onMessage);
 
       // Check initial online status
       await checkOnlineStatus();
       await updateSyncStats();
 
       return () => {
-        navigator.serviceWorker.removeEventListener('message', onMessage);
+        navigator.serviceWorker?.removeEventListener('message', onMessage);
       };
     };
 

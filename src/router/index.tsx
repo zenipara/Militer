@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createHashRouter, Link, Navigate } from 'react-router-dom';
+import { createHashRouter, Link } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import { APP_ROUTE_PATHS, ROLE_ROUTE_PATHS, ROUTE_ROLE_GROUPS } from '../lib/rolePermissions';
 import LoadingSpinner from '../components/common/LoadingSpinner';
