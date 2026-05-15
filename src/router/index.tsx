@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 // const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
 // Jika error, cek penamaan file/folder (huruf besar/kecil harus sama persis)
 
+const Landing = lazy(() => import('../pages/Landing'));
 const Login = lazy(() => import('../pages/Login'));
 const RegisterByLink = lazy(() => import('../pages/RegisterByLink'));
 const ForceChangePin = lazy(() => import('../pages/ForceChangePin'));
@@ -65,7 +66,7 @@ const wrap = (element: React.ReactNode) => (
 export const router = createHashRouter([
   {
     path: APP_ROUTE_PATHS.root,
-    element: <Navigate to={APP_ROUTE_PATHS.login} replace />,
+    element: wrap(<Landing />),
   },
   {
     path: APP_ROUTE_PATHS.login,
